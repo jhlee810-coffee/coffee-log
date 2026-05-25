@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="빈본타이머">
+<title>빈본 로스팅 타이머</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body { font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif; background:#f4f6f8; min-height:100vh; display:flex; flex-direction:column; align-items:center; }
+.header { width:100%; color:#fff; text-align:center; padding:48px 16px 16px; transition:background 0.3s; }
+.header h1 { font-size:20px; font-weight:800; letter-spacing:-0.5px; }
+.header p { font-size:12px; opacity:0.85; margin-top:3px; }
+.body { width:100%; max-width:420px; padding:16px 14px 40px; }
+.sec { background:#fff; border-radius:14px; padding:14px 16px; margin-bottom:12px; box-shadow:0 2px 8px rgba(0,0,0,0.07); }
+.lbl { font-size:11px; font-weight:700; color:#888; margin-bottom:8px; letter-spacing:0.5px; }
+.btn-row { display:flex; gap:8px; flex-wrap:wrap; }
+.chip { padding:8px 14px; border-radius:20px; border:2px solid #ddd; background:#fff; color:#555; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; }
+.bean-btn { width:100%; padding:10px 14px; border-radius:10px; border:2px solid #ddd; background:#fff; color:#555; font-size:13px; font-weight:700; cursor:pointer; text-align:left; font-family:inherit; margin-bottom:6px; }
+.warn-box { margin-top:10px; font-size:12px; color:#e05c00; font-weight:700; background:#fff8f0; border-radius:8px; padding:8px 12px; }
+.info-row { display:flex; gap:8px; margin-bottom:12px; }
+.info-card { flex:1; background:#fff; border-radius:12px; padding:10px 12px; text-align:center; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
+.info-val { font-size:18px; font-weight:800; color:#1a1a1a; }
+.info-lab { font-size:10px; color:#888; margin-top:2px; }
+.table-btn { width:100%; padding:12px; border-radius:14px; border:2px solid; background:#fff; font-size:14px; font-weight:700; cursor:pointer; margin-bottom:8px; font-family:inherit; }
+.start-btn { width:100%; padding:16px; border-radius:14px; border:none; color:#fff; font-size:17px; font-weight:800; cursor:pointer; font-family:inherit; }
+/* 로스팅 화면 */
+.timer-box { background:#fff; border-radius:14px; padding:16px 16px 14px; margin-bottom:12px; text-align:center; box-shadow:0 2px 8px rgba(0,0,0,0.07); }
+.remain-num { font-size:64px; font-weight:900; color:#1a1a1a; line-height:1; letter-spacing:-3px; }
+.remain-lbl-main { font-size:12px; color:#888; margin-bottom:4px; }
+.elapsed-lbl { font-size:13px; color:#bbb; margin-top:6px; }
+.elapsed-lbl b { color:#999; }
+.pop-btn { width:100%; padding:22px; border-radius:14px; border:none; color:#fff; font-size:20px; font-weight:900; cursor:pointer; margin-bottom:12px; font-family:inherit; }
+.pop-info { background:#f0f0f0; border-radius:14px; padding:12px 16px; text-align:center; margin-bottom:12px; font-size:13px; color:#555; }
+.result-box { border-radius:14px; padding:14px 16px; margin-bottom:12px; text-align:center; border:2px solid; }
+.result-title { font-size:11px; font-weight:700; color:#888; margin-bottom:6px; }
+.result-main { font-size:64px; font-weight:900; line-height:1; letter-spacing:-3px; }
+.result-sub { font-size:12px; color:#666; margin-top:6px; }
+.cd-box { border-radius:14px; padding:12px 16px; margin-bottom:12px; text-align:center; border:2px solid; }
+.cd-num { font-size:40px; font-weight:900; letter-spacing:-2px; }
+.cd-lbl { font-size:12px; color:#666; margin-top:4px; }
+.reset-btn { width:100%; padding:14px; border-radius:14px; background:#eee; color:#444; font-size:15px; font-weight:700; border:none; cursor:pointer; font-family:inherit; margin-top:4px; }
+/* 인라인 표 */
+.inline-table-wrap { overflow-x:auto; margin:0 -2px; }
+.itbl { width:100%; border-collapse:collapse; font-size:11px; }
+.itbl th { padding:6px 3px; text-align:center; color:#fff; font-size:10px; font-weight:700; border-right:1px solid rgba(255,255,255,0.2); }
+.itbl th:last-child { border-right:none; }
+.itbl td { padding:6px 3px; text-align:center; border-bottom:1px solid #f0f0f0; border-right:1px solid #f0f0f0; vertical-align:middle; }
+.itbl td:last-child { border-right:none; }
+.itbl tr.is-ref td { background:#f8f8f8; border-top:2px solid; border-bottom:2px solid; }
+.itbl tr.is-hit { background:#fffde7 !important; }
+.itbl tr.is-hit td { font-weight:800; border-top:2px solid #f57f17; border-bottom:2px solid #f57f17; }
+.dev-b { display:inline-block; border-radius:3px; padding:1px 4px; font-size:9px; font-weight:700; margin-bottom:2px; }
+.pop-main { font-size:13px; font-weight:800; line-height:1.2; }
+.pop-sub-s { font-size:9px; color:#888; }
+.rem-val { font-size:13px; font-weight:800; line-height:1.2; }
+.rem-val.over { color:#e05c00; }
+.rem-sub-s { font-size:9px; color:#888; }
+.tbl-legend { margin-top:8px; padding:8px 10px; background:#f8f8f8; border-radius:8px; }
+.tbl-legend p { font-size:10px; color:#444; line-height:1.8; }
+.tbl-warn { margin-top:6px; font-size:10px; color:#c05000; font-weight:600; background:#fff8f0; border-radius:6px; padding:5px 8px; }
+/* 설정화면 모달 */
+.modal-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.55); z-index:100; display:flex; align-items:flex-end; }
+.modal { background:#fff; width:100%; max-height:88vh; border-radius:20px 20px 0 0; overflow-y:auto; padding:16px 12px 32px; }
+.modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; padding:0 4px; }
+.modal-title { font-size:15px; font-weight:800; }
+.modal-close { font-size:26px; color:#888; cursor:pointer; padding:2px 8px; line-height:1; }
+.modal-meta { font-size:11px; color:#888; text-align:center; margin-bottom:10px; }
+</style>
+</head>
+<body>
+<div class="header" id="hdr">
+  <h1 id="hdr-title">☕ 빈본 로스팅 타이머</h1>
+  <p id="hdr-sub">1차 팝 → 배출 시간 즉시 계산</p>
+</div>
+<div class="body" id="app"></div>
+<div id="modal-area"></div>
+
+<script>
+const MODES = {
+  2:{label:"2번",autoEject:445},
+  3:{label:"3번",autoEject:399},
+  4:{label:"4번",autoEject:406},
+  5:{label:"5번",autoEject:470},
+  6:{label:"6번",autoEject:362},
+  7:{label:"7번",autoEject:405},
+};
+const BEAN = {
+  washed: {label:"워시드",color:"#0D6E54",dtrs:[12,13,14],
+    legend:["꽃향기·산미 극대화","향기 우선, 밝은 산미","단맛 균형"]},
+  natural:{label:"내추럴·허니·무산소",color:"#0D6E54",dtrs:[13,14,15],
+    legend:["과일향·꽃향기 선명","향기·단맛 균형","단맛·복합향 강조"]},
+  kenya:  {label:"케냐 (워시드·전가공)",color:"#7A3B10",dtrs:[13,16,20],
+    legend:["라이트 — 꽃향기·산미·블랙커런트","미디엄 — 단맛·바디 균형","다크 — 진한 바디 (라떼·더치)"]},
+};
+const POP_ROWS = {
+  2:{rows:[75,70,65,60,55,50,45,40,35],center:55},
+  3:{rows:[85,80,75,70,65,60,55,50,45],center:65},
+  4:{rows:[90,85,80,75,70,65,60,55,50],center:70},
+  5:{rows:[110,105,100,95,90,85,80,75,70],center:90},
+  6:{rows:[125,120,115,110,105,100,95,90,85],center:105},
+  7:{rows:[130,125,120,115,110,105,100,95,90],center:110},
+};
+const COOLING=[0,0,1,2,3];
+
+let S={screen:"setup",modeKey:5,beanType:"kenya",dtr:13,batchNum:1,
+  elapsed:0,popElapsed:null,result:null,countdown:null,countdownDone:false,showTable:false};
+let timerIv=null,cdIv=null,startTime=null,audioCtx=null;
+
+function fmt(s){
+  const a=Math.abs(Math.round(s)),m=Math.floor(a/60),sec=a%60;
+  return `${m}:${String(sec).padStart(2,"0")}`;
+}
+function calcEject(popSec,dtr,autoEject){
+  const ej=popSec/(1-dtr/100),dev=Math.round(ej-popSec),rem=autoEject-Math.round(ej);
+  return{dev,rem,over:rem<0,ejSec:Math.round(ej)};
+}
+function beep(freq=880,dur=0.15){
+  try{
+    if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+    o.connect(g);g.connect(audioCtx.destination);
+    o.frequency.value=freq;
+    g.gain.setValueAtTime(0.3,audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+dur);
+    o.start();o.stop(audioCtx.currentTime+dur);
+  }catch(e){}
+}
+
+function doStart(){
+  clearInterval(timerIv);clearInterval(cdIv);
+  Object.assign(S,{elapsed:0,popElapsed:null,result:null,countdown:null,countdownDone:false,showTable:false,screen:"running"});
+  startTime=Date.now();
+  timerIv=setInterval(()=>{S.elapsed=Math.floor((Date.now()-startTime)/1000);render();},200);
+  beep(660,0.2);render();
+}
+function handlePop(){
+  if(S.popElapsed!==null)return;
+  S.popElapsed=S.elapsed;beep(660,0.2);
+  const ae=MODES[S.modeKey].autoEject;
+  S.result=calcEject(S.popElapsed,S.dtr,ae);
+  if(!S.result.over){
+    const target=S.result.ejSec;
+    cdIv=setInterval(()=>{
+      const left=target-Math.floor((Date.now()-startTime)/1000);
+      S.countdown=left;
+      if(left<=10&&left>0)beep(880,0.05);
+      if(left<=0){clearInterval(cdIv);S.countdownDone=true;beep(1200,0.4);setTimeout(()=>beep(1200,0.4),500);}
+      render();
+    },500);
+  }
+  render();
+}
+function handleReset(){
+  clearInterval(timerIv);clearInterval(cdIv);
+  Object.assign(S,{screen:"setup",elapsed:0,popElapsed:null,result:null,countdown:null,countdownDone:false,showTable:false});
+  render();
+}
+function toggleTable(){S.showTable=!S.showTable;render();}
+
+// ── 표 HTML (설정화면 모달용 + 로스팅 인라인 공용) ──────────────
+function buildTableHtml(hitRemain){
+  const ae=MODES[S.modeKey].autoEject;
+  const bean=BEAN[S.beanType];
+  const color=bean.color;
+  const {rows,center}=POP_ROWS[S.modeKey];
+  const dtrs=bean.dtrs;
+
+  const thS=`style="background:${color}"`;
+  const rowsHtml=rows.map(pr=>{
+    const popSec=ae-pr;
+    const isRef=pr===center;
+    const isHit=hitRemain!==null&&pr===hitRemain;
+    let trClass=isHit?"is-hit":isRef?"is-ref":"";
+
+    const cols=dtrs.map(dtr=>{
+      const {dev,rem,over,ejSec}=calcEject(popSec,dtr,ae);
+      const remStr=over?`+${fmt(Math.abs(rem))}`:fmt(rem);
+      const devBg=over?"#ffe0d0":"#e6f2ee";
+      const devCol=over?"#c05000":color;
+      return `<td>
+        <div class="dev-b" style="background:${devBg};color:${devCol}">${dev}초</div>
+        <div class="rem-val${over?" over":""}">${remStr}</div>
+        <div class="rem-sub-s">(${fmt(ejSec)})</div>
+      </td>`;
+    }).join("");
+
+    const refB=isRef?`<div style="display:inline-block;background:${color};color:#fff;font-size:8px;font-weight:700;border-radius:3px;padding:1px 4px;margin-top:2px">기준</div>`:"";
+    const hitB=isHit?`<div style="display:inline-block;background:#f57f17;color:#fff;font-size:8px;font-weight:700;border-radius:3px;padding:1px 4px;margin-top:2px">▶현재</div>`:"";
+
+    return `<tr class="${trClass}" style="${isRef?`border-color:${color}`:""}">
+      <td>
+        <div class="pop-main" style="color:${color}">${fmt(pr)}</div>
+        <div class="pop-sub-s">(${fmt(popSec)})</div>
+        ${refB}${hitB}
+      </td>${cols}
+    </tr>`;
+  }).join("");
+
+  const legendHtml=dtrs.map((d,i)=>`<p><span style="color:${color};font-weight:700">• DTR ${d}%</span>: ${bean.legend[i]}</p>`).join("");
+
+  return `
+    <div class="inline-table-wrap">
+      <table class="itbl">
+        <thead><tr>
+          <th ${thS}>1차팝<br><span style="font-size:8px;opacity:0.8">남은(경과)</span></th>
+          ${dtrs.map(d=>`<th ${thS}>DTR ${d}%<br><span style="font-size:8px;opacity:0.8">발달·남은(경과)</span></th>`).join("")}
+        </tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+    </div>
+    <div class="tbl-legend">${legendHtml}</div>
+    <div class="tbl-warn">+표시 → 자동배출(${fmt(ae)}) 초과 · 강제배출 불가</div>
+  `;
+}
+
+function render(){
+  const app=document.getElementById("app");
+  const hdr=document.getElementById("hdr");
+  const hdrT=document.getElementById("hdr-title");
+  const hdrS=document.getElementById("hdr-sub");
+  const modalArea=document.getElementById("modal-area");
+  const mode=MODES[S.modeKey];
+  const bean=BEAN[S.beanType];
+  const color=bean.color;
+
+  // 설정화면 모달
+  if(S.screen==="setup"&&S.showTable){
+    modalArea.innerHTML=`
+      <div class="modal-overlay" onclick="if(event.target===this)toggleTable()">
+        <div class="modal">
+          <div class="modal-header">
+            <div class="modal-title" style="color:${color}">${mode.label}번 · ${bean.label.replace("(워시드·전가공)","").trim()}</div>
+            <div class="modal-close" onclick="toggleTable()">✕</div>
+          </div>
+          <div class="modal-meta">자동배출 ${fmt(mode.autoEject)} · 남은시간 기준 · 괄호=경과</div>
+          ${buildTableHtml(null)}
+        </div>
+      </div>`;
+  } else {
+    modalArea.innerHTML="";
+  }
+
+  if(S.screen==="setup"){
+    hdr.style.background=color;
+    hdrT.textContent="☕ 빈본 로스팅 타이머";
+    hdrS.textContent="1차 팝 → 배출 시간 즉시 계산";
+    const cooling=COOLING[Math.min(S.batchNum,4)];
+    app.innerHTML=`
+      <div class="sec">
+        <div class="lbl">빈본 모드</div>
+        <div class="btn-row">
+          ${Object.entries(MODES).map(([k,v])=>`
+            <button class="chip" style="${S.modeKey===+k?`background:${color};border-color:${color};color:#fff`:""}"
+              onclick="S.modeKey=${k};render()">${v.label}</button>`).join("")}
+        </div>
+      </div>
+      <div class="sec">
+        <div class="lbl">원두 / 가공</div>
+        ${Object.entries(BEAN).map(([k,v])=>`
+          <button class="bean-btn" style="${S.beanType===k?`background:${v.color};border-color:${v.color};color:#fff`:""}"
+            onclick="S.beanType='${k}';S.dtr=${v.dtrs[0]};render()">${v.label}</button>`).join("")}
+      </div>
+      <div class="sec">
+        <div class="lbl">DTR 목표</div>
+        <div class="btn-row">
+          ${bean.dtrs.map(d=>`
+            <button class="chip" style="${S.dtr===d?`background:${color};border-color:${color};color:#fff`:""}"
+              onclick="S.dtr=${d};render()">${d}%</button>`).join("")}
+        </div>
+      </div>
+      <div class="sec">
+        <div class="lbl">배치 번호</div>
+        <div class="btn-row">
+          ${[1,2,3,4,5].map(n=>`
+            <button class="chip" style="${S.batchNum===n?"background:#555;border-color:#555;color:#fff":""}"
+              onclick="S.batchNum=${n};render()">${n}배치</button>`).join("")}
+        </div>
+        ${S.batchNum>1?`<div class="warn-box">⚠ ${S.batchNum}배치 → 시작 전 강제 쿨링 ${cooling}회 권장</div>`:""}
+      </div>
+      <div class="info-row">
+        <div class="info-card" style="border-top:3px solid ${color}">
+          <div class="info-val">${mode.label}</div>
+          <div class="info-lab">모드 (${fmt(mode.autoEject)})</div>
+        </div>
+        <div class="info-card" style="border-top:3px solid ${color}">
+          <div class="info-val">DTR ${S.dtr}%</div>
+          <div class="info-lab">${bean.label.split("·")[0]}</div>
+        </div>
+      </div>
+      <button class="table-btn" style="border-color:${color};color:${color}" onclick="toggleTable()">
+        📋 ${S.showTable?"표 닫기":"전체 표 보기"}</button>
+      <button class="start-btn" style="background:${color}" onclick="doStart()">▶ 로스팅 시작</button>
+    `;
+  } else {
+    // ── 로스팅 화면 ──
+    const hdrBg=S.popElapsed!==null?(S.result?.over?"#e05c00":color):"#333";
+    hdr.style.background=hdrBg;
+    hdrT.textContent=S.popElapsed===null?"🔥 로스팅 중...":(S.result?.over?"⚠ 자동배출 초과":"✅ 배출 시간");
+    hdrS.textContent=`${mode.label} · DTR ${S.dtr}% · ${bean.label.split("·")[0]}`;
+    const remDisplay=Math.max(0,mode.autoEject-S.elapsed);
+
+    // 1차팝 하이라이트 행
+    let hitRemain=null;
+    if(S.popElapsed!==null){
+      hitRemain=Math.round((mode.autoEject-S.popElapsed)/5)*5;
+    }
+
+    let resultHtml="";
+    if(S.result){
+      const r=S.result;
+      const rc=r.over?"#e05c00":color;
+      const rs=r.over?`+${fmt(Math.abs(r.rem))}`:fmt(r.rem);
+      resultHtml=`
+        <div class="result-box" style="background:${r.over?"#fff5f0":"#fff"};border-color:${rc}">
+          <div class="result-title">${r.over?"⚠ 자동배출 초과 — 강제배출 불가":"배출 잔여시간 (빈본 표시)"}</div>
+          <div class="result-main" style="color:${rc}">${rs}</div>
+          <div class="result-sub">발달시간 <b>${r.dev}초</b> · 배출 경과 <b>${fmt(r.ejSec)}</b></div>
+        </div>
+        ${!r.over?`
+        <div class="cd-box" style="background:${S.countdownDone?"#e8f5e9":"#fffde7"};border-color:${S.countdownDone?"#4caf50":"#ffc107"}">
+          ${S.countdownDone
+            ?`<div class="cd-num" style="color:#4caf50">배출!</div><div class="cd-lbl">지금 배출하세요 🔔</div>`
+            :`<div class="cd-num" style="color:#e65100">${S.countdown!==null?Math.max(0,S.countdown)+"초":"계산중..."}</div><div class="cd-lbl">배출까지 남은 시간</div>`}
+        </div>`:""}`;
+    }
+
+    app.innerHTML=`
+      <div class="timer-box">
+        <div class="remain-lbl-main">빈본 잔여시간</div>
+        <div class="remain-num">${fmt(remDisplay)}</div>
+        <div class="elapsed-lbl">경과 <b>${fmt(S.elapsed)}</b></div>
+      </div>
+      ${S.popElapsed===null
+        ?`<button class="pop-btn" style="background:${color};box-shadow:0 4px 16px ${color}55" onclick="handlePop()">🔊 1차 팝!</button>`
+        :`<div class="pop-info">1차 팝: 경과 <b>${fmt(S.popElapsed)}</b> / 잔여 ≈ <b>${fmt(mode.autoEject-S.popElapsed)}</b></div>`}
+      ${resultHtml}
+      <div class="sec" style="padding:12px 10px;margin-bottom:12px">
+        <div class="lbl" style="margin-bottom:6px">📋 ${mode.label}번 · ${bean.label.replace("(워시드·전가공)","").trim()} · DTR ${S.dtr}% 기준표</div>
+        ${buildTableHtml(hitRemain)}
+      </div>
+      <button class="reset-btn" onclick="handleReset()">↩ 처음으로</button>
+    `;
+  }
+}
+
+render();
+</script>
+</body>
+</html>

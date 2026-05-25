@@ -227,6 +227,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div class="tb" onclick="showTab('roasts',this)">로스팅 로그</div>
     <div class="tb" onclick="showTab('brewing',this)">브루잉</div>
     <div class="tb" onclick="showTab('wishlist',this)">구매 검토</div>
+    <div class="tb" onclick="showTab('timer',this)">🔥 빈본 타이머</div>
   </div>
 </div>
 
@@ -275,6 +276,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div class="sh"><div class="stl">브루잉 기록</div><button class="btn btn-sm" onclick="openBrewLogForm()">+ 기록 추가</button></div>
     <div id="brewLogList"></div>
   </div>
+</div>
+
+<!-- 빈본 타이머 -->
+<div id="tab-timer" class="sec">
+  <iframe src="binbon_timer.html" style="width:100%;height:calc(100vh - 130px);border:none;border-radius:10px;display:block;"></iframe>
 </div>
 
 <!-- 구매 검토 -->
