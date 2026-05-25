@@ -447,7 +447,7 @@ const INITIAL_DATA = {
       "eject_time": "7:05",
       "time_basis": "진행",
       "dtr_pct": "",
-      "roast_level": "",
+      "roast_level": "라이트",
       "degas_days": "",
       "notes": "DTR 18.8% 봉투기재 (경과시간 기록)"
     },
@@ -464,7 +464,7 @@ const INITIAL_DATA = {
       "eject_time": "0:22",
       "time_basis": "잔여",
       "dtr_pct": "",
-      "roast_level": "",
+      "roast_level": "라이트",
       "degas_days": "",
       "notes": ""
     },
@@ -481,7 +481,7 @@ const INITIAL_DATA = {
       "eject_time": "0:34",
       "time_basis": "잔여",
       "dtr_pct": "",
-      "roast_level": "",
+      "roast_level": "라이트",
       "degas_days": "",
       "notes": ""
     },
@@ -498,7 +498,7 @@ const INITIAL_DATA = {
       "eject_time": "0:51",
       "time_basis": "잔여",
       "dtr_pct": "",
-      "roast_level": "",
+      "roast_level": "라이트",
       "degas_days": "",
       "notes": "샘플 100g"
     },
@@ -515,7 +515,7 @@ const INITIAL_DATA = {
       "eject_time": "0:56",
       "time_basis": "잔여",
       "dtr_pct": "",
-      "roast_level": "",
+      "roast_level": "라이트",
       "degas_days": "",
       "notes": ""
     },
@@ -532,7 +532,7 @@ const INITIAL_DATA = {
       "eject_time": "1:05",
       "time_basis": "잔여",
       "dtr_pct": "",
-      "roast_level": "",
+      "roast_level": "라이트",
       "degas_days": "",
       "notes": "샘플 / 스코어 90.5점"
     },
@@ -549,7 +549,7 @@ const INITIAL_DATA = {
       "eject_time": "0:46",
       "time_basis": "잔여",
       "dtr_pct": "",
-      "roast_level": "",
+      "roast_level": "라이트",
       "degas_days": "",
       "notes": ""
     },
@@ -566,7 +566,7 @@ const INITIAL_DATA = {
       "eject_time": "",
       "time_basis": "",
       "dtr_pct": "",
-      "roast_level": "",
+      "roast_level": "라이트",
       "degas_days": "",
       "notes": "빈본 1번 모드, 시간 미기록"
     },
@@ -583,7 +583,7 @@ const INITIAL_DATA = {
       "eject_time": "",
       "time_basis": "",
       "dtr_pct": "",
-      "roast_level": "",
+      "roast_level": "라이트",
       "degas_days": "",
       "notes": "빈본 1번 모드, 시간 미기록"
     },
@@ -600,7 +600,7 @@ const INITIAL_DATA = {
       "eject_time": "",
       "time_basis": "",
       "dtr_pct": "",
-      "roast_level": "",
+      "roast_level": "라이트",
       "degas_days": "",
       "notes": "빈본 8번 모드, 시간 미기록"
     },
@@ -617,7 +617,7 @@ const INITIAL_DATA = {
       "eject_time": "",
       "time_basis": "진행",
       "dtr_pct": "",
-      "roast_level": "",
+      "roast_level": "라이트",
       "degas_days": "",
       "notes": "진행시간 기준, 상세 시간 미기록"
     },
@@ -634,7 +634,7 @@ const INITIAL_DATA = {
       "eject_time": "",
       "time_basis": "진행",
       "dtr_pct": "",
-      "roast_level": "",
+      "roast_level": "라이트",
       "degas_days": "",
       "notes": "진행시간 기준, 상세 시간 미기록"
     },
@@ -651,7 +651,7 @@ const INITIAL_DATA = {
       "eject_time": "",
       "time_basis": "",
       "dtr_pct": "",
-      "roast_level": "",
+      "roast_level": "라이트",
       "degas_days": "",
       "notes": "빈본 1번 모드, 시간 미기록"
     },
@@ -668,7 +668,7 @@ const INITIAL_DATA = {
       "eject_time": "",
       "time_basis": "진행",
       "dtr_pct": "",
-      "roast_level": "",
+      "roast_level": "라이트",
       "degas_days": "",
       "notes": "빈본 2번 모드, 시간 미기록"
     },
@@ -753,7 +753,7 @@ const INITIAL_DATA = {
       "eject_time": "0:33",
       "time_basis": "잔여",
       "dtr_pct": "",
-      "roast_level": "",
+      "roast_level": "라이트",
       "degas_days": "",
       "notes": ""
     },
@@ -770,7 +770,7 @@ const INITIAL_DATA = {
       "eject_time": "0:26",
       "time_basis": "잔여",
       "dtr_pct": "",
-      "roast_level": "",
+      "roast_level": "라이트",
       "degas_days": "",
       "notes": ""
     },
@@ -787,7 +787,7 @@ const INITIAL_DATA = {
       "eject_time": "0:44",
       "time_basis": "잔여",
       "dtr_pct": "",
-      "roast_level": "",
+      "roast_level": "라이트",
       "degas_days": "",
       "notes": ""
     },
@@ -804,7 +804,7 @@ const INITIAL_DATA = {
       "eject_time": "0:45",
       "time_basis": "잔여",
       "dtr_pct": "",
-      "roast_level": "",
+      "roast_level": "라이트",
       "degas_days": "",
       "notes": ""
     },
@@ -821,7 +821,7 @@ const INITIAL_DATA = {
       "eject_time": "0:39",
       "time_basis": "잔여",
       "dtr_pct": "",
-      "roast_level": "",
+      "roast_level": "라이트",
       "degas_days": "",
       "notes": ""
     },
@@ -838,7 +838,7 @@ const INITIAL_DATA = {
       "eject_time": "1:09",
       "time_basis": "잔여",
       "dtr_pct": "",
-      "roast_level": "",
+      "roast_level": "라이트",
       "degas_days": "",
       "notes": ""
     },
@@ -855,7 +855,7 @@ const INITIAL_DATA = {
       "eject_time": "0:37",
       "time_basis": "잔여",
       "dtr_pct": "",
-      "roast_level": "",
+      "roast_level": "라이트",
       "degas_days": "",
       "notes": "케냐 커핑 모드 테스트"
     },
@@ -872,7 +872,7 @@ const INITIAL_DATA = {
       "eject_time": "0:36",
       "time_basis": "잔여",
       "dtr_pct": "",
-      "roast_level": "",
+      "roast_level": "라이트",
       "degas_days": "",
       "notes": "케냐 커핑 모드 테스트 ★ 최우수 — 이후 케냐 모드3 DTR 조정 예정"
     },
@@ -889,7 +889,7 @@ const INITIAL_DATA = {
       "eject_time": "1:13",
       "time_basis": "잔여",
       "dtr_pct": "",
-      "roast_level": "",
+      "roast_level": "라이트",
       "degas_days": "",
       "notes": "케핑 커핑 모드 테스트"
     },
@@ -906,7 +906,7 @@ const INITIAL_DATA = {
       "eject_time": "1:20",
       "time_basis": "잔여",
       "dtr_pct": "",
-      "roast_level": "",
+      "roast_level": "라이트",
       "degas_days": "",
       "notes": "케냐 커핑 모드 테스트"
     },
@@ -923,12 +923,31 @@ const INITIAL_DATA = {
       "eject_time": "0:55",
       "time_basis": "잔여",
       "dtr_pct": "",
-      "roast_level": "",
+      "roast_level": "라이트",
       "degas_days": "",
       "notes": "케냐 커핑 모드 테스트"
     }
   ],
   "recipes": [],
-  "brewlogs": [],
+  "brewlogs": [
+    {
+      "id": "bl_example1",
+      "date": "2026-05-25",
+      "bean_name": "페루 엘 라우렐 게이샤 무산소 워시드",
+      "roast_id": "",
+      "roast_ref": "2026-05-25 · 모드5 · DTR 13.1%",
+      "recipe_name": "484 레시피",
+      "coffee_g": "15",
+      "water_g": "240",
+      "temp": "96",
+      "grind": "코만단테 22클릭",
+      "water_ratio": "백산수10:딥스골드1",
+      "score_acid": 8,
+      "score_aroma": 9,
+      "score_taste": 8,
+      "neg_tags": [],
+      "memo": "자스민 향이 아주 선명하게 났고, 산미는 밝고 깨끗함. 긴 여운. 디게이싱 7일차가 최적인 듯."
+    }
+  ],
   "wishlist": []
 };

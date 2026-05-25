@@ -562,7 +562,7 @@ function renderRoasts(){
         ${r.dtr_pct?`<span class="rdtr">DTR <span>${r.dtr_pct}%</span></span>`:''}
       </div>
       ${r.notes?`<div class="rmemo">${r.notes}</div>`:''}
-      <div class="ract"><button class="btn2" onclick="editRoast('${r.id}')">수정</button><button class="btnd" onclick="deleteRoast('${r.id}')">삭제</button></div>
+      <div class="ract"><button class="btn2" onclick="editRoast('${r.id}')">수정</button></div>
     </div>`).join('')||'<div class="empty"><div class="empty-icon">🔥</div><div class="empty-text">로스팅 기록이 없습니다</div></div>';
 }
 function openRoastForm(id){
