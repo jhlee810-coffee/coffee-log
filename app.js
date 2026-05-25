@@ -56,7 +56,7 @@ function showTab(name,el){
   el.classList.add('on');
   if(name==='timer'){
     const fr=document.getElementById('timerFrame');
-    if(!fr.src||fr.src==='about:blank'||fr.src==='')fr.src='binbon_timer.html';
+    if(!fr.getAttribute('src'))fr.src='binbon_timer.html';
   }
   const fn={dash:renderDash,beans:renderBeans,roasts:renderRoasts,brewing:renderBrewing,wishlist:renderWishlist};
   if(fn[name]) fn[name]();
