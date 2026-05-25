@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Coffee Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=Josefin+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#1e252c;--bg2:#161b20;--bg3:#252d35;--bg4:#1a2028;
@@ -72,18 +72,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 @media(max-width:600px){.grid{grid-template-columns:1fr;}}
 .bcard{background:var(--card);border:1px solid var(--b1);border-top:2px solid var(--teal);border-radius:var(--r);padding:14px;cursor:pointer;transition:all .15s;}
 .bcard:hover{background:var(--card2);border-color:var(--b2);}
-.bog{font-size:10px;letter-spacing:0.18em;text-transform:uppercase;font-weight:700;color:var(--teal);margin-bottom:5px;}
-.bnm{font-family:'Playfair Display',serif;font-size:15px;color:var(--text);font-weight:700;line-height:1.3;margin-bottom:5px;}
+.bog{font-family:'Josefin Sans',sans-serif;font-size:10px;letter-spacing:0.22em;text-transform:uppercase;font-weight:700;color:var(--teal);margin-bottom:5px;}
+.bnm{font-family:'Josefin Sans',sans-serif;font-size:14px;color:var(--text);font-weight:600;line-height:1.35;margin-bottom:5px;letter-spacing:.01em;}
 .bsub{font-size:11px;color:var(--muted);margin-bottom:9px;}
-.bnote{font-family:'Playfair Display',serif;font-size:12px;color:var(--muted2);line-height:1.55;border-top:1px solid var(--b1);padding-top:8px;font-style:italic;}
-.bfoot{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap;}
-.stbg{font-size:10px;font-family:'DM Sans',sans-serif;border-radius:4px;padding:2px 9px;font-weight:600;}
-.st재고있음{background:var(--green2);color:var(--green);border:1px solid var(--green3);}
-.st샘플{background:rgba(78,205,196,.1);color:var(--teal);border:1px solid var(--teal3);}
-.st잔량부족{background:var(--amber2);color:var(--amber);border:1px solid var(--amber3);}
-.st소진{background:var(--coral2);color:#ff8080;border:1px solid var(--coral3);}
-.st재고량미입력{background:rgba(74,96,112,.1);color:var(--muted);border:1px solid var(--b1);}
-.scscore{font-size:10px;color:var(--amber);margin-left:auto;font-weight:600;}
+.bnote{font-size:12px;color:var(--muted2);line-height:1.55;border-top:1px solid var(--b1);padding-top:8px;font-style:italic;margin-bottom:4px;}
+.bfoot{display:flex;align-items:center;justify-content:space-between;margin-top:6px;}
+.bfmeta{font-size:11px;color:var(--muted2);}
+.bfscore{font-size:11px;color:var(--amber);font-weight:600;}
 
 /* ROAST */
 .rlist{display:flex;flex-direction:column;gap:9px;}
@@ -396,6 +391,8 @@ const OFFICIAL_RECIPES=[
   {id:'r_hoffmann',type:'James Hoffmann',name:'Ultimate V60',coffee:30,water:500,temp:92,grind:'미디엄',water_ratio:'',desc:'45초 블룸 후 연속 투입+스월링. 균일추출로 클린컵 지향',steps:[{time:'0:00',action:'블룸',detail:'60g 투입, 45초 대기',water:'60g'},{time:'0:45',action:'연속 투입',detail:'0:45~1:30 사이 440g까지 투입',water:'440g'},{time:'1:30',action:'스월링',detail:'드리퍼 가볍게 스월링',water:''},{time:'3:30',action:'종료 목표',detail:'3:30~4:00 완료',water:'✓'}],color:'am'},
 ];
 
+const ORIGIN_COLORS={'에티오피아':'var(--amber)','케냐':'var(--coral)','콜롬비아':'var(--purple)','에콰도르':'var(--green)','온두라스':'var(--teal)','파나마':'#c084fc','과테말라':'#fb923c','페루':'#94a3b8'};
+
 let db=loadDB();
 let cf='all',cs='';
 let openTimerId=null;
@@ -468,14 +465,16 @@ function renderBeans(){
   if(cf!=='all') beans=beans.filter(b=>b.origin===cf);
   if(cs){const q=cs.toLowerCase();beans=beans.filter(b=>(b.name+b.origin+b.cup_notes+b.shop).toLowerCase().includes(q));}
   document.getElementById('beanCards').innerHTML=beans.map(b=>{
-    const sc=b.score_momos?`모모스 ${b.score_momos}pt`:b.score_wonderroom?`원더룸 ${b.score_wonderroom}pt`:'';
-    const st=(b.status||'').replace(/ /g,'_');
-    return `<div class="bcard" onclick="showBeanDetail('${b.id}')">
-      <div class="bog">${b.origin||'—'}</div>
+    const oc=ORIGIN_COLORS[b.origin]||'var(--teal)';
+    const dateStr=b.stock_date?b.stock_date.slice(2,4)+'.'+b.stock_date.slice(5,7):'—';
+    const meta=[b.shop||'—',dateStr,b.price||'—'].join('  ');
+    const sc=b.score_momos||b.score_wonderroom||'';
+    return `<div class="bcard" style="border-top-color:${oc}" onclick="showBeanDetail('${b.id}')">
+      <div class="bog" style="color:${oc}">${b.origin||'—'}</div>
       <div class="bnm">${b.name}</div>
       <div class="bsub">${[b.variety,b.process].filter(Boolean).join(' · ')||'&nbsp;'}</div>
       ${b.cup_notes?`<div class="bnote">${b.cup_notes}</div>`:''}
-      <div class="bfoot"><span class="stbg st${st}">${b.status||'—'}</span>${sc?`<span class="scscore">${sc}</span>`:''}</div>
+      <div class="bfoot"><span class="bfmeta">${meta}</span>${sc?`<span class="bfscore">★ ${sc}</span>`:''}</div>
     </div>`;
   }).join('')||'<div class="empty"><div class="empty-icon">🫘</div><div class="empty-text">생두가 없습니다</div></div>';
 }
