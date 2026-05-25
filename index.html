@@ -3,455 +3,210 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>☕ 이재형의 커피 아카이브</title>
+<title>Coffee Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600&family=DM+Serif+Display&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Playfair+Display:wght@400;700;900&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #0f0d0a;
-  --bg2: #1a1612;
-  --bg3: #242018;
-  --card: #1e1a15;
-  --card2: #2a2419;
-  --border: #3a3228;
-  --border2: #4a4238;
-  --gold: #c8a96e;
-  --gold2: #e8c98e;
-  --cream: #f5edd8;
-  --muted: #8a7a68;
-  --text: #e8dcc8;
-  --text2: #c8b898;
-  --red: #c85050;
+  --bg:    #1c1810;
+  --bg2:   #241f15;
+  --bg3:   #2e2818;
+  --card:  #282210;
+  --card2: #322c1a;
+  --border:#3a3220;
+  --border2:#4a4230;
+  --gold:  #c8a040;
+  --gold2: #e0b84e;
+  --cream: #f0e4c8;
+  --text:  #e8dcc0;
+  --text2: #c0aa80;
+  --muted: #7a6a50;
+  --red:   #c05040;
   --green: #5a9060;
-  --blue: #5080a0;
-  --radius: 12px;
-  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  --blue:  #5080a0;
+  --r: 12px;
+  --sh: 0 4px 20px rgba(0,0,0,0.5);
 }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  font-family: 'Noto Serif KR', serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  overflow-x: hidden;
-}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
 
 /* HEADER */
-.header {
-  background: linear-gradient(180deg, #0a0806 0%, var(--bg) 100%);
-  border-bottom: 1px solid var(--border);
-  padding: 16px 20px 0;
-  position: sticky; top: 0; z-index: 100;
-  backdrop-filter: blur(10px);
-}
-.header-top {
-  display: flex; align-items: center; gap: 12px; margin-bottom: 14px;
-}
-.header-logo {
-  font-family: 'DM Serif Display', serif;
-  font-size: 22px; color: var(--gold2);
-  letter-spacing: 0.02em;
-}
-.header-sub { font-size: 11px; color: var(--muted); margin-left: auto; font-family: 'DM Mono', monospace; }
-
-/* NAV TABS */
-.nav {
-  display: flex; gap: 2px; overflow-x: auto;
-  scrollbar-width: none;
-}
-.nav::-webkit-scrollbar { display: none; }
-.nav-tab {
-  padding: 10px 18px;
-  border-radius: 8px 8px 0 0;
-  font-size: 13px; cursor: pointer;
-  white-space: nowrap;
-  color: var(--muted);
-  border: 1px solid transparent;
-  border-bottom: none;
-  transition: all 0.2s;
-  background: transparent;
-  font-family: 'Noto Serif KR', serif;
-}
-.nav-tab:hover { color: var(--text2); background: var(--bg2); }
-.nav-tab.active {
-  color: var(--gold2);
-  background: var(--bg2);
-  border-color: var(--border);
-}
+.header{background:var(--bg);border-bottom:3px solid var(--gold);padding:14px 20px 0;position:sticky;top:0;z-index:100;}
+.header-top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px;}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--cream);letter-spacing:0.12em;}
+.logo span{color:var(--gold);}
+.logo-sub{font-family:'Libre Baskerville',serif;font-size:10px;color:var(--muted);font-style:italic;letter-spacing:0.08em;}
+.nav{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;}
+.nav::-webkit-scrollbar{display:none;}
+.nav-tab{padding:8px 16px;font-size:11px;cursor:pointer;white-space:nowrap;color:var(--muted);border:1px solid transparent;border-bottom:none;border-radius:6px 6px 0 0;background:transparent;font-family:'Space Grotesk',sans-serif;letter-spacing:0.06em;text-transform:uppercase;transition:all .2s;}
+.nav-tab:hover{color:var(--text2);background:var(--bg2);}
+.nav-tab.active{color:var(--gold);background:var(--bg2);border-color:var(--border);}
 
 /* MAIN */
-.main { padding: 20px; max-width: 900px; margin: 0 auto; }
-.section { display: none; }
-.section.active { display: block; }
-
-/* CARDS GRID */
-.cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 14px; margin-top: 16px;
-}
-@media(max-width: 600px) {
-  .cards-grid { grid-template-columns: 1fr; }
-}
-
-/* BEAN CARD */
-.bean-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px;
-  cursor: pointer;
-  transition: all 0.2s;
-  position: relative;
-  overflow: hidden;
-}
-.bean-card::before {
-  content: '';
-  position: absolute; top: 0; left: 0; right: 0; height: 3px;
-  background: linear-gradient(90deg, var(--gold), transparent);
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-.bean-card:hover { border-color: var(--border2); transform: translateY(-2px); box-shadow: var(--shadow); }
-.bean-card:hover::before { opacity: 1; }
-
-.bean-origin-badge {
-  display: inline-block;
-  font-size: 10px; font-family: 'DM Mono', monospace;
-  color: var(--gold); background: rgba(200,169,110,0.1);
-  border: 1px solid rgba(200,169,110,0.2);
-  border-radius: 4px; padding: 2px 8px; margin-bottom: 8px;
-}
-.bean-name {
-  font-size: 14px; font-weight: 600; line-height: 1.4;
-  color: var(--cream); margin-bottom: 6px;
-}
-.bean-sub {
-  font-size: 11px; color: var(--muted); margin-bottom: 10px;
-  font-family: 'DM Mono', monospace;
-}
-.bean-notes {
-  font-size: 12px; color: var(--text2); line-height: 1.5;
-  border-top: 1px solid var(--border);
-  padding-top: 10px; margin-top: 4px;
-}
-.bean-footer {
-  display: flex; align-items: center; gap: 8px;
-  margin-top: 10px; flex-wrap: wrap;
-}
-.status-badge {
-  font-size: 10px; font-family: 'DM Mono', monospace;
-  border-radius: 4px; padding: 2px 8px;
-}
-.status-재고있음 { background: rgba(90,144,96,0.15); color: #7ab880; border: 1px solid rgba(90,144,96,0.3); }
-.status-샘플 { background: rgba(80,128,160,0.15); color: #80a8c8; border: 1px solid rgba(80,128,160,0.3); }
-.status-잔량부족 { background: rgba(200,180,80,0.15); color: #c8c050; border: 1px solid rgba(200,180,80,0.3); }
-.status-소진 { background: rgba(200,80,80,0.15); color: #c87070; border: 1px solid rgba(200,80,80,0.3); }
-.status-재고량미입력 { background: rgba(100,90,80,0.15); color: var(--muted); border: 1px solid var(--border); }
-.score-chip {
-  font-size: 10px; font-family: 'DM Mono', monospace;
-  color: var(--gold); margin-left: auto;
-}
+.main{padding:20px;max-width:960px;margin:0 auto;}
+.section{display:none;}
+.section.active{display:block;}
 
 /* SECTION HEADER */
-.section-header {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 4px;
-}
-.section-title {
-  font-family: 'DM Serif Display', serif;
-  font-size: 20px; color: var(--gold2);
-}
-.btn {
-  background: var(--gold);
-  color: var(--bg);
-  border: none; border-radius: 8px;
-  padding: 8px 16px; font-size: 13px;
-  cursor: pointer; font-family: 'Noto Serif KR', serif;
-  font-weight: 600;
-  transition: all 0.2s;
-}
-.btn:hover { background: var(--gold2); }
-.btn-outline {
-  background: transparent;
-  color: var(--gold);
-  border: 1px solid var(--gold);
-}
-.btn-outline:hover { background: rgba(200,169,110,0.1); }
-.btn-sm { padding: 5px 12px; font-size: 12px; }
-.btn-danger { background: var(--red); color: white; }
+.sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.sec-title{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--cream);letter-spacing:0.1em;}
 
-/* FILTER BAR */
-.filter-bar {
-  display: flex; gap: 8px; margin: 12px 0;
-  flex-wrap: wrap;
-}
-.filter-chip {
-  font-size: 12px; padding: 4px 12px;
-  border-radius: 20px; cursor: pointer;
-  border: 1px solid var(--border);
-  color: var(--muted);
-  transition: all 0.2s;
-  font-family: 'DM Mono', monospace;
-  background: transparent;
-}
-.filter-chip:hover, .filter-chip.active {
-  border-color: var(--gold);
-  color: var(--gold);
-  background: rgba(200,169,110,0.08);
-}
-
-/* ROAST TABLE */
-.roast-list { margin-top: 16px; display: flex; flex-direction: column; gap: 10px; }
-.roast-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 14px 16px;
-}
-.roast-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
-.roast-date {
-  font-family: 'DM Mono', monospace;
-  font-size: 11px; color: var(--gold);
-  background: rgba(200,169,110,0.1);
-  border-radius: 4px; padding: 2px 8px;
-  white-space: nowrap;
-}
-.roast-name { font-size: 13px; font-weight: 600; color: var(--cream); flex: 1; }
-.roast-stats {
-  display: flex; gap: 16px; flex-wrap: wrap;
-  font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted);
-}
-.roast-stat span { color: var(--text2); }
-.roast-note { font-size: 12px; color: var(--muted); margin-top: 6px; font-style: italic; }
-
-/* MODAL */
-.modal-overlay {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.7);
-  backdrop-filter: blur(4px);
-  z-index: 200; display: none;
-  align-items: center; justify-content: center;
-  padding: 20px;
-}
-.modal-overlay.open { display: flex; }
-.modal {
-  background: var(--bg2);
-  border: 1px solid var(--border2);
-  border-radius: 16px;
-  width: 100%; max-width: 520px;
-  max-height: 90vh; overflow-y: auto;
-  padding: 24px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-}
-.modal-title {
-  font-family: 'DM Serif Display', serif;
-  font-size: 18px; color: var(--gold2);
-  margin-bottom: 20px;
-}
-.form-group { margin-bottom: 14px; }
-.form-label { font-size: 12px; color: var(--muted); margin-bottom: 6px; display: block; }
-.form-input, .form-select, .form-textarea {
-  width: 100%;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--text);
-  padding: 10px 12px;
-  font-size: 13px;
-  font-family: 'Noto Serif KR', serif;
-  outline: none;
-  transition: border-color 0.2s;
-}
-.form-input:focus, .form-select:focus, .form-textarea:focus {
-  border-color: var(--gold);
-}
-.form-textarea { resize: vertical; min-height: 80px; }
-.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.form-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
-
-/* SCORE INPUT */
-.score-group { display: flex; flex-direction: column; gap: 10px; }
-.score-row { display: flex; align-items: center; gap: 12px; }
-.score-label { font-size: 12px; color: var(--muted); width: 40px; }
-.score-slider {
-  flex: 1; -webkit-appearance: none;
-  height: 4px; border-radius: 2px;
-  background: var(--border2); outline: none;
-}
-.score-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 16px; height: 16px;
-  border-radius: 50%;
-  background: var(--gold); cursor: pointer;
-}
-.score-val {
-  font-family: 'DM Mono', monospace;
-  font-size: 13px; color: var(--gold2);
-  width: 28px; text-align: right;
-}
-
-/* NEG TAGS */
-.neg-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
-.neg-tag {
-  font-size: 11px; padding: 4px 10px;
-  border-radius: 20px;
-  border: 1px solid var(--border2);
-  color: var(--muted); cursor: pointer;
-  transition: all 0.2s;
-  font-family: 'DM Mono', monospace;
-  background: transparent;
-}
-.neg-tag.selected {
-  border-color: var(--red);
-  color: #e07070;
-  background: rgba(200,80,80,0.1);
-}
-
-/* TASTING CARD */
-.tasting-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px; margin-bottom: 10px;
-}
-.tasting-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-.tasting-bean { font-size: 13px; font-weight: 600; color: var(--cream); flex: 1; }
-.tasting-date { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; }
-.score-bars { display: flex; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
-.score-bar-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.score-bar-label { font-size: 10px; color: var(--muted); }
-.score-bar-ring {
-  width: 44px; height: 44px; border-radius: 50%;
-  border: 3px solid var(--border2);
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'DM Mono', monospace; font-size: 13px; color: var(--gold2);
-  font-weight: 600;
-}
-.tasting-text { font-size: 12px; color: var(--text2); line-height: 1.6; }
-.tasting-negs { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
-.tasting-neg-tag {
-  font-size: 10px; padding: 2px 8px; border-radius: 20px;
-  background: rgba(200,80,80,0.1); color: #e07070;
-  border: 1px solid rgba(200,80,80,0.2);
-  font-family: 'DM Mono', monospace;
-}
-
-/* WISHLIST */
-.wish-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 14px 16px; margin-bottom: 10px;
-  display: flex; align-items: flex-start; gap: 12px;
-}
-.wish-main { flex: 1; }
-.wish-name { font-size: 13px; font-weight: 600; color: var(--cream); margin-bottom: 4px; }
-.wish-meta { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; margin-bottom: 6px; }
-.wish-memo { font-size: 12px; color: var(--text2); }
-.wish-url { font-size: 11px; color: var(--blue); text-decoration: none; word-break: break-all; }
-.wish-url:hover { text-decoration: underline; }
-.wish-actions { display: flex; flex-direction: column; gap: 6px; }
-
-/* DETAIL MODAL */
-.detail-section { margin-bottom: 18px; }
-.detail-section-title {
-  font-size: 11px; color: var(--gold); letter-spacing: 0.1em;
-  text-transform: uppercase; font-family: 'DM Mono', monospace;
-  margin-bottom: 8px;
-}
-.detail-row { display: flex; gap: 8px; margin-bottom: 6px; align-items: flex-start; }
-.detail-key { font-size: 11px; color: var(--muted); width: 80px; flex-shrink: 0; }
-.detail-val { font-size: 12px; color: var(--text2); flex: 1; }
-
-/* EMPTY STATE */
-.empty-state {
-  text-align: center; padding: 60px 20px;
-  color: var(--muted); font-size: 14px;
-}
-.empty-icon { font-size: 40px; margin-bottom: 12px; }
-
-/* DASHBOARD */
-.dash-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 12px; margin: 16px 0 24px;
-}
-.dash-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px; text-align: center;
-}
-.dash-num {
-  font-family: 'DM Serif Display', serif;
-  font-size: 32px; color: var(--gold2);
-}
-.dash-label { font-size: 11px; color: var(--muted); margin-top: 4px; }
-.recent-list { display: flex; flex-direction: column; gap: 8px; }
-.recent-item {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 8px; padding: 12px 14px;
-  display: flex; align-items: center; gap: 12px;
-}
-.recent-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--gold); flex-shrink: 0;
-}
-.recent-text { font-size: 12px; color: var(--text2); flex: 1; }
-.recent-date { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; }
-
-/* BREW CARD */
-.brew-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 14px 16px; margin-bottom: 10px;
-}
-.brew-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.brew-method {
-  font-size: 11px; font-family: 'DM Mono', monospace;
-  color: var(--blue); background: rgba(80,128,160,0.1);
-  border: 1px solid rgba(80,128,160,0.2);
-  border-radius: 4px; padding: 2px 8px;
-}
-.brew-bean { font-size: 13px; font-weight: 600; color: var(--cream); flex: 1; }
-.brew-stats { display: flex; gap: 14px; flex-wrap: wrap; font-size: 11px; font-family: 'DM Mono', monospace; color: var(--muted); }
-.brew-stats span { color: var(--text2); }
-.brew-note { font-size: 12px; color: var(--text2); margin-top: 8px; line-height: 1.5; }
+/* BUTTONS */
+.btn{background:var(--gold);color:var(--bg);border:none;border-radius:6px;padding:7px 16px;font-size:12px;cursor:pointer;font-family:'Space Grotesk',sans-serif;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;transition:all .2s;}
+.btn:hover{background:var(--gold2);}
+.btn-outline{background:transparent;color:var(--gold);border:1px solid var(--gold);}
+.btn-outline:hover{background:rgba(200,160,64,.1);}
+.btn-sm{padding:5px 12px;font-size:11px;}
+.btn-danger{background:var(--red);color:#fff;}
 
 /* SEARCH */
-.search-input {
-  width: 100%; background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 8px; color: var(--text);
-  padding: 10px 14px; font-size: 13px;
-  font-family: 'Noto Serif KR', serif;
-  outline: none; margin-bottom: 12px;
-}
-.search-input:focus { border-color: var(--gold); }
+.search-input{width:100%;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--cream);padding:10px 14px;font-size:13px;font-family:'Space Grotesk',sans-serif;outline:none;margin-bottom:12px;}
+.search-input:focus{border-color:var(--gold);}
+.search-input::placeholder{color:var(--muted);}
 
-/* SCROLLBAR */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+/* FILTER CHIPS */
+.filter-bar{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
+.filter-chip{font-size:11px;padding:4px 12px;border-radius:20px;cursor:pointer;border:1px solid var(--border);color:var(--muted);background:transparent;font-family:'Space Grotesk',sans-serif;letter-spacing:0.06em;transition:all .2s;}
+.filter-chip:hover,.filter-chip.active{border-color:var(--gold);color:var(--gold);background:rgba(200,160,64,.08);}
+
+/* BEAN CARDS GRID */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px;}
+@media(max-width:600px){.cards-grid{grid-template-columns:1fr;}}
+
+.bean-card{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:var(--r);padding:16px;cursor:pointer;transition:all .2s;}
+.bean-card:hover{background:var(--card2);border-color:var(--border2);transform:translateY(-2px);box-shadow:var(--sh);}
+.bean-origin{font-family:'Space Grotesk',sans-serif;font-size:9px;color:var(--gold);letter-spacing:0.22em;text-transform:uppercase;margin-bottom:5px;}
+.bean-name{font-family:'Playfair Display',serif;font-size:15px;font-weight:700;color:var(--cream);line-height:1.35;margin-bottom:5px;}
+.bean-sub{font-size:11px;color:var(--text2);margin-bottom:10px;letter-spacing:0.03em;}
+.bean-notes{font-family:'Libre Baskerville',serif;font-size:12px;color:var(--text2);line-height:1.6;border-top:1px solid var(--border);padding-top:10px;font-style:italic;}
+.bean-footer{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;}
+.status-badge{font-size:10px;font-family:'Space Grotesk',sans-serif;border-radius:3px;padding:2px 9px;letter-spacing:0.06em;}
+.status-재고있음{background:rgba(90,144,80,.15);color:#80c070;border:1px solid rgba(90,144,80,.3);}
+.status-샘플{background:rgba(80,128,160,.15);color:#80b0d0;border:1px solid rgba(80,128,160,.3);}
+.status-잔량부족{background:rgba(200,160,64,.15);color:#d4a848;border:1px solid rgba(200,160,64,.3);}
+.status-소진{background:rgba(192,80,64,.15);color:#d07060;border:1px solid rgba(192,80,64,.3);}
+.status-재고량미입력{background:rgba(100,90,70,.15);color:var(--muted);border:1px solid var(--border);}
+.score-chip{font-size:10px;font-family:'Space Grotesk',sans-serif;color:var(--gold);margin-left:auto;}
+
+/* ROAST CARDS */
+.roast-list{display:flex;flex-direction:column;gap:10px;margin-top:4px;}
+.roast-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;}
+.roast-header{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;}
+.roast-date{font-family:'Space Grotesk',sans-serif;font-size:10px;color:var(--gold);background:rgba(200,160,64,.1);border:1px solid rgba(200,160,64,.2);border-radius:4px;padding:2px 9px;white-space:nowrap;letter-spacing:0.06em;}
+.roast-name{font-family:'Playfair Display',serif;font-size:14px;color:var(--cream);flex:1;line-height:1.3;}
+.roast-stats{display:flex;gap:16px;flex-wrap:wrap;font-family:'Space Grotesk',sans-serif;font-size:11px;color:var(--muted);}
+.roast-stats span{color:var(--text2);}
+.roast-dtr{color:var(--gold) !important;}
+.roast-note{font-family:'Libre Baskerville',serif;font-size:11px;color:var(--muted);margin-top:7px;font-style:italic;line-height:1.5;}
+
+/* TASTING */
+.tasting-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:10px;}
+.tasting-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.tasting-bean{font-family:'Playfair Display',serif;font-size:14px;color:var(--cream);flex:1;}
+.tasting-date{font-size:10px;color:var(--muted);font-family:'Space Grotesk',sans-serif;letter-spacing:0.06em;}
+.score-bars{display:flex;gap:14px;margin-bottom:10px;}
+.score-bar-item{display:flex;flex-direction:column;align-items:center;gap:5px;}
+.score-ring{width:46px;height:46px;border-radius:50%;border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:var(--cream);}
+.score-ring-label{font-size:10px;color:var(--muted);font-family:'Space Grotesk',sans-serif;letter-spacing:0.06em;}
+.tasting-memo{font-family:'Libre Baskerville',serif;font-size:12px;color:var(--text2);line-height:1.6;font-style:italic;}
+.neg-tags-display{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;}
+.neg-tag-show{font-size:10px;padding:2px 9px;border-radius:20px;background:rgba(192,80,64,.1);color:#d07060;border:1px solid rgba(192,80,64,.2);font-family:'Space Grotesk',sans-serif;letter-spacing:0.04em;}
+
+/* BREW CARD */
+.brew-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:10px;}
+.brew-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.brew-method{font-size:10px;font-family:'Space Grotesk',sans-serif;color:var(--blue);background:rgba(80,128,160,.1);border:1px solid rgba(80,128,160,.2);border-radius:4px;padding:2px 9px;letter-spacing:0.06em;white-space:nowrap;}
+.brew-bean{font-family:'Playfair Display',serif;font-size:14px;color:var(--cream);flex:1;}
+.brew-stats{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;font-family:'Space Grotesk',sans-serif;color:var(--muted);}
+.brew-stats span{color:var(--text2);}
+.brew-note{font-family:'Libre Baskerville',serif;font-size:12px;color:var(--text2);margin-top:8px;line-height:1.6;font-style:italic;}
+
+/* WISHLIST */
+.wish-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:10px;display:flex;align-items:flex-start;gap:12px;}
+.wish-main{flex:1;}
+.wish-name{font-family:'Playfair Display',serif;font-size:14px;color:var(--cream);margin-bottom:4px;}
+.wish-meta{font-size:11px;color:var(--muted);font-family:'Space Grotesk',sans-serif;margin-bottom:6px;letter-spacing:0.04em;}
+.wish-memo{font-family:'Libre Baskerville',serif;font-size:12px;color:var(--text2);font-style:italic;}
+.wish-url{font-size:11px;color:var(--blue);text-decoration:none;word-break:break-all;display:block;margin-top:4px;}
+.wish-url:hover{text-decoration:underline;}
+.wish-actions{display:flex;flex-direction:column;gap:6px;}
+
+/* DASHBOARD */
+.dash-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin:4px 0 24px;}
+.dash-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;text-align:center;}
+.dash-num{font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--gold);letter-spacing:0.06em;line-height:1;}
+.dash-label{font-size:10px;color:var(--muted);margin-top:4px;letter-spacing:0.1em;text-transform:uppercase;}
+.recent-list{display:flex;flex-direction:column;gap:7px;}
+.recent-item{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:11px 14px;display:flex;align-items:center;gap:12px;}
+.recent-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0;}
+.recent-text{font-size:12px;color:var(--text2);flex:1;}
+.recent-date{font-size:10px;color:var(--muted);font-family:'Space Grotesk',sans-serif;letter-spacing:0.06em;}
+.recent-section-title{font-family:'Space Grotesk',sans-serif;font-size:10px;color:var(--muted);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:10px;}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.6);}
+.modal-title{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--cream);letter-spacing:0.1em;margin-bottom:20px;}
+
+/* FORMS */
+.form-group{margin-bottom:13px;}
+.form-label{font-size:11px;color:var(--muted);margin-bottom:5px;display:block;letter-spacing:0.08em;text-transform:uppercase;font-family:'Space Grotesk',sans-serif;}
+.form-input,.form-select,.form-textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:7px;color:var(--cream);padding:9px 12px;font-size:13px;font-family:'Space Grotesk',sans-serif;outline:none;transition:border-color .2s;}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--gold);}
+.form-input::placeholder{color:var(--muted);}
+.form-textarea{resize:vertical;min-height:75px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end;}
+.form-select option{background:var(--bg2);}
+
+/* SCORE SLIDER */
+.score-group{display:flex;flex-direction:column;gap:10px;}
+.score-row{display:flex;align-items:center;gap:12px;}
+.score-label{font-size:11px;color:var(--muted);width:36px;font-family:'Space Grotesk',sans-serif;letter-spacing:0.06em;}
+.score-slider{flex:1;-webkit-appearance:none;height:3px;border-radius:2px;background:var(--border2);outline:none;}
+.score-slider::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--gold);cursor:pointer;}
+.score-val{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;color:var(--gold2);width:26px;text-align:right;}
+
+/* NEG TAGS */
+.neg-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+.neg-tag{font-size:11px;padding:4px 11px;border-radius:20px;border:1px solid var(--border2);color:var(--muted);cursor:pointer;transition:all .2s;font-family:'Space Grotesk',sans-serif;background:transparent;}
+.neg-tag.selected{border-color:var(--red);color:#d07060;background:rgba(192,80,64,.1);}
+
+/* DETAIL */
+.detail-section{margin-bottom:16px;}
+.detail-section-title{font-size:10px;color:var(--gold);letter-spacing:0.14em;text-transform:uppercase;font-family:'Space Grotesk',sans-serif;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:5px;}
+.detail-row{display:flex;gap:8px;margin-bottom:5px;}
+.detail-key{font-size:11px;color:var(--muted);width:76px;flex-shrink:0;font-family:'Space Grotesk',sans-serif;}
+.detail-val{font-size:12px;color:var(--text2);flex:1;line-height:1.5;}
+
+/* EMPTY */
+.empty{text-align:center;padding:50px 20px;color:var(--muted);}
+.empty-icon{font-size:36px;margin-bottom:10px;}
+.empty-text{font-size:13px;font-family:'Libre Baskerville',serif;font-style:italic;}
+
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
 </style>
 </head>
 <body>
 
 <div class="header">
   <div class="header-top">
-    <div class="header-logo">☕ Coffee Archive</div>
-    <div class="header-sub" id="lastUpdate"></div>
+    <div>
+      <div class="logo">COFFEE<span>·</span>LOG</div>
+      <div class="logo-sub">specialty archive</div>
+    </div>
+    <div id="lastUpdate" style="font-size:10px;color:var(--muted);font-family:'Space Grotesk',sans-serif;letter-spacing:0.06em;"></div>
   </div>
   <nav class="nav">
-    <div class="nav-tab active" onclick="showTab('dash')">대시보드</div>
-    <div class="nav-tab" onclick="showTab('beans')">생두 목록</div>
-    <div class="nav-tab" onclick="showTab('roasts')">로스팅 로그</div>
-    <div class="nav-tab" onclick="showTab('tastings')">맛 평가</div>
-    <div class="nav-tab" onclick="showTab('brews')">브루잉 레시피</div>
-    <div class="nav-tab" onclick="showTab('wishlist')">구매 검토</div>
+    <div class="nav-tab active" onclick="showTab('dash',this)">대시보드</div>
+    <div class="nav-tab" onclick="showTab('beans',this)">생두 목록</div>
+    <div class="nav-tab" onclick="showTab('roasts',this)">로스팅 로그</div>
+    <div class="nav-tab" onclick="showTab('tastings',this)">맛 평가</div>
+    <div class="nav-tab" onclick="showTab('brews',this)">브루잉 레시피</div>
+    <div class="nav-tab" onclick="showTab('wishlist',this)">구매 검토</div>
   </nav>
 </div>
 
@@ -460,25 +215,25 @@ body {
 <!-- 대시보드 -->
 <div id="tab-dash" class="section active">
   <div class="dash-grid" id="dashStats"></div>
-  <div style="font-size:13px; color:var(--muted); margin-bottom:12px;">최근 활동</div>
+  <div class="recent-section-title">최근 활동</div>
   <div class="recent-list" id="recentActivity"></div>
 </div>
 
 <!-- 생두 목록 -->
 <div id="tab-beans" class="section">
-  <div class="section-header">
-    <div class="section-title">생두 목록</div>
+  <div class="sec-head">
+    <div class="sec-title">생두 목록</div>
     <button class="btn btn-sm" onclick="openBeanForm()">+ 추가</button>
   </div>
-  <input class="search-input" placeholder="생두명, 원산지, 컵노트 검색..." oninput="filterBeans(this.value)" id="beanSearch">
+  <input class="search-input" placeholder="생두명, 원산지, 컵노트 검색..." oninput="filterBeans(this.value)">
   <div class="filter-bar" id="originFilters"></div>
   <div class="cards-grid" id="beanCards"></div>
 </div>
 
-<!-- 로스팅 로그 -->
+<!-- 로스팅 -->
 <div id="tab-roasts" class="section">
-  <div class="section-header">
-    <div class="section-title">로스팅 로그</div>
+  <div class="sec-head">
+    <div class="sec-title">로스팅 로그</div>
     <button class="btn btn-sm" onclick="openRoastForm()">+ 추가</button>
   </div>
   <div class="roast-list" id="roastList"></div>
@@ -486,35 +241,34 @@ body {
 
 <!-- 맛 평가 -->
 <div id="tab-tastings" class="section">
-  <div class="section-header">
-    <div class="section-title">맛 평가</div>
+  <div class="sec-head">
+    <div class="sec-title">맛 평가</div>
     <button class="btn btn-sm" onclick="openTastingForm()">+ 추가</button>
   </div>
-  <div id="tastingList" style="margin-top:16px;"></div>
+  <div id="tastingList" style="margin-top:14px;"></div>
 </div>
 
-<!-- 브루잉 레시피 -->
+<!-- 브루잉 -->
 <div id="tab-brews" class="section">
-  <div class="section-header">
-    <div class="section-title">브루잉 레시피</div>
+  <div class="sec-head">
+    <div class="sec-title">브루잉 레시피</div>
     <button class="btn btn-sm" onclick="openBrewForm()">+ 추가</button>
   </div>
-  <div id="brewList" style="margin-top:16px;"></div>
+  <div id="brewList" style="margin-top:14px;"></div>
 </div>
 
 <!-- 구매 검토 -->
 <div id="tab-wishlist" class="section">
-  <div class="section-header">
-    <div class="section-title">구매 검토</div>
+  <div class="sec-head">
+    <div class="sec-title">구매 검토</div>
     <button class="btn btn-sm" onclick="openWishForm()">+ 추가</button>
   </div>
-  <div id="wishList" style="margin-top:16px;"></div>
+  <div id="wishList" style="margin-top:14px;"></div>
 </div>
 
 </div>
 
-<!-- MODALS -->
-<!-- Bean Detail -->
+<!-- MODAL: Bean Detail -->
 <div class="modal-overlay" id="beanDetailModal">
   <div class="modal">
     <div class="modal-title" id="beanDetailName"></div>
@@ -525,7 +279,7 @@ body {
   </div>
 </div>
 
-<!-- Bean Form -->
+<!-- MODAL: Bean Form -->
 <div class="modal-overlay" id="beanFormModal">
   <div class="modal">
     <div class="modal-title" id="beanFormTitle">생두 추가</div>
@@ -533,83 +287,75 @@ body {
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">원두명 *</label>
-        <input class="form-input" id="f_bean_name" placeholder="예: 케냐 카리미쿠이 AA">
+        <input class="form-input" id="f_bn" placeholder="케냐 카리미쿠이 AA">
       </div>
       <div class="form-group">
         <label class="form-label">원산지 *</label>
-        <input class="form-input" id="f_bean_origin" placeholder="예: 케냐">
+        <input class="form-input" id="f_bo" placeholder="케냐">
       </div>
     </div>
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">지역/농장</label>
-        <input class="form-input" id="f_bean_region">
+        <input class="form-input" id="f_br">
       </div>
       <div class="form-group">
         <label class="form-label">품종</label>
-        <input class="form-input" id="f_bean_variety">
+        <input class="form-input" id="f_bv">
       </div>
     </div>
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">가공방식</label>
-        <select class="form-select" id="f_bean_process">
+        <select class="form-select" id="f_bp">
           <option value="">선택</option>
-          <option>Washed</option>
-          <option>Natural</option>
-          <option>Honey</option>
-          <option>Anaerobic Washed</option>
-          <option>Double Fermentation Washed</option>
-          <option>Natural Cascada</option>
-          <option>Classic Honey</option>
-          <option>Red Honey</option>
-          <option>Fully Washed</option>
+          <option>Washed</option><option>Natural</option><option>Honey</option>
+          <option>Anaerobic Washed</option><option>Double Fermentation Washed</option>
+          <option>Natural Cascada</option><option>Classic Honey</option>
+          <option>Red Honey</option><option>Fully Washed</option>
         </select>
       </div>
       <div class="form-group">
         <label class="form-label">고도(m)</label>
-        <input class="form-input" id="f_bean_altitude">
+        <input class="form-input" id="f_ba">
       </div>
     </div>
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">구매처</label>
-        <input class="form-input" id="f_bean_shop">
+        <input class="form-input" id="f_bsh">
       </div>
       <div class="form-group">
         <label class="form-label">가격(만원/kg)</label>
-        <input class="form-input" type="number" step="0.01" id="f_bean_price">
+        <input class="form-input" type="number" step="0.01" id="f_bpr">
       </div>
     </div>
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">초기재고(g)</label>
-        <input class="form-input" type="number" id="f_bean_stock">
+        <input class="form-input" type="number" id="f_bst">
       </div>
       <div class="form-group">
         <label class="form-label">상태</label>
-        <select class="form-select" id="f_bean_status">
+        <select class="form-select" id="f_bss">
           <option value="">선택</option>
-          <option>재고있음</option>
-          <option>잔량부족</option>
-          <option>샘플</option>
-          <option>소진</option>
-          <option>재고량미입력</option>
+          <option>재고있음</option><option>잔량부족</option>
+          <option>샘플</option><option>소진</option><option>재고량미입력</option>
         </select>
       </div>
     </div>
     <div class="form-group">
       <label class="form-label">컵노트</label>
-      <input class="form-input" id="f_bean_notes" placeholder="예: 자스민, 복숭아, 꿀">
+      <input class="form-input" id="f_bnt" placeholder="자스민, 복숭아, 꿀">
     </div>
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">모모스 스코어</label>
-        <input class="form-input" type="number" step="0.1" id="f_bean_score_m">
+        <input class="form-input" type="number" step="0.1" id="f_bsm">
       </div>
       <div class="form-group">
         <label class="form-label">원더룸 스코어</label>
-        <input class="form-input" type="number" step="0.1" id="f_bean_score_w">
+        <input class="form-input" type="number" step="0.1" id="f_bsw">
       </div>
     </div>
     <div class="form-actions">
@@ -619,69 +365,62 @@ body {
   </div>
 </div>
 
-<!-- Roast Form -->
+<!-- MODAL: Roast Form -->
 <div class="modal-overlay" id="roastFormModal">
   <div class="modal">
-    <div class="modal-title">로스팅 기록 추가</div>
+    <div class="modal-title">로스팅 기록</div>
     <input type="hidden" id="roastFormId">
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">날짜 *</label>
-        <input class="form-input" type="date" id="f_roast_date">
+        <input class="form-input" type="date" id="f_rd">
       </div>
       <div class="form-group">
         <label class="form-label">빈본 모드</label>
-        <input class="form-input" type="number" id="f_roast_mode" placeholder="예: 5">
+        <input class="form-input" type="number" id="f_rm" placeholder="5">
       </div>
     </div>
     <div class="form-group">
-      <label class="form-label">생두명 *</label>
-      <select class="form-select" id="f_roast_bean">
-        <option value="">선택...</option>
-      </select>
+      <label class="form-label">생두 *</label>
+      <select class="form-select" id="f_rb"><option value="">선택...</option></select>
     </div>
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">투입량(g)</label>
-        <input class="form-input" type="number" id="f_roast_input">
+        <input class="form-input" type="number" id="f_ri">
       </div>
       <div class="form-group">
         <label class="form-label">배출량(g)</label>
-        <input class="form-input" type="number" id="f_roast_output">
+        <input class="form-input" type="number" id="f_ro">
       </div>
     </div>
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">1팝 시간</label>
-        <input class="form-input" id="f_roast_pop" placeholder="예: 1:45">
+        <input class="form-input" id="f_rp" placeholder="1:45">
       </div>
       <div class="form-group">
         <label class="form-label">배출 시간</label>
-        <input class="form-input" id="f_roast_eject" placeholder="예: 0:46">
+        <input class="form-input" id="f_re" placeholder="0:46">
       </div>
     </div>
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">시간 기준</label>
-        <select class="form-select" id="f_roast_basis">
-          <option value="">선택</option>
-          <option>잔여</option>
-          <option>진행</option>
+        <select class="form-select" id="f_rb2">
+          <option value="">선택</option><option>잔여</option><option>진행</option>
         </select>
       </div>
       <div class="form-group">
         <label class="form-label">로스팅 레벨</label>
-        <select class="form-select" id="f_roast_level">
-          <option value="">선택</option>
-          <option>라이트</option>
-          <option>미디엄</option>
-          <option>다크</option>
+        <select class="form-select" id="f_rl">
+          <option value="">선택</option><option>라이트</option><option>미디엄</option><option>다크</option>
         </select>
       </div>
     </div>
     <div class="form-group">
-      <label class="form-label">메모/이슈</label>
-      <textarea class="form-textarea" id="f_roast_notes" placeholder="로스팅 중 느낌, 이슈 등"></textarea>
+      <label class="form-label">메모 / 이슈</label>
+      <textarea class="form-textarea" id="f_rn" placeholder="로스팅 중 느낌, 특이사항"></textarea>
     </div>
     <div class="form-actions">
       <button class="btn btn-outline btn-sm" onclick="closeModal('roastFormModal')">취소</button>
@@ -690,20 +429,18 @@ body {
   </div>
 </div>
 
-<!-- Tasting Form -->
+<!-- MODAL: Tasting Form -->
 <div class="modal-overlay" id="tastingFormModal">
   <div class="modal">
-    <div class="modal-title">맛 평가 추가</div>
+    <div class="modal-title">맛 평가</div>
     <div class="form-row">
       <div class="form-group">
-        <label class="form-label">날짜 *</label>
-        <input class="form-input" type="date" id="f_tast_date">
+        <label class="form-label">날짜</label>
+        <input class="form-input" type="date" id="f_td">
       </div>
       <div class="form-group">
         <label class="form-label">생두</label>
-        <select class="form-select" id="f_tast_bean">
-          <option value="">선택...</option>
-        </select>
+        <select class="form-select" id="f_tb"><option value="">선택...</option></select>
       </div>
     </div>
     <div class="form-group">
@@ -711,28 +448,28 @@ body {
       <div class="score-group">
         <div class="score-row">
           <div class="score-label">산미</div>
-          <input type="range" class="score-slider" min="1" max="10" value="5" id="f_score_acid" oninput="document.getElementById('v_acid').textContent=this.value">
-          <div class="score-val" id="v_acid">5</div>
+          <input type="range" class="score-slider" min="1" max="10" value="5" id="f_sa" oninput="document.getElementById('va').textContent=this.value">
+          <div class="score-val" id="va">5</div>
         </div>
         <div class="score-row">
           <div class="score-label">향</div>
-          <input type="range" class="score-slider" min="1" max="10" value="5" id="f_score_aroma" oninput="document.getElementById('v_aroma').textContent=this.value">
-          <div class="score-val" id="v_aroma">5</div>
+          <input type="range" class="score-slider" min="1" max="10" value="5" id="f_sr" oninput="document.getElementById('vr').textContent=this.value">
+          <div class="score-val" id="vr">5</div>
         </div>
         <div class="score-row">
           <div class="score-label">맛</div>
-          <input type="range" class="score-slider" min="1" max="10" value="5" id="f_score_taste" oninput="document.getElementById('v_taste').textContent=this.value">
-          <div class="score-val" id="v_taste">5</div>
+          <input type="range" class="score-slider" min="1" max="10" value="5" id="f_st" oninput="document.getElementById('vt').textContent=this.value">
+          <div class="score-val" id="vt">5</div>
         </div>
       </div>
     </div>
     <div class="form-group">
-      <label class="form-label">안 좋은 부분 (해당되는 것 클릭)</label>
+      <label class="form-label">안 좋은 부분</label>
       <div class="neg-tags" id="negTagContainer"></div>
     </div>
     <div class="form-group">
-      <label class="form-label">자유 메모</label>
-      <textarea class="form-textarea" id="f_tast_memo" placeholder="마셨을 때의 느낌, 인상 등 자유롭게"></textarea>
+      <label class="form-label">메모</label>
+      <textarea class="form-textarea" id="f_tm" placeholder="마셨을 때의 느낌을 자유롭게"></textarea>
     </div>
     <div class="form-actions">
       <button class="btn btn-outline btn-sm" onclick="closeModal('tastingFormModal')">취소</button>
@@ -741,58 +478,54 @@ body {
   </div>
 </div>
 
-<!-- Brew Form -->
+<!-- MODAL: Brew Form -->
 <div class="modal-overlay" id="brewFormModal">
   <div class="modal">
-    <div class="modal-title">브루잉 레시피 추가</div>
+    <div class="modal-title">브루잉 레시피</div>
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">날짜</label>
-        <input class="form-input" type="date" id="f_brew_date">
+        <input class="form-input" type="date" id="f_wd">
       </div>
       <div class="form-group">
         <label class="form-label">방법</label>
-        <select class="form-select" id="f_brew_method">
-          <option>V60 Switch</option>
-          <option>Tetsu Hybrid</option>
-          <option>V60 Pour Over</option>
-          <option>기타</option>
+        <select class="form-select" id="f_wm">
+          <option>V60 Switch</option><option>Tetsu Hybrid</option>
+          <option>V60 Pour Over</option><option>기타</option>
         </select>
       </div>
     </div>
     <div class="form-group">
       <label class="form-label">생두</label>
-      <select class="form-select" id="f_brew_bean">
-        <option value="">선택...</option>
-      </select>
+      <select class="form-select" id="f_wb"><option value="">선택...</option></select>
     </div>
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">원두량(g)</label>
-        <input class="form-input" type="number" step="0.1" id="f_brew_coffee">
+        <input class="form-input" type="number" step="0.1" id="f_wc">
       </div>
       <div class="form-group">
         <label class="form-label">물량(g)</label>
-        <input class="form-input" type="number" id="f_brew_water">
+        <input class="form-input" type="number" id="f_ww">
       </div>
     </div>
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">수온(°C)</label>
-        <input class="form-input" type="number" id="f_brew_temp">
+        <input class="form-input" type="number" id="f_wt">
       </div>
       <div class="form-group">
         <label class="form-label">분쇄도</label>
-        <input class="form-input" id="f_brew_grind" placeholder="예: 코만단테 25클릭">
+        <input class="form-input" id="f_wg" placeholder="코만단테 25클릭">
       </div>
     </div>
     <div class="form-group">
       <label class="form-label">레시피 상세</label>
-      <textarea class="form-textarea" id="f_brew_recipe" placeholder="뜸들이기 30초, 1차 100g ..."></textarea>
+      <textarea class="form-textarea" id="f_wr" placeholder="뜸들이기 30초, 1차 100g ..."></textarea>
     </div>
     <div class="form-group">
       <label class="form-label">맛 느낌</label>
-      <textarea class="form-textarea" id="f_brew_result" placeholder="이 레시피로 마셨을 때 어떤 느낌이었는지"></textarea>
+      <textarea class="form-textarea" id="f_wrs" placeholder="이 레시피로 마셨을 때 어땠는지"></textarea>
     </div>
     <div class="form-actions">
       <button class="btn btn-outline btn-sm" onclick="closeModal('brewFormModal')">취소</button>
@@ -801,31 +534,31 @@ body {
   </div>
 </div>
 
-<!-- Wish Form -->
+<!-- MODAL: Wish Form -->
 <div class="modal-overlay" id="wishFormModal">
   <div class="modal">
-    <div class="modal-title">구매 검토 추가</div>
+    <div class="modal-title">구매 검토</div>
     <div class="form-group">
       <label class="form-label">생두명 *</label>
-      <input class="form-input" id="f_wish_name">
+      <input class="form-input" id="f_xn">
     </div>
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">가격</label>
-        <input class="form-input" id="f_wish_price" placeholder="예: 3.5만원/kg">
+        <input class="form-input" id="f_xp" placeholder="3.5만원/kg">
       </div>
       <div class="form-group">
         <label class="form-label">출처</label>
-        <input class="form-input" id="f_wish_source" placeholder="예: 모모스, 커피리브레">
+        <input class="form-input" id="f_xs" placeholder="모모스, 커피리브레">
       </div>
     </div>
     <div class="form-group">
       <label class="form-label">URL</label>
-      <input class="form-input" id="f_wish_url" placeholder="https://...">
+      <input class="form-input" id="f_xu" placeholder="https://...">
     </div>
     <div class="form-group">
       <label class="form-label">메모</label>
-      <textarea class="form-textarea" id="f_wish_memo" placeholder="왜 검토하는지, 특이사항 등"></textarea>
+      <textarea class="form-textarea" id="f_xm" placeholder="왜 검토하는지, 특이사항"></textarea>
     </div>
     <div class="form-actions">
       <button class="btn btn-outline btn-sm" onclick="closeModal('wishFormModal')">취소</button>
@@ -836,567 +569,326 @@ body {
 
 <script src="data.js"></script>
 <script>
-// ─── STATE ───────────────────────────────────────────────────────────────────
-const STORAGE_KEY = 'coffee_archive_v1';
-const NEG_TAGS = ['강한 쓴맛', '역함', '떫음', '흙냄새', '곰팡이냄새', '과발효', '밋밋함', '텁텁함', '연기냄새', '너무 신맛', '잡미'];
+const SK='coffee_archive_v2';
+const NEG=['강한 쓴맛','역함','떫음','흙냄새','곰팡이냄새','과발효','밋밋함','텁텁함','연기냄새','너무 신맛','잡미'];
+let db=loadDB(), cf='all', cs='';
 
-let db = loadDB();
-let currentFilter = 'all';
-let currentSearch = '';
-
-function loadDB() {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      // 초기 데이터가 없으면 INITIAL_DATA로 채우기
-      if (!parsed.beans || parsed.beans.length === 0) parsed.beans = INITIAL_DATA.beans;
-      if (!parsed.roasts || parsed.roasts.length === 0) parsed.roasts = INITIAL_DATA.roasts;
-      return parsed;
+function loadDB(){
+  try{
+    const s=localStorage.getItem(SK);
+    if(s){
+      const p=JSON.parse(s);
+      if(!p.beans||!p.beans.length) p.beans=INITIAL_DATA.beans;
+      if(!p.roasts||!p.roasts.length) p.roasts=INITIAL_DATA.roasts;
+      if(!p.tastings) p.tastings=[];
+      if(!p.brews) p.brews=[];
+      if(!p.wishlist) p.wishlist=[];
+      return p;
     }
-  } catch(e) {}
+  }catch(e){}
   return JSON.parse(JSON.stringify(INITIAL_DATA));
 }
+function saveDB(){
+  localStorage.setItem(SK,JSON.stringify(db));
+  document.getElementById('lastUpdate').textContent=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+}
+function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 
-function saveDB() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
-  document.getElementById('lastUpdate').textContent = '저장됨 ' + new Date().toLocaleTimeString('ko-KR');
+function showTab(name,el){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  el.classList.add('active');
+  const fn={dash:renderDash,beans:renderBeans,roasts:renderRoasts,tastings:renderTastings,brews:renderBrews,wishlist:renderWishlist};
+  fn[name]&&fn[name]();
 }
 
-function genId() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+/* DASHBOARD */
+function renderDash(){
+  document.getElementById('dashStats').innerHTML=
+    dCard(db.beans.length,'생두')+
+    dCard(db.beans.filter(b=>b.status==='재고있음').length,'재고있음')+
+    dCard(db.roasts.length,'로스팅')+
+    dCard(db.tastings.length,'맛평가')+
+    dCard(db.brews.length,'브루잉')+
+    dCard(db.wishlist.length,'구매검토');
+  const rec=[
+    ...db.roasts.slice(-6).map(r=>({date:r.date,text:`🔥 ${r.bean_name}${r.mode?' — 모드'+r.mode:''}`})),
+    ...db.tastings.slice(-3).map(t=>({date:t.date,text:`☕ ${t.bean_name} 맛 평가`})),
+  ].sort((a,b)=>b.date>a.date?1:-1).slice(0,8);
+  document.getElementById('recentActivity').innerHTML=rec.length?
+    rec.map(r=>`<div class="recent-item"><div class="recent-dot"></div><div class="recent-text">${r.text}</div><div class="recent-date">${r.date}</div></div>`).join(''):
+    '<div class="empty"><div class="empty-icon">☕</div><div class="empty-text">아직 기록이 없습니다</div></div>';
 }
+function dCard(n,l){return `<div class="dash-card"><div class="dash-num">${n}</div><div class="dash-label">${l}</div></div>`;}
 
-// ─── TABS ────────────────────────────────────────────────────────────────────
-function showTab(name) {
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
-  event.target.classList.add('active');
-  if (name === 'dash') renderDash();
-  if (name === 'beans') renderBeans();
-  if (name === 'roasts') renderRoasts();
-  if (name === 'tastings') renderTastings();
-  if (name === 'brews') renderBrews();
-  if (name === 'wishlist') renderWishlist();
-}
-
-// ─── DASHBOARD ───────────────────────────────────────────────────────────────
-function renderDash() {
-  const activeStock = db.beans.filter(b => b.status === '재고있음').length;
-  const totalRoasts = db.roasts.length;
-  const totalTastings = db.tastings.length;
-  const wishCount = db.wishlist.length;
-
-  document.getElementById('dashStats').innerHTML = `
-    <div class="dash-card"><div class="dash-num">${db.beans.length}</div><div class="dash-label">보유 생두</div></div>
-    <div class="dash-card"><div class="dash-num">${activeStock}</div><div class="dash-label">재고 있음</div></div>
-    <div class="dash-card"><div class="dash-num">${totalRoasts}</div><div class="dash-label">로스팅 횟수</div></div>
-    <div class="dash-card"><div class="dash-num">${totalTastings}</div><div class="dash-label">맛 평가</div></div>
-    <div class="dash-card"><div class="dash-num">${db.brews.length}</div><div class="dash-label">브루잉 레시피</div></div>
-    <div class="dash-card"><div class="dash-num">${wishCount}</div><div class="dash-label">구매 검토</div></div>
-  `;
-
-  // 최근 활동
-  const recent = [];
-  db.roasts.slice(-5).reverse().forEach(r => {
-    recent.push({ date: r.date, text: `🔥 ${r.bean_name} — 모드${r.mode} 로스팅` });
-  });
-  db.tastings.slice(-3).reverse().forEach(t => {
-    recent.push({ date: t.date, text: `☕ ${t.bean_name} 맛 평가` });
-  });
-  recent.sort((a,b) => b.date > a.date ? 1 : -1);
-
-  document.getElementById('recentActivity').innerHTML = recent.slice(0,8).map(r => `
-    <div class="recent-item">
-      <div class="recent-dot"></div>
-      <div class="recent-text">${r.text}</div>
-      <div class="recent-date">${r.date}</div>
-    </div>
-  `).join('') || '<div class="empty-state"><div class="empty-icon">☕</div>아직 기록이 없습니다</div>';
-}
-
-// ─── BEANS ───────────────────────────────────────────────────────────────────
-function renderBeans() {
-  const origins = [...new Set(db.beans.map(b => b.origin).filter(Boolean))];
-  const filterHTML = `<button class="filter-chip ${currentFilter==='all'?'active':''}" onclick="setFilter('all')">전체</button>` +
-    origins.map(o => `<button class="filter-chip ${currentFilter===o?'active':''}" onclick="setFilter('${o}')">${o}</button>`).join('');
-  document.getElementById('originFilters').innerHTML = filterHTML;
-
-  let beans = db.beans;
-  if (currentFilter !== 'all') beans = beans.filter(b => b.origin === currentFilter);
-  if (currentSearch) {
-    const q = currentSearch.toLowerCase();
-    beans = beans.filter(b =>
-      b.name.toLowerCase().includes(q) ||
-      (b.origin||'').toLowerCase().includes(q) ||
-      (b.cup_notes||'').toLowerCase().includes(q) ||
-      (b.shop||'').toLowerCase().includes(q)
-    );
-  }
-
-  document.getElementById('beanCards').innerHTML = beans.map(b => {
-    const score = b.score_momos || b.score_wonderroom;
-    const scoreLabel = b.score_momos ? `모모스 ${b.score_momos}` : b.score_wonderroom ? `원더룸 ${b.score_wonderroom}` : '';
-    return `
-    <div class="bean-card" onclick="showBeanDetail('${b.id}')">
-      <div class="bean-origin-badge">${b.origin || '—'}</div>
+/* BEANS */
+function renderBeans(){
+  const origins=[...new Set(db.beans.map(b=>b.origin).filter(Boolean))];
+  document.getElementById('originFilters').innerHTML=
+    `<button class="filter-chip ${cf==='all'?'active':''}" onclick="setF('all')">전체</button>`+
+    origins.map(o=>`<button class="filter-chip ${cf===o?'active':''}" onclick="setF('${o}')">${o}</button>`).join('');
+  let beans=db.beans;
+  if(cf!=='all') beans=beans.filter(b=>b.origin===cf);
+  if(cs){const q=cs.toLowerCase();beans=beans.filter(b=>(b.name+b.origin+b.cup_notes+b.shop).toLowerCase().includes(q));}
+  document.getElementById('beanCards').innerHTML=beans.map(b=>{
+    const sc=b.score_momos?`모모스 ${b.score_momos}pt`:b.score_wonderroom?`원더룸 ${b.score_wonderroom}pt`:'';
+    return `<div class="bean-card" onclick="showBeanDetail('${b.id}')">
+      <div class="bean-origin">${b.origin||'—'}</div>
       <div class="bean-name">${b.name}</div>
-      <div class="bean-sub">${[b.variety, b.process].filter(Boolean).join(' · ')}</div>
-      ${b.cup_notes ? `<div class="bean-notes">${b.cup_notes}</div>` : ''}
+      <div class="bean-sub">${[b.variety,b.process].filter(Boolean).join(' · ')||'&nbsp;'}</div>
+      ${b.cup_notes?`<div class="bean-notes">${b.cup_notes}</div>`:''}
       <div class="bean-footer">
-        <span class="status-badge status-${(b.status||'').replace(/ /g,'_')}">${b.status || '—'}</span>
-        ${scoreLabel ? `<span class="score-chip">${scoreLabel}pt</span>` : ''}
+        <span class="status-badge status-${(b.status||'').replace(/ /g,'_')}">${b.status||'—'}</span>
+        ${sc?`<span class="score-chip">${sc}</span>`:''}
       </div>
     </div>`;
-  }).join('') || '<div class="empty-state"><div class="empty-icon">🫘</div>생두가 없습니다</div>';
+  }).join('')||'<div class="empty"><div class="empty-icon">🫘</div><div class="empty-text">생두가 없습니다</div></div>';
 }
+function setF(f){cf=f;renderBeans();}
+function filterBeans(q){cs=q;renderBeans();}
 
-function setFilter(f) {
-  currentFilter = f;
-  renderBeans();
-}
-function filterBeans(q) {
-  currentSearch = q;
-  renderBeans();
-}
-
-function showBeanDetail(id) {
-  const b = db.beans.find(x => x.id === id);
-  if (!b) return;
-  const roastCount = db.roasts.filter(r => r.bean_name === b.name).length;
-  document.getElementById('beanDetailName').textContent = b.name;
-  document.getElementById('beanDetailContent').innerHTML = `
+function showBeanDetail(id){
+  const b=db.beans.find(x=>x.id===id);if(!b)return;
+  const rc=db.roasts.filter(r=>r.bean_name===b.name).length;
+  document.getElementById('beanDetailName').textContent=b.name;
+  document.getElementById('beanDetailContent').innerHTML=`
     <div class="detail-section">
       <div class="detail-section-title">기본 정보</div>
-      ${row('원산지', b.origin)}${row('지역/농장', b.region)}
-      ${row('품종', b.variety)}${row('가공방식', b.process)}
-      ${row('고도', b.altitude ? b.altitude + 'm' : '')}
-      ${row('구매처', b.shop)}${row('가격', b.price ? b.price + '만원/kg' : '')}
-      ${row('초기재고', b.stock_initial ? b.stock_initial + 'g' : '')}
-      ${row('상태', b.status)}
+      ${dr('원산지',b.origin)}${dr('지역/농장',b.region)}${dr('품종',b.variety)}
+      ${dr('가공방식',b.process)}${dr('고도',b.altitude?(b.altitude+'m'):'')}
+      ${dr('구매처',b.shop)}${dr('가격',b.price?(b.price+'만원/kg'):'')}
+      ${dr('초기재고',b.stock_initial?(b.stock_initial+'g'):'')}${dr('상태',b.status)}
     </div>
-    ${(b.score_momos||b.score_wonderroom) ? `
-    <div class="detail-section">
-      <div class="detail-section-title">스코어</div>
-      ${row('모모스', b.score_momos)}${row('원더룸', b.score_wonderroom)}
-    </div>` : ''}
-    ${b.cup_notes ? `
-    <div class="detail-section">
-      <div class="detail-section-title">컵노트</div>
-      <div style="font-size:13px;color:var(--text2);line-height:1.6">${b.cup_notes}</div>
-      ${b.cup_notes_source ? `<div style="font-size:11px;color:var(--muted);margin-top:4px">출처: ${b.cup_notes_source}</div>` : ''}
-    </div>` : ''}
-    <div class="detail-section">
-      <div class="detail-section-title">로스팅</div>
-      <div style="font-size:13px;color:var(--text2)">${roastCount}회 로스팅됨</div>
-    </div>
-    <div style="margin-top:16px;display:flex;gap:8px">
-      <button class="btn btn-sm btn-outline" onclick="editBean('${b.id}');closeModal('beanDetailModal')">수정</button>
+    ${(b.score_momos||b.score_wonderroom)?`<div class="detail-section"><div class="detail-section-title">스코어</div>${dr('모모스',b.score_momos)}${dr('원더룸',b.score_wonderroom)}</div>`:''}
+    ${b.cup_notes?`<div class="detail-section"><div class="detail-section-title">컵노트</div><div style="font-family:'Libre Baskerville',serif;font-size:13px;color:var(--text2);line-height:1.7;font-style:italic">${b.cup_notes}</div>${b.cup_notes_source?`<div style="font-size:10px;color:var(--muted);margin-top:5px">출처: ${b.cup_notes_source}</div>`:''}</div>`:''}
+    <div class="detail-section"><div class="detail-section-title">로스팅</div><div style="font-size:13px;color:var(--text2)">${rc}회 로스팅됨</div></div>
+    <div style="margin-top:14px;display:flex;gap:8px">
+      <button class="btn btn-outline btn-sm" onclick="editBean('${b.id}');closeModal('beanDetailModal')">수정</button>
       <button class="btn btn-sm btn-danger" onclick="deleteBean('${b.id}')">삭제</button>
-    </div>
-  `;
+    </div>`;
   openModal('beanDetailModal');
 }
+function dr(k,v){return v?`<div class="detail-row"><div class="detail-key">${k}</div><div class="detail-val">${v}</div></div>`:''}
 
-function row(k, v) {
-  if (!v) return '';
-  return `<div class="detail-row"><div class="detail-key">${k}</div><div class="detail-val">${v}</div></div>`;
-}
-
-function openBeanForm(id) {
-  document.getElementById('beanFormTitle').textContent = id ? '생두 수정' : '생두 추가';
-  document.getElementById('beanFormId').value = id || '';
-  if (id) {
-    const b = db.beans.find(x => x.id === id);
-    if (b) {
-      document.getElementById('f_bean_name').value = b.name || '';
-      document.getElementById('f_bean_origin').value = b.origin || '';
-      document.getElementById('f_bean_region').value = b.region || '';
-      document.getElementById('f_bean_variety').value = b.variety || '';
-      document.getElementById('f_bean_process').value = b.process || '';
-      document.getElementById('f_bean_altitude').value = b.altitude || '';
-      document.getElementById('f_bean_shop').value = b.shop || '';
-      document.getElementById('f_bean_price').value = b.price || '';
-      document.getElementById('f_bean_stock').value = b.stock_initial || '';
-      document.getElementById('f_bean_status').value = b.status || '';
-      document.getElementById('f_bean_notes').value = b.cup_notes || '';
-      document.getElementById('f_bean_score_m').value = b.score_momos || '';
-      document.getElementById('f_bean_score_w').value = b.score_wonderroom || '';
-    }
-  } else {
-    ['f_bean_name','f_bean_origin','f_bean_region','f_bean_variety','f_bean_altitude','f_bean_shop','f_bean_price','f_bean_stock','f_bean_notes','f_bean_score_m','f_bean_score_w'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('f_bean_process').value = '';
-    document.getElementById('f_bean_status').value = '';
+function openBeanForm(id){
+  document.getElementById('beanFormTitle').textContent=id?'생두 수정':'생두 추가';
+  document.getElementById('beanFormId').value=id||'';
+  const b=id?db.beans.find(x=>x.id===id):{};
+  ['f_bn','f_bo','f_br','f_bv','f_ba','f_bsh','f_bpr','f_bst','f_bnt','f_bsm','f_bsw'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('f_bp').value='';document.getElementById('f_bss').value='';
+  if(b){
+    document.getElementById('f_bn').value=b.name||'';
+    document.getElementById('f_bo').value=b.origin||'';
+    document.getElementById('f_br').value=b.region||'';
+    document.getElementById('f_bv').value=b.variety||'';
+    document.getElementById('f_bp').value=b.process||'';
+    document.getElementById('f_ba').value=b.altitude||'';
+    document.getElementById('f_bsh').value=b.shop||'';
+    document.getElementById('f_bpr').value=b.price||'';
+    document.getElementById('f_bst').value=b.stock_initial||'';
+    document.getElementById('f_bss').value=b.status||'';
+    document.getElementById('f_bnt').value=b.cup_notes||'';
+    document.getElementById('f_bsm').value=b.score_momos||'';
+    document.getElementById('f_bsw').value=b.score_wonderroom||'';
   }
   openModal('beanFormModal');
 }
-function editBean(id) { openBeanForm(id); }
-
-function saveBean() {
-  const id = document.getElementById('beanFormId').value;
-  const name = document.getElementById('f_bean_name').value.trim();
-  if (!name) { alert('원두명을 입력하세요'); return; }
-  const data = {
-    id: id || genId(),
-    name, origin: document.getElementById('f_bean_origin').value.trim(),
-    region: document.getElementById('f_bean_region').value.trim(),
-    variety: document.getElementById('f_bean_variety').value.trim(),
-    process: document.getElementById('f_bean_process').value,
-    altitude: document.getElementById('f_bean_altitude').value.trim(),
-    shop: document.getElementById('f_bean_shop').value.trim(),
-    price: document.getElementById('f_bean_price').value,
-    stock_initial: document.getElementById('f_bean_stock').value,
-    status: document.getElementById('f_bean_status').value,
-    cup_notes: document.getElementById('f_bean_notes').value.trim(),
-    score_momos: document.getElementById('f_bean_score_m').value,
-    score_wonderroom: document.getElementById('f_bean_score_w').value,
-  };
-  if (id) {
-    const idx = db.beans.findIndex(b => b.id === id);
-    if (idx >= 0) db.beans[idx] = data;
-  } else {
-    db.beans.push(data);
-  }
-  saveDB(); closeModal('beanFormModal'); renderBeans();
+function editBean(id){openBeanForm(id);}
+function saveBean(){
+  const id=document.getElementById('beanFormId').value;
+  const name=document.getElementById('f_bn').value.trim();
+  if(!name){alert('원두명을 입력하세요');return;}
+  const data={id:id||genId(),name,origin:document.getElementById('f_bo').value.trim(),region:document.getElementById('f_br').value.trim(),variety:document.getElementById('f_bv').value.trim(),process:document.getElementById('f_bp').value,altitude:document.getElementById('f_ba').value.trim(),shop:document.getElementById('f_bsh').value.trim(),price:document.getElementById('f_bpr').value,stock_initial:document.getElementById('f_bst').value,status:document.getElementById('f_bss').value,cup_notes:document.getElementById('f_bnt').value.trim(),score_momos:document.getElementById('f_bsm').value,score_wonderroom:document.getElementById('f_bsw').value};
+  if(id){const i=db.beans.findIndex(b=>b.id===id);if(i>=0)db.beans[i]=data;}else db.beans.push(data);
+  saveDB();closeModal('beanFormModal');renderBeans();
+}
+function deleteBean(id){
+  if(!confirm('삭제하시겠습니까?'))return;
+  db.beans=db.beans.filter(b=>b.id!==id);
+  saveDB();closeModal('beanDetailModal');renderBeans();
 }
 
-function deleteBean(id) {
-  if (!confirm('삭제하시겠습니까?')) return;
-  db.beans = db.beans.filter(b => b.id !== id);
-  saveDB(); closeModal('beanDetailModal'); renderBeans();
-}
-
-// ─── ROASTS ──────────────────────────────────────────────────────────────────
-function renderRoasts() {
-  const roasts = [...db.roasts].reverse();
-  document.getElementById('roastList').innerHTML = roasts.map(r => {
-    const loss = r.loss_pct ? `손실 ${r.loss_pct}%` : '';
-    const dtr = r.dtr_pct ? `DTR ${r.dtr_pct}%` : '';
-    return `
+/* ROASTS */
+function renderRoasts(){
+  document.getElementById('roastList').innerHTML=[...db.roasts].reverse().map(r=>`
     <div class="roast-card">
       <div class="roast-header">
         <div class="roast-date">${r.date}</div>
         <div class="roast-name">${r.bean_name}</div>
-        ${r.roast_level ? `<span class="status-badge status-재고있음" style="font-size:10px">${r.roast_level}</span>` : ''}
+        ${r.roast_level?`<span class="status-badge status-재고있음">${r.roast_level}</span>`:''}
       </div>
       <div class="roast-stats">
-        ${r.mode ? `<span>모드 <span>${r.mode}</span></span>` : ''}
-        ${r.input_g ? `<span>투입 <span>${r.input_g}g</span></span>` : ''}
-        ${r.output_g ? `<span>배출 <span>${r.output_g}g</span></span>` : ''}
-        ${loss ? `<span>${loss}</span>` : ''}
-        ${r.pop_time ? `<span>1팝 <span>${r.pop_time}</span></span>` : ''}
-        ${r.eject_time ? `<span>배출 <span>${r.eject_time}</span></span>` : ''}
-        ${dtr ? `<span style="color:var(--gold)">${dtr}</span>` : ''}
+        ${r.mode?`<span>모드 <span>${r.mode}</span></span>`:''}
+        ${r.input_g?`<span>투입 <span>${r.input_g}g</span></span>`:''}
+        ${r.output_g?`<span>배출 <span>${r.output_g}g</span></span>`:''}
+        ${r.loss_pct?`<span>손실 <span>${r.loss_pct}%</span></span>`:''}
+        ${r.pop_time?`<span>1팝 <span>${r.pop_time}</span></span>`:''}
+        ${r.eject_time?`<span>배출 <span>${r.eject_time}</span></span>`:''}
+        ${r.dtr_pct?`<span class="roast-dtr">DTR <span>${r.dtr_pct}%</span></span>`:''}
       </div>
-      ${r.notes ? `<div class="roast-note">${r.notes}</div>` : ''}
-      <div style="margin-top:8px;display:flex;gap:6px">
+      ${r.notes?`<div class="roast-note">${r.notes}</div>`:''}
+      <div style="margin-top:9px;display:flex;gap:6px">
         <button class="btn btn-outline btn-sm" onclick="editRoast('${r.id}')">수정</button>
         <button class="btn btn-sm btn-danger" onclick="deleteRoast('${r.id}')">삭제</button>
       </div>
-    </div>`;
-  }).join('') || '<div class="empty-state"><div class="empty-icon">🔥</div>로스팅 기록이 없습니다</div>';
+    </div>`).join('')||'<div class="empty"><div class="empty-icon">🔥</div><div class="empty-text">로스팅 기록이 없습니다</div></div>';
 }
-
-function openRoastForm(id) {
-  populateBeanSelect('f_roast_bean');
-  const today = new Date().toISOString().slice(0,10);
-  if (id) {
-    const r = db.roasts.find(x => x.id === id);
-    if (r) {
-      document.getElementById('roastFormId').value = id;
-      document.getElementById('f_roast_date').value = r.date;
-      document.getElementById('f_roast_bean').value = r.bean_name;
-      document.getElementById('f_roast_mode').value = r.mode;
-      document.getElementById('f_roast_input').value = r.input_g;
-      document.getElementById('f_roast_output').value = r.output_g;
-      document.getElementById('f_roast_pop').value = r.pop_time;
-      document.getElementById('f_roast_eject').value = r.eject_time;
-      document.getElementById('f_roast_basis').value = r.time_basis;
-      document.getElementById('f_roast_level').value = r.roast_level;
-      document.getElementById('f_roast_notes').value = r.notes;
-    }
-  } else {
-    document.getElementById('roastFormId').value = '';
-    document.getElementById('f_roast_date').value = today;
-    ['f_roast_mode','f_roast_input','f_roast_output','f_roast_pop','f_roast_eject','f_roast_notes'].forEach(i => document.getElementById(i).value = '');
-    document.getElementById('f_roast_basis').value = '';
-    document.getElementById('f_roast_level').value = '';
-  }
+function openRoastForm(id){
+  fillBeanSel('f_rb');
+  const today=new Date().toISOString().slice(0,10);
+  document.getElementById('roastFormId').value=id||'';
+  const r=id?db.roasts.find(x=>x.id===id):{};
+  document.getElementById('f_rd').value=r.date||today;
+  document.getElementById('f_rb').value=r.bean_name||'';
+  document.getElementById('f_rm').value=r.mode||'';
+  document.getElementById('f_ri').value=r.input_g||'';
+  document.getElementById('f_ro').value=r.output_g||'';
+  document.getElementById('f_rp').value=r.pop_time||'';
+  document.getElementById('f_re').value=r.eject_time||'';
+  document.getElementById('f_rb2').value=r.time_basis||'';
+  document.getElementById('f_rl').value=r.roast_level||'';
+  document.getElementById('f_rn').value=r.notes||'';
   openModal('roastFormModal');
 }
-function editRoast(id) { openRoastForm(id); }
-
-function saveRoast() {
-  const id = document.getElementById('roastFormId').value;
-  const bean_name = document.getElementById('f_roast_bean').value;
-  if (!bean_name) { alert('생두를 선택하세요'); return; }
-  const input_g = parseFloat(document.getElementById('f_roast_input').value) || '';
-  const output_g = parseFloat(document.getElementById('f_roast_output').value) || '';
-  const loss_pct = (input_g && output_g) ? ((input_g - output_g) / input_g * 100).toFixed(1) : '';
-  const pop = document.getElementById('f_roast_pop').value;
-  const eject = document.getElementById('f_roast_eject').value;
-  const basis = document.getElementById('f_roast_basis').value;
-  let dtr_pct = '';
-  if (pop && eject && basis) {
-    const toSec = t => { const p = t.split(':'); return parseInt(p[0])*60+parseInt(p[1]); };
-    const popSec = toSec(pop), ejectSec = toSec(eject);
-    if (basis === '잔여') dtr_pct = ((popSec - ejectSec) / popSec * 100).toFixed(1);
-    else dtr_pct = ((ejectSec - popSec) / popSec * 100).toFixed(1);
-  }
-  const data = {
-    id: id || genId(),
-    date: document.getElementById('f_roast_date').value,
-    bean_name,
-    shop: db.beans.find(b => b.name === bean_name)?.shop || '',
-    mode: document.getElementById('f_roast_mode').value,
-    input_g: input_g.toString(),
-    output_g: output_g.toString(),
-    loss_pct: loss_pct.toString(),
-    pop_time: pop,
-    eject_time: eject,
-    time_basis: basis,
-    dtr_pct: dtr_pct.toString(),
-    roast_level: document.getElementById('f_roast_level').value,
-    notes: document.getElementById('f_roast_notes').value.trim(),
-  };
-  if (id) {
-    const idx = db.roasts.findIndex(r => r.id === id);
-    if (idx >= 0) db.roasts[idx] = data;
-  } else {
-    db.roasts.push(data);
-  }
-  saveDB(); closeModal('roastFormModal'); renderRoasts();
+function editRoast(id){openRoastForm(id);}
+function saveRoast(){
+  const id=document.getElementById('roastFormId').value;
+  const bn=document.getElementById('f_rb').value;
+  if(!bn){alert('생두를 선택하세요');return;}
+  const ig=parseFloat(document.getElementById('f_ri').value)||'';
+  const og=parseFloat(document.getElementById('f_ro').value)||'';
+  const lp=(ig&&og)?((ig-og)/ig*100).toFixed(1):'';
+  const pop=document.getElementById('f_rp').value;
+  const ej=document.getElementById('f_re').value;
+  const bs=document.getElementById('f_rb2').value;
+  let dtr='';
+  if(pop&&ej&&bs){const s=t=>{const p=t.split(':');return+p[0]*60+ +p[1];};const ps=s(pop),es=s(ej);dtr=bs==='잔여'?((ps-es)/ps*100).toFixed(1):((es-ps)/ps*100).toFixed(1);}
+  const data={id:id||genId(),date:document.getElementById('f_rd').value,bean_name:bn,shop:db.beans.find(b=>b.name===bn)?.shop||'',mode:document.getElementById('f_rm').value,input_g:ig.toString(),output_g:og.toString(),loss_pct:lp.toString(),pop_time:pop,eject_time:ej,time_basis:bs,dtr_pct:dtr.toString(),roast_level:document.getElementById('f_rl').value,notes:document.getElementById('f_rn').value.trim()};
+  if(id){const i=db.roasts.findIndex(r=>r.id===id);if(i>=0)db.roasts[i]=data;}else db.roasts.push(data);
+  saveDB();closeModal('roastFormModal');renderRoasts();
 }
+function deleteRoast(id){if(!confirm('삭제?'))return;db.roasts=db.roasts.filter(r=>r.id!==id);saveDB();renderRoasts();}
 
-function deleteRoast(id) {
-  if (!confirm('삭제하시겠습니까?')) return;
-  db.roasts = db.roasts.filter(r => r.id !== id);
-  saveDB(); renderRoasts();
-}
-
-// ─── TASTINGS ────────────────────────────────────────────────────────────────
-function renderTastings() {
-  const el = document.getElementById('tastingList');
-  if (!db.tastings.length) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">☕</div>맛 평가 기록이 없습니다</div>';
-    return;
-  }
-  el.innerHTML = [...db.tastings].reverse().map(t => `
+/* TASTINGS */
+function renderTastings(){
+  const el=document.getElementById('tastingList');
+  el.innerHTML=[...db.tastings].reverse().map(t=>`
     <div class="tasting-card">
       <div class="tasting-header">
         <div class="tasting-bean">${t.bean_name}</div>
         <div class="tasting-date">${t.date}</div>
       </div>
       <div class="score-bars">
-        ${scoreRing('산미', t.score_acid)}
-        ${scoreRing('향', t.score_aroma)}
-        ${scoreRing('맛', t.score_taste)}
+        ${sring('산미',t.score_acid)}${sring('향',t.score_aroma)}${sring('맛',t.score_taste)}
       </div>
-      ${t.memo ? `<div class="tasting-text">${t.memo}</div>` : ''}
-      ${t.neg_tags && t.neg_tags.length ? `
-        <div class="tasting-negs">${t.neg_tags.map(tag => `<span class="tasting-neg-tag">${tag}</span>`).join('')}</div>
-      ` : ''}
-      <div style="margin-top:10px;display:flex;gap:6px">
+      ${t.memo?`<div class="tasting-memo">${t.memo}</div>`:''}
+      ${t.neg_tags&&t.neg_tags.length?`<div class="neg-tags-display">${t.neg_tags.map(g=>`<span class="neg-tag-show">${g}</span>`).join('')}</div>`:''}
+      <div style="margin-top:9px;display:flex;gap:6px">
         <button class="btn btn-sm btn-danger" onclick="deleteTasting('${t.id}')">삭제</button>
       </div>
-    </div>
-  `).join('');
+    </div>`).join('')||'<div class="empty"><div class="empty-icon">☕</div><div class="empty-text">맛 평가 기록이 없습니다</div></div>';
 }
-
-function scoreRing(label, val) {
-  const color = val >= 8 ? '#7ab880' : val >= 5 ? 'var(--gold)' : '#c87070';
-  return `<div class="score-bar-item">
-    <div class="score-bar-ring" style="border-color:${color}">${val}</div>
-    <div class="score-bar-label">${label}</div>
-  </div>`;
-}
-
-function openTastingForm() {
-  populateBeanSelect('f_tast_bean');
-  document.getElementById('f_tast_date').value = new Date().toISOString().slice(0,10);
-  document.getElementById('f_score_acid').value = 5;
-  document.getElementById('f_score_aroma').value = 5;
-  document.getElementById('f_score_taste').value = 5;
-  document.getElementById('v_acid').textContent = 5;
-  document.getElementById('v_aroma').textContent = 5;
-  document.getElementById('v_taste').textContent = 5;
-  document.getElementById('f_tast_memo').value = '';
-  document.getElementById('negTagContainer').innerHTML = NEG_TAGS.map(tag =>
-    `<button class="neg-tag" onclick="toggleNeg(this)">${tag}</button>`
-  ).join('');
+function sring(l,v){const c=v>=8?'#80c070':v>=5?'var(--gold)':'#d07060';return `<div class="score-bar-item"><div class="score-ring" style="border-color:${c}">${v}</div><div class="score-ring-label">${l}</div></div>`;}
+function openTastingForm(){
+  fillBeanSel('f_tb');
+  document.getElementById('f_td').value=new Date().toISOString().slice(0,10);
+  ['f_sa','f_sr','f_st'].forEach(i=>{document.getElementById(i).value=5;});
+  document.getElementById('va').textContent=document.getElementById('vr').textContent=document.getElementById('vt').textContent='5';
+  document.getElementById('f_tm').value='';
+  document.getElementById('negTagContainer').innerHTML=NEG.map(t=>`<button class="neg-tag" onclick="this.classList.toggle('selected')">${t}</button>`).join('');
   openModal('tastingFormModal');
 }
-
-function toggleNeg(el) { el.classList.toggle('selected'); }
-
-function saveTasting() {
-  const bean_name = document.getElementById('f_tast_bean').value;
-  if (!bean_name) { alert('생두를 선택하세요'); return; }
-  const neg_tags = [...document.querySelectorAll('.neg-tag.selected')].map(el => el.textContent);
-  db.tastings.push({
-    id: genId(),
-    date: document.getElementById('f_tast_date').value,
-    bean_name,
-    score_acid: parseInt(document.getElementById('f_score_acid').value),
-    score_aroma: parseInt(document.getElementById('f_score_aroma').value),
-    score_taste: parseInt(document.getElementById('f_score_taste').value),
-    neg_tags,
-    memo: document.getElementById('f_tast_memo').value.trim(),
-  });
-  saveDB(); closeModal('tastingFormModal'); renderTastings();
+function saveTasting(){
+  const bn=document.getElementById('f_tb').value;if(!bn){alert('생두를 선택하세요');return;}
+  db.tastings.push({id:genId(),date:document.getElementById('f_td').value,bean_name:bn,score_acid:+document.getElementById('f_sa').value,score_aroma:+document.getElementById('f_sr').value,score_taste:+document.getElementById('f_st').value,neg_tags:[...document.querySelectorAll('.neg-tag.selected')].map(e=>e.textContent),memo:document.getElementById('f_tm').value.trim()});
+  saveDB();closeModal('tastingFormModal');renderTastings();
 }
+function deleteTasting(id){if(!confirm('삭제?'))return;db.tastings=db.tastings.filter(t=>t.id!==id);saveDB();renderTastings();}
 
-function deleteTasting(id) {
-  if (!confirm('삭제하시겠습니까?')) return;
-  db.tastings = db.tastings.filter(t => t.id !== id);
-  saveDB(); renderTastings();
-}
-
-// ─── BREWS ───────────────────────────────────────────────────────────────────
-function renderBrews() {
-  const el = document.getElementById('brewList');
-  if (!db.brews.length) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">🫗</div>브루잉 레시피가 없습니다</div>';
-    return;
-  }
-  el.innerHTML = [...db.brews].reverse().map(b => `
+/* BREWS */
+function renderBrews(){
+  document.getElementById('brewList').innerHTML=[...db.brews].reverse().map(b=>`
     <div class="brew-card">
       <div class="brew-header">
         <span class="brew-method">${b.method}</span>
         <div class="brew-bean">${b.bean_name}</div>
-        <div style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace">${b.date}</div>
+        <div style="font-size:10px;color:var(--muted);font-family:'Space Grotesk',sans-serif">${b.date}</div>
       </div>
       <div class="brew-stats">
-        ${b.coffee_g ? `<span>원두 <span>${b.coffee_g}g</span></span>` : ''}
-        ${b.water_g ? `<span>물 <span>${b.water_g}g</span></span>` : ''}
-        ${b.temp ? `<span>수온 <span>${b.temp}°C</span></span>` : ''}
-        ${b.grind ? `<span>분쇄 <span>${b.grind}</span></span>` : ''}
+        ${b.coffee_g?`<span>원두 <span>${b.coffee_g}g</span></span>`:''}
+        ${b.water_g?`<span>물 <span>${b.water_g}g</span></span>`:''}
+        ${b.temp?`<span>수온 <span>${b.temp}°C</span></span>`:''}
+        ${b.grind?`<span>분쇄 <span>${b.grind}</span></span>`:''}
       </div>
-      ${b.recipe ? `<div class="brew-note" style="margin-top:8px;white-space:pre-wrap">${b.recipe}</div>` : ''}
-      ${b.result ? `<div class="brew-note" style="color:var(--gold);margin-top:6px">${b.result}</div>` : ''}
-      <div style="margin-top:8px;display:flex;gap:6px">
-        <button class="btn btn-sm btn-danger" onclick="deleteBrew('${b.id}')">삭제</button>
-      </div>
-    </div>
-  `).join('');
+      ${b.recipe?`<div class="brew-note" style="white-space:pre-wrap">${b.recipe}</div>`:''}
+      ${b.result?`<div class="brew-note" style="color:var(--gold2)">${b.result}</div>`:''}
+      <div style="margin-top:9px"><button class="btn btn-sm btn-danger" onclick="deleteBrew('${b.id}')">삭제</button></div>
+    </div>`).join('')||'<div class="empty"><div class="empty-icon">🫗</div><div class="empty-text">브루잉 레시피가 없습니다</div></div>';
 }
-
-function openBrewForm() {
-  populateBeanSelect('f_brew_bean');
-  document.getElementById('f_brew_date').value = new Date().toISOString().slice(0,10);
-  ['f_brew_coffee','f_brew_water','f_brew_temp','f_brew_grind','f_brew_recipe','f_brew_result'].forEach(id => document.getElementById(id).value = '');
+function openBrewForm(){
+  fillBeanSel('f_wb');
+  document.getElementById('f_wd').value=new Date().toISOString().slice(0,10);
+  ['f_wc','f_ww','f_wt','f_wg','f_wr','f_wrs'].forEach(i=>document.getElementById(i).value='');
   openModal('brewFormModal');
 }
-
-function saveBrew() {
-  const bean_name = document.getElementById('f_brew_bean').value;
-  if (!bean_name) { alert('생두를 선택하세요'); return; }
-  db.brews.push({
-    id: genId(),
-    date: document.getElementById('f_brew_date').value,
-    method: document.getElementById('f_brew_method').value,
-    bean_name,
-    coffee_g: document.getElementById('f_brew_coffee').value,
-    water_g: document.getElementById('f_brew_water').value,
-    temp: document.getElementById('f_brew_temp').value,
-    grind: document.getElementById('f_brew_grind').value.trim(),
-    recipe: document.getElementById('f_brew_recipe').value.trim(),
-    result: document.getElementById('f_brew_result').value.trim(),
-  });
-  saveDB(); closeModal('brewFormModal'); renderBrews();
+function saveBrew(){
+  const bn=document.getElementById('f_wb').value;if(!bn){alert('생두를 선택하세요');return;}
+  db.brews.push({id:genId(),date:document.getElementById('f_wd').value,method:document.getElementById('f_wm').value,bean_name:bn,coffee_g:document.getElementById('f_wc').value,water_g:document.getElementById('f_ww').value,temp:document.getElementById('f_wt').value,grind:document.getElementById('f_wg').value.trim(),recipe:document.getElementById('f_wr').value.trim(),result:document.getElementById('f_wrs').value.trim()});
+  saveDB();closeModal('brewFormModal');renderBrews();
 }
+function deleteBrew(id){if(!confirm('삭제?'))return;db.brews=db.brews.filter(b=>b.id!==id);saveDB();renderBrews();}
 
-function deleteBrew(id) {
-  if (!confirm('삭제하시겠습니까?')) return;
-  db.brews = db.brews.filter(b => b.id !== id);
-  saveDB(); renderBrews();
-}
-
-// ─── WISHLIST ─────────────────────────────────────────────────────────────────
-function renderWishlist() {
-  const el = document.getElementById('wishList');
-  if (!db.wishlist.length) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div>구매 검토 목록이 없습니다</div>';
-    return;
-  }
-  el.innerHTML = [...db.wishlist].reverse().map(w => `
+/* WISHLIST */
+function renderWishlist(){
+  document.getElementById('wishList').innerHTML=[...db.wishlist].reverse().map(w=>`
     <div class="wish-card">
       <div class="wish-main">
         <div class="wish-name">${w.name}</div>
-        <div class="wish-meta">${[w.source, w.price].filter(Boolean).join(' · ')}</div>
-        ${w.memo ? `<div class="wish-memo">${w.memo}</div>` : ''}
-        ${w.url ? `<a class="wish-url" href="${w.url}" target="_blank">${w.url}</a>` : ''}
+        <div class="wish-meta">${[w.source,w.price].filter(Boolean).join(' · ')}</div>
+        ${w.memo?`<div class="wish-memo">${w.memo}</div>`:''}
+        ${w.url?`<a class="wish-url" href="${w.url}" target="_blank">${w.url}</a>`:''}
       </div>
       <div class="wish-actions">
         <button class="btn btn-sm" onclick="buyWish('${w.id}')">구매확정</button>
         <button class="btn btn-sm btn-danger" onclick="deleteWish('${w.id}')">삭제</button>
       </div>
-    </div>
-  `).join('');
+    </div>`).join('')||'<div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">구매 검토 목록이 없습니다</div></div>';
 }
-
-function openWishForm() {
-  ['f_wish_name','f_wish_price','f_wish_source','f_wish_url','f_wish_memo'].forEach(id => document.getElementById(id).value = '');
+function openWishForm(){
+  ['f_xn','f_xp','f_xs','f_xu','f_xm'].forEach(i=>document.getElementById(i).value='');
   openModal('wishFormModal');
 }
-
-function saveWish() {
-  const name = document.getElementById('f_wish_name').value.trim();
-  if (!name) { alert('생두명을 입력하세요'); return; }
-  db.wishlist.push({
-    id: genId(), name,
-    price: document.getElementById('f_wish_price').value.trim(),
-    source: document.getElementById('f_wish_source').value.trim(),
-    url: document.getElementById('f_wish_url').value.trim(),
-    memo: document.getElementById('f_wish_memo').value.trim(),
-  });
-  saveDB(); closeModal('wishFormModal'); renderWishlist();
+function saveWish(){
+  const name=document.getElementById('f_xn').value.trim();if(!name){alert('생두명을 입력하세요');return;}
+  db.wishlist.push({id:genId(),name,price:document.getElementById('f_xp').value.trim(),source:document.getElementById('f_xs').value.trim(),url:document.getElementById('f_xu').value.trim(),memo:document.getElementById('f_xm').value.trim()});
+  saveDB();closeModal('wishFormModal');renderWishlist();
 }
-
-function deleteWish(id) {
-  if (!confirm('삭제하시겠습니까?')) return;
-  db.wishlist = db.wishlist.filter(w => w.id !== id);
-  saveDB(); renderWishlist();
-}
-
-function buyWish(id) {
-  const w = db.wishlist.find(x => x.id === id);
-  if (!w) return;
-  // 생두 추가 폼으로 이동
-  db.wishlist = db.wishlist.filter(x => x.id !== id);
-  saveDB();
-  showTab({target: document.querySelectorAll('.nav-tab')[1]}, 'beans');
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.nav-tab')[1].classList.add('active');
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+function deleteWish(id){if(!confirm('삭제?'))return;db.wishlist=db.wishlist.filter(w=>w.id!==id);saveDB();renderWishlist();}
+function buyWish(id){
+  const w=db.wishlist.find(x=>x.id===id);if(!w)return;
+  db.wishlist=db.wishlist.filter(x=>x.id!==id);saveDB();
+  document.querySelectorAll('.nav-tab').forEach((t,i)=>{t.classList.remove('active');if(i===1)t.classList.add('active');});
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.getElementById('tab-beans').classList.add('active');
-  renderBeans();
-  openBeanForm();
-  document.getElementById('f_bean_name').value = w.name;
-  document.getElementById('f_bean_shop').value = w.source;
-  document.getElementById('f_bean_price').value = w.price;
+  renderBeans();openBeanForm();
+  document.getElementById('f_bn').value=w.name;
+  document.getElementById('f_bsh').value=w.source;
+  document.getElementById('f_bpr').value=w.price;
 }
 
-// ─── HELPERS ─────────────────────────────────────────────────────────────────
-function populateBeanSelect(selectId) {
-  const sel = document.getElementById(selectId);
-  const current = sel.value;
-  sel.innerHTML = '<option value="">선택...</option>' +
-    db.beans.map(b => `<option value="${b.name}" ${b.name===current?'selected':''}>${b.name}</option>`).join('');
+/* HELPERS */
+function fillBeanSel(sid){
+  const s=document.getElementById(sid);const v=s.value;
+  s.innerHTML='<option value="">선택...</option>'+db.beans.map(b=>`<option value="${b.name}" ${b.name===v?'selected':''}>${b.name}</option>`).join('');
 }
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');}));
 
-function openModal(id) { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-
-// 모달 외부 클릭 닫기
-document.querySelectorAll('.modal-overlay').forEach(el => {
-  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
-});
-
-// ─── INIT ────────────────────────────────────────────────────────────────────
+/* INIT */
 renderDash();
-document.getElementById('lastUpdate').textContent = '로드됨 ' + new Date().toLocaleTimeString('ko-KR');
+document.getElementById('lastUpdate').textContent=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
 </script>
 </body>
 </html>
