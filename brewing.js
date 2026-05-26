@@ -28,6 +28,64 @@ function adjGrind(delta){
   });
 }
 
+function setGrindRec(n,chip){
+  document.getElementById('f_recg').value=`코만단테 ${n}클릭`;
+  if(chip){
+    chip.closest('.preset-chips').querySelectorAll('.pchip').forEach(c=>c.classList.remove('on'));
+    chip.classList.add('on');
+  }
+}
+
+function adjGrindRec(delta){
+  const el=document.getElementById('f_recg');
+  const m=el.value.match(/(\d+)/);
+  let n=m?+m[1]+delta:22+delta;
+  n=Math.max(1,Math.min(40,n));
+  el.value=`코만단테 ${n}클릭`;
+  document.querySelectorAll('#moRecipeForm .pchip[data-v]').forEach(c=>{
+    c.classList.toggle('on',+c.dataset.v===n);
+  });
+}
+
+/* ── 레시피 단계 빌더 ── */
+let _stepIdx=0;
+
+function addRecipeStep(time='',action='',water=''){
+  const idx=_stepIdx++;
+  const TIME_CHIPS=['0:00','0:30','0:45','1:00','1:30','1:45','2:00','2:15','2:30','3:00','3:30'];
+  const ACT_CHIPS=['블룸','2차','3차','4차','5차','종료','스위치 열기','스위치 닫기'];
+  const WAT_CHIPS=['30g','40g','50g','60g','70g','80g','100g','120g','160g','↓','✓'];
+  const row=document.createElement('div');
+  row.className='rstep';
+  row.dataset.idx=idx;
+  row.innerHTML=`
+    <div class="rstep-col">
+      <div class="rstep-label">시간</div>
+      <div class="rstep-chips">${TIME_CHIPS.map(t=>`<span class="rstep-chip${time===t?' on':''}" onclick="setStepChip(this,'rst_t_${idx}')">${t}</span>`).join('')}</div>
+      <input class="rstep-input" id="rst_t_${idx}" placeholder="0:00" value="${time}">
+    </div>
+    <div class="rstep-col" style="flex:2">
+      <div class="rstep-label">동작</div>
+      <div class="rstep-chips">${ACT_CHIPS.map(a=>`<span class="rstep-chip${action===a?' on':''}" onclick="setStepChip(this,'rst_a_${idx}')">${a}</span>`).join('')}</div>
+      <input class="rstep-input" id="rst_a_${idx}" placeholder="동작명" value="${action}">
+    </div>
+    <div class="rstep-col">
+      <div class="rstep-label">물량</div>
+      <div class="rstep-chips">${WAT_CHIPS.map(w=>`<span class="rstep-chip${water===w?' on':''}" onclick="setStepChip(this,'rst_w_${idx}')">${w}</span>`).join('')}</div>
+      <input class="rstep-input" id="rst_w_${idx}" placeholder="40g" value="${water}">
+    </div>
+    <button class="rstep-del" onclick="removeRecipeStep(this)">×</button>`;
+  document.getElementById('recipeSteps').appendChild(row);
+}
+
+function removeRecipeStep(btn){btn.closest('.rstep').remove();}
+
+function setStepChip(chip,inputId){
+  document.getElementById(inputId).value=chip.textContent;
+  chip.closest('.rstep-chips').querySelectorAll('.rstep-chip').forEach(c=>c.classList.remove('on'));
+  chip.classList.add('on');
+}
+
 function degassingHtml(roastDateStr,brewDateStr){
   if(!roastDateStr)return'';
   const ref=brewDateStr?new Date(brewDateStr):new Date();
@@ -119,7 +177,7 @@ function renderRecipes(){
 function renderTimerViews(){
   const allRecs=[...OFFICIAL_RECIPES,...db.recipes.map(r=>({
     ...r,color:'cu',
-    steps:(r.steps_raw||'').split('\n').filter(Boolean).map(line=>{
+    steps:r.steps&&r.steps.length?r.steps:(r.steps_raw||'').split('\n').filter(Boolean).map(line=>{
       const m=line.match(/^(\d+:\d+)\s+(.+?)\s+(\d+g|↓|✓)?$/);
       return m?{time:m[1],action:m[2],detail:'',water:m[3]||''}:{time:'',action:line,detail:'',water:''};
     }),
@@ -183,9 +241,11 @@ function tglStep(el){
 }
 
 function openRecipeForm(id){
+  _stepIdx=0;
+  document.getElementById('recipeSteps').innerHTML='';
   document.getElementById('recId').value=id||'';
   const r=id?db.recipes.find(x=>x.id===id):{};
-  ['f_recn','f_recc','f_recw','f_rect','f_recg','f_recwater','f_recsteps','f_recdesc'].forEach(i=>document.getElementById(i).value='');
+  ['f_recn','f_recc','f_recw','f_rect','f_recg','f_recwater','f_recdesc'].forEach(i=>document.getElementById(i).value='');
   if(id&&r){
     document.getElementById('f_recn').value=r.name||'';
     document.getElementById('f_recc').value=r.coffee||'';
@@ -193,8 +253,19 @@ function openRecipeForm(id){
     document.getElementById('f_rect').value=r.temp||'';
     document.getElementById('f_recg').value=r.grind||'';
     document.getElementById('f_recwater').value=r.water_ratio||'';
-    document.getElementById('f_recsteps').value=r.steps_raw||'';
     document.getElementById('f_recdesc').value=r.desc||'';
+    if(r.steps&&r.steps.length){
+      r.steps.forEach(s=>addRecipeStep(s.time||'',s.action||'',s.water||''));
+    }else if(r.steps_raw){
+      r.steps_raw.split('\n').filter(Boolean).forEach(line=>{
+        const m=line.match(/^(\d+:\d+)\s+(.+?)\s+(\S+)?$/);
+        if(m)addRecipeStep(m[1],m[2].trim(),m[3]||'');
+        else addRecipeStep('',line,'');
+      });
+    }
+    ['f_recc','f_recw','f_rect'].forEach(syncChips);
+    const gm=(r.grind||'').match(/(\d+)/);
+    if(gm)document.querySelectorAll('#moRecipeForm .pchip[data-v]').forEach(c=>c.classList.toggle('on',+c.dataset.v===+gm[1]));
   }
   openMo('moRecipeForm');
 }
@@ -203,6 +274,14 @@ function saveRecipe(){
   const id=document.getElementById('recId').value;
   const name=document.getElementById('f_recn').value.trim();
   if(!name){alert('레시피명을 입력하세요');return;}
+  const steps=[];
+  document.querySelectorAll('#recipeSteps .rstep').forEach(row=>{
+    const i=row.dataset.idx;
+    const t=(document.getElementById(`rst_t_${i}`)?.value||'').trim();
+    const a=(document.getElementById(`rst_a_${i}`)?.value||'').trim();
+    const w=(document.getElementById(`rst_w_${i}`)?.value||'').trim();
+    if(t||a)steps.push({time:t,action:a,detail:'',water:w});
+  });
   const data={
     id:id||genId(),name,
     coffee:document.getElementById('f_recc').value,
@@ -210,7 +289,8 @@ function saveRecipe(){
     temp:document.getElementById('f_rect').value,
     grind:document.getElementById('f_recg').value.trim(),
     water_ratio:document.getElementById('f_recwater').value.trim(),
-    steps_raw:document.getElementById('f_recsteps').value.trim(),
+    steps,
+    steps_raw:steps.map(s=>`${s.time} ${s.action} ${s.water}`).join('\n'),
     desc:document.getElementById('f_recdesc').value.trim(),
   };
   if(id){const i=db.recipes.findIndex(r=>r.id===id);if(i>=0)db.recipes[i]=data;}
@@ -250,10 +330,11 @@ function renderBrewLogs(){
       </div>
       <div class="blstats">
         ${b.coffee_g?`<span>원두 <span>${b.coffee_g}g</span></span>`:''}
-        ${b.water_g?`<span>물 <span>${b.water_g}ml</span></span>`:''}
+        ${b.water_ratio?`<span>물 <span>${b.water_ratio}</span></span>`:''}
+        ${b.water_g?`<span><span>${b.water_g}ml</span></span>`:''}
+        ${b.dilute_water||b.dilute_ml?`<span>가수 <span>${[b.dilute_water,b.dilute_ml?(b.dilute_ml+'ml'):''].filter(Boolean).join(' ')}</span></span>`:''}
         ${b.temp?`<span>수온 <span>${b.temp}°C</span></span>`:''}
         ${b.grind?`<span>분쇄 <span>${b.grind}</span></span>`:''}
-        ${b.water_ratio?`<span>가수 <span>${b.water_ratio}</span></span>`:''}
       </div>
       ${(sc_a||sc_sw||sc_r||sc_t)?`<div class="scores">
         ${sc_a?scRing('산미',sc_a):''}${sc_sw?scRing('단맛',sc_sw):''}${sc_r?scRing('향',sc_r):''}${sc_t?scRing('맛',sc_t):''}
@@ -299,8 +380,10 @@ function openBrewLogForm(id){
   document.getElementById('f_blt').value=b.temp||'';
   document.getElementById('f_blg').value=b.grind||'';
   document.getElementById('f_blwater').value=b.water_ratio||'';
+  document.getElementById('f_bldilw').value=b.dilute_water||'';
+  document.getElementById('f_bldilml').value=b.dilute_ml||'';
 
-  ['f_blc','f_blw','f_blt','f_blwater'].forEach(syncChips);
+  ['f_blc','f_blw','f_blt','f_blwater','f_bldilml'].forEach(syncChips);
   const gm=(b.grind||'').match(/(\d+)/);
   if(gm){
     const n=+gm[1];
@@ -376,6 +459,8 @@ function saveBrewLog(){
     temp:document.getElementById('f_blt').value,
     grind:document.getElementById('f_blg').value.trim(),
     water_ratio:document.getElementById('f_blwater').value.trim(),
+    dilute_water:document.getElementById('f_bldilw').value.trim(),
+    dilute_ml:document.getElementById('f_bldilml').value,
     score_acid:+document.getElementById('f_bla').value,
     score_sweet:+document.getElementById('f_blsw').value,
     score_aroma:+document.getElementById('f_blar').value,
