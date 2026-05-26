@@ -327,7 +327,15 @@ function openBrewLogForm(id){
 function updateRoastSel(beanName,selId){
   const roasts=db.roasts.filter(r=>r.bean_name===beanName).reverse();
   const sel=document.getElementById('f_blroast');
-  sel.innerHTML='<option value="">선택...</option>'+roasts.map(r=>`<option value="${r.id}" ${r.id===selId?'selected':''}>${r.date} 모드${r.mode||'?'} DTR${r.dtr_pct||'--'}%</option>`).join('');
+  sel.innerHTML='<option value="">선택...</option>'+roasts.map(r=>{
+    let dtr=r.dtr_pct;
+    if(!dtr&&r.pop_time&&r.eject_time&&r.mode){
+      const ae=BINBON_MODES[+r.mode];
+      if(ae){const ps=toSec(r.pop_time),es=toSec(r.eject_time);if(ps>es&&(ae-es)>0)dtr=((ps-es)/(ae-es)*100).toFixed(1);}
+    }
+    const loss=r.loss_pct||(r.input_g&&r.output_g?((+r.input_g - +r.output_g)/+r.input_g*100).toFixed(1):'');
+    return`<option value="${r.id}" ${r.id===selId?'selected':''}>${r.date} 모드${r.mode||'?'} DTR${dtr||'--'}% 손실${loss||'--'}%</option>`;
+  }).join('');
 }
 
 function editBrewLog(id){openBrewLogForm(id);}

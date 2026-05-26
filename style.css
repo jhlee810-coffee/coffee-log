@@ -277,6 +277,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 /* ROAST FILTERS */
 .rfilters{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
 
+/* ROAST CARD KEY STATS */
+.rkey-row{display:flex;gap:16px;align-items:baseline;margin:6px 0 4px;}
+.rkey-dtr{font-size:12px;color:var(--teal);}.rkey-dtr b{font-size:18px;font-weight:700;font-family:'Bebas Neue',sans-serif;letter-spacing:.03em;margin-left:2px;}
+.rkey-loss{font-size:12px;color:var(--amber);}.rkey-loss b{font-size:18px;font-weight:700;font-family:'Bebas Neue',sans-serif;letter-spacing:.03em;margin-left:2px;}
+
 /* DEGASSING */
 .degas-info{display:flex;align-items:center;gap:7px;margin-top:7px;}
 .degas-days{font-size:11px;color:var(--muted);font-weight:500;}

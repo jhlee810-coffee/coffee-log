@@ -56,6 +56,14 @@ function renderRoasts(){
     const beanInfoParts=[bean.origin,r.bean_name].filter(Boolean).join('  ');
     const beanMetaParts=[beanYear,bean.shop,beanPrice,beanMonth].filter(Boolean).join('  ');
 
+    // DTR 실시간 계산 (저장값 없으면 pop/eject 시간으로 재계산)
+    let dtr=r.dtr_pct;
+    if(!dtr&&r.pop_time&&r.eject_time&&r.mode){
+      const ae=BINBON_MODES[+r.mode];
+      if(ae){const ps=toSec(r.pop_time),es=toSec(r.eject_time);if(ps>es&&(ae-es)>0)dtr=((ps-es)/(ae-es)*100).toFixed(1);}
+    }
+    const loss=r.loss_pct||(r.input_g&&r.output_g?((+r.input_g - +r.output_g)/+r.input_g*100).toFixed(1):'');
+
     // 브루잉 연계 점수
     const brews=db.brewlogs.filter(b=>b.roast_id===r.id);
     let brewHTML='';
@@ -84,11 +92,14 @@ function renderRoasts(){
         <div style="margin-left:auto"><button class="btn2" onclick="event.stopPropagation();editRoast('${r.id}')">수정</button></div>
       </div>
       <div class="rbeaninfo"><b>${beanInfoParts}</b>${beanMetaParts?`  /  ${beanMetaParts}`:''}</div>
+      <div class="rkey-row">
+        ${dtr?`<span class="rkey-dtr">DTR <b>${dtr}%</b></span>`:''}
+        ${loss?`<span class="rkey-loss">손실율 <b>${loss}%</b></span>`:''}
+      </div>
       <div class="rstats">
         ${r.mode?`<span>모드${r.mode}</span>`:''}
-        ${r.dtr_pct?`<span class="rdtr">DTR ${r.dtr_pct}%</span>`:''}
-        ${r.loss_pct?`<span>손실율 ${r.loss_pct}%</span>`:''}
         ${r.input_g?`<span>투입 ${r.input_g}g</span>`:''}
+        ${r.output_g?`<span>배출 ${r.output_g}g</span>`:''}
       </div>
       ${r.notes?`<div class="rmemo">${r.notes}</div>`:''}
       ${brewHTML}
