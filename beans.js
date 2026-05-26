@@ -13,8 +13,12 @@ function renderBeans(){
 function beanCard(b){
   const oc=ORIGIN_COLORS[b.origin]||'var(--teal)';
   const isSogin=b.status==='소진';
+  const price=b.price?Math.round(parseFloat(b.price)):'';
   const dateStr=b.stock_date?b.stock_date.slice(2,4)+'.'+b.stock_date.slice(5,7):'—';
-  const meta=[b.shop||'—',dateStr,b.price?b.price+'만':''||'—'].filter(Boolean).join('  ');
+  const metaParts=[b.shop||'—'];
+  if(price) metaParts.push(String(price));
+  metaParts.push(dateStr);
+  const meta=metaParts.join('  ');
   const sc=b.score_momos||b.score_wonderroom||'';
   return`<div class="bcard${isSogin?' sogin':''}" style="border-top-color:${isSogin?'var(--coral)':oc}" onclick="showBeanDetail('${b.id}')">
     <div class="bog" style="color:${isSogin?'var(--coral)':oc}">${b.origin||'—'}</div>

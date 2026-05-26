@@ -244,6 +244,39 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .empty-icon{font-size:34px;margin-bottom:8px;}
 .empty-text{font-family:'Playfair Display',serif;font-size:13px;font-style:italic;}
 
+/* ROAST FORM - UX PRESETS */
+.preset-chips{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px;}
+.pchip{font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid var(--b2);color:var(--muted2);cursor:pointer;transition:all .15s;user-select:none;}
+.pchip:hover{border-color:var(--teal3);color:var(--teal);}
+.pchip.on{border-color:var(--teal);color:var(--teal);background:var(--teal2);}
+.adj-row{display:flex;align-items:center;gap:6px;}
+.adj-btn{background:var(--bg3);border:1px solid var(--b1);border-radius:6px;color:var(--text2);padding:7px 11px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;flex-shrink:0;transition:all .15s;}
+.adj-btn:hover{border-color:var(--teal3);color:var(--teal);}
+.adj-inp{text-align:center;flex:1;}
+.mode-btns{display:flex;gap:5px;}
+.mbtn{flex:1;background:var(--bg3);border:1px solid var(--b1);border-radius:8px;color:var(--muted);padding:9px 4px;font-size:15px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;text-align:center;}
+.mbtn:hover{border-color:var(--teal3);color:var(--text2);}
+.mbtn.on{background:var(--teal2);border-color:var(--teal);color:var(--teal);}
+.auto-row{display:flex;gap:7px;flex-wrap:wrap;padding:10px;background:var(--bg4);border:1px solid var(--b1);border-radius:8px;margin-bottom:12px;}
+.auto-badge{font-size:12px;font-weight:600;color:var(--text2);}
+.auto-badge.hi{color:var(--teal);}
+.basis-btns{display:flex;gap:5px;}
+.basis-btn{flex:1;background:var(--bg3);border:1px solid var(--b1);border-radius:6px;color:var(--muted);padding:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;text-align:center;}
+.basis-btn.on{background:var(--amber2);border-color:var(--amber);color:var(--amber);}
+
+/* ROAST CARD - enhanced */
+.rserial{font-family:'Bebas Neue',sans-serif;font-size:13px;color:var(--muted);letter-spacing:0.05em;flex-shrink:0;}
+.rbeaninfo{font-size:11px;color:var(--muted2);margin-bottom:7px;line-height:1.5;}
+.rbeaninfo b{color:var(--text2);font-weight:600;}
+.rbrew{margin-top:8px;padding-top:8px;border-top:1px solid var(--b1);display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.rbrew-lbl{font-size:10px;color:var(--muted);font-weight:600;letter-spacing:0.08em;text-transform:uppercase;}
+.rbrew-score{font-size:11px;color:var(--text2);}
+.rbrew-score span{font-weight:700;}
+.rbrew-cnt{font-size:10px;color:var(--muted);}
+
+/* ROAST FILTERS */
+.rfilters{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-track{background:var(--bg);}
 ::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px;}

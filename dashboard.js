@@ -127,6 +127,7 @@ function renderTasteProfile(){
   if(!logs.length) return`<div class="panel"><div class="panel-title">테이스트 프로필</div><div style="font-size:12px;color:var(--muted);font-style:italic">브루잉 기록이 없습니다</div></div>`;
   const avg=arr=>arr.length?(arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1):0;
   const acid=avg(logs.map(b=>+b.score_acid||0));
+  const sweet=avg(logs.map(b=>+b.score_sweet||0));
   const aroma=avg(logs.map(b=>+b.score_aroma||0));
   const taste=avg(logs.map(b=>+b.score_taste||0));
   const bar=(lbl,val)=>`<div class="taste-row">
@@ -136,7 +137,7 @@ function renderTasteProfile(){
   </div>`;
   return`<div class="panel">
     <div class="panel-title">테이스트 평균 <span style="font-size:10px;color:var(--muted);font-weight:400">(최근 ${logs.length}회)</span></div>
-    ${bar('산미',acid)}${bar('향',aroma)}${bar('맛',taste)}
+    ${bar('산미',acid)}${sweet>0?bar('단맛',sweet):''}${bar('향',aroma)}${bar('맛',taste)}
   </div>`;
 }
 

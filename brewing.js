@@ -132,7 +132,7 @@ function saveRecipe(){
 function renderBrewLogs(){
   const el=document.getElementById('brewLogList');
   el.innerHTML=[...db.brewlogs].reverse().map(b=>{
-    const sc_a=b.score_acid,sc_r=b.score_aroma,sc_t=b.score_taste;
+    const sc_a=b.score_acid,sc_sw=b.score_sweet,sc_r=b.score_aroma,sc_t=b.score_taste;
     return`<div class="blcard">
       <div class="blhead">
         <div class="bldate">${b.date}</div>
@@ -148,8 +148,8 @@ function renderBrewLogs(){
         ${b.grind?`<span>분쇄 <span>${b.grind}</span></span>`:''}
         ${b.water_ratio?`<span>가수 <span>${b.water_ratio}</span></span>`:''}
       </div>
-      ${(sc_a||sc_r||sc_t)?`<div class="scores">
-        ${sc_a?scRing('산미',sc_a):''}${sc_r?scRing('향',sc_r):''}${sc_t?scRing('맛',sc_t):''}
+      ${(sc_a||sc_sw||sc_r||sc_t)?`<div class="scores">
+        ${sc_a?scRing('산미',sc_a):''}${sc_sw?scRing('단맛',sc_sw):''}${sc_r?scRing('향',sc_r):''}${sc_t?scRing('맛',sc_t):''}
       </div>`:''}
       ${b.memo?`<div class="blmemo">${b.memo}</div>`:''}
       ${b.neg_tags&&b.neg_tags.length?`<div class="negtags">${b.neg_tags.map(t=>`<span class="ntag">${t}</span>`).join('')}</div>`:''}
@@ -178,9 +178,11 @@ function openBrewLogForm(id){
   document.getElementById('f_blg').value=b.grind||'';
   document.getElementById('f_blwater').value=b.water_ratio||'';
   document.getElementById('f_bla').value=b.score_acid||5;
+  document.getElementById('f_blsw').value=b.score_sweet||5;
   document.getElementById('f_blar').value=b.score_aroma||5;
   document.getElementById('f_blta').value=b.score_taste||5;
   document.getElementById('va').textContent=b.score_acid||5;
+  document.getElementById('vs').textContent=b.score_sweet||5;
   document.getElementById('vr').textContent=b.score_aroma||5;
   document.getElementById('vt').textContent=b.score_taste||5;
   document.getElementById('f_blmemo').value=b.memo||'';
@@ -218,6 +220,7 @@ function saveBrewLog(){
     grind:document.getElementById('f_blg').value.trim(),
     water_ratio:document.getElementById('f_blwater').value.trim(),
     score_acid:+document.getElementById('f_bla').value,
+    score_sweet:+document.getElementById('f_blsw').value,
     score_aroma:+document.getElementById('f_blar').value,
     score_taste:+document.getElementById('f_blta').value,
     neg_tags:neg,
