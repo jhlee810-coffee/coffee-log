@@ -42,22 +42,36 @@ body { font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-seri
 .cd-num { font-size:40px; font-weight:900; letter-spacing:-2px; }
 .cd-lbl { font-size:12px; color:#666; margin-top:4px; }
 .reset-btn { width:100%; padding:14px; border-radius:14px; background:#eee; color:#444; font-size:15px; font-weight:700; border:none; cursor:pointer; font-family:inherit; margin-top:4px; }
-/* 인라인 표 */
+/* 인라인 표 — 다열 공용 (설정 모달 / 로스팅 인라인) */
 .inline-table-wrap { overflow-x:auto; margin:0 -2px; }
-.itbl { width:100%; border-collapse:collapse; font-size:11px; }
-.itbl th { padding:6px 3px; text-align:center; color:#fff; font-size:10px; font-weight:700; border-right:1px solid rgba(255,255,255,0.2); }
+.itbl { width:100%; border-collapse:collapse; font-size:10px; }
+.itbl th { padding:5px 2px; text-align:center; color:#fff; font-size:9px; font-weight:700; border-right:1px solid rgba(255,255,255,0.2); }
 .itbl th:last-child { border-right:none; }
-.itbl td { padding:6px 3px; text-align:center; border-bottom:1px solid #f0f0f0; border-right:1px solid #f0f0f0; vertical-align:middle; }
+.itbl th.sel-col { font-size:10px; border-bottom:3px solid rgba(255,255,255,0.85); }
+.itbl td { padding:5px 2px; text-align:center; border-bottom:1px solid #f0f0f0; border-right:1px solid #f0f0f0; vertical-align:middle; }
 .itbl td:last-child { border-right:none; }
+.itbl td.sel-col { background:#f0faf5; }
 .itbl tr.is-ref td { background:#f8f8f8; border-top:2px solid; border-bottom:2px solid; }
+.itbl tr.is-ref td.sel-col { background:#e4f5ed; }
 .itbl tr.is-hit { background:#fffde7 !important; }
 .itbl tr.is-hit td { font-weight:800; border-top:2px solid #f57f17; border-bottom:2px solid #f57f17; }
-.dev-b { display:inline-block; border-radius:3px; padding:1px 4px; font-size:9px; font-weight:700; margin-bottom:2px; }
-.pop-main { font-size:13px; font-weight:800; line-height:1.2; }
+.itbl tr.is-hit td.sel-col { background:#fffde7 !important; }
+.dev-b { display:inline-block; border-radius:3px; padding:1px 3px; font-size:9px; font-weight:700; margin-bottom:2px; }
+.pop-main { font-size:12px; font-weight:800; line-height:1.2; }
 .pop-sub-s { font-size:9px; color:#888; }
-.rem-val { font-size:13px; font-weight:800; line-height:1.2; }
+.rem-val { font-size:12px; font-weight:800; line-height:1.2; }
 .rem-val.over { color:#e05c00; }
 .rem-sub-s { font-size:9px; color:#888; }
+/* 로스팅 화면 — 3열 와이드 표 */
+.itbl.wide { font-size:13px; }
+.itbl.wide th { padding:8px 4px; font-size:11px; }
+.itbl.wide th.sel-col { font-size:12px; }
+.itbl.wide td { padding:7px 4px; }
+.itbl.wide .dev-b { font-size:11px; padding:2px 5px; margin-bottom:3px; }
+.itbl.wide .pop-main { font-size:15px; }
+.itbl.wide .pop-sub-s { font-size:10px; }
+.itbl.wide .rem-val { font-size:15px; }
+.itbl.wide .rem-sub-s { font-size:10px; }
 .tbl-legend { margin-top:8px; padding:8px 10px; background:#f8f8f8; border-radius:8px; }
 .tbl-legend p { font-size:10px; color:#444; line-height:1.8; }
 .tbl-warn { margin-top:6px; font-size:10px; color:#c05000; font-weight:600; background:#fff8f0; border-radius:6px; padding:5px 8px; }
@@ -88,12 +102,12 @@ const MODES = {
   7:{label:"7번",autoEject:405},
 };
 const BEAN = {
-  washed: {label:"워시드",color:"#0D6E54",dtrs:[12,13,14],
-    legend:["꽃향기·산미 극대화","향기 우선, 밝은 산미","단맛 균형"]},
-  natural:{label:"내추럴·허니·무산소",color:"#0D6E54",dtrs:[13,14,15],
-    legend:["과일향·꽃향기 선명","향기·단맛 균형","단맛·복합향 강조"]},
-  kenya:  {label:"케냐 (워시드·전가공)",color:"#7A3B10",dtrs:[13,16,20],
-    legend:["라이트 — 꽃향기·산미·블랙커런트","미디엄 — 단맛·바디 균형","다크 — 진한 바디 (라떼·더치)"]},
+  washed: {label:"워시드",color:"#0D6E54",dtrs:[11,12,13,14,15],
+    legend:["라이트 — 꽃향기·산미 극대화","꽃향기·산미 강조","향기 우선, 밝은 산미","단맛 균형","미디엄 — 단맛·바디 강조"]},
+  natural:{label:"내추럴·허니·무산소",color:"#0D6E54",dtrs:[12,13,14,15,16],
+    legend:["라이트 — 과일향·꽃향기 선명","과일향·꽃향기 강조","향기·단맛 균형","단맛·복합향 강조","미디엄 — 진한 단맛·바디"]},
+  kenya:  {label:"케냐 (워시드·전가공)",color:"#7A3B10",dtrs:[12,14,16,18,20,22],
+    legend:["라이트 — 꽃향기·산미·블랙커런트","라이트미디엄 — 꽃향기·산미 강조","미디엄 — 단맛·바디 균형","미디엄다크 — 단맛·진한 바디","다크 — 진한 바디 (라떼·더치)","풀시티 — 강한 바디·쓴맛"]},
 };
 const POP_ROWS = {
   2:{rows:[75,70,65,60,55,50,45,40,35],center:55},
@@ -105,7 +119,7 @@ const POP_ROWS = {
 };
 const COOLING=[0,0,1,2,3];
 
-let S={screen:"setup",modeKey:5,beanType:"kenya",dtr:13,batchNum:1,
+let S={screen:"setup",modeKey:5,beanType:"kenya",dtr:16,batchNum:1,
   elapsed:0,popElapsed:null,result:null,countdown:null,countdownDone:false,showTable:false};
 let timerIv=null,cdIv=null,startTime=null,audioCtx=null;
 
@@ -160,15 +174,25 @@ function handleReset(){
 }
 function toggleTable(){S.showTable=!S.showTable;render();}
 
-// ── 표 HTML (설정화면 모달용 + 로스팅 인라인 공용) ──────────────
-function buildTableHtml(hitRemain){
+// ── 로스팅 화면용: 선택 DTR 중심으로 3열만 추출 ──────────────
+function getDisplayDtrs(dtrs,selectedDtr){
+  if(dtrs.length<=3)return dtrs;
+  const idx=dtrs.indexOf(selectedDtr);
+  if(idx===-1)return dtrs.slice(0,3);
+  let start=Math.max(0,idx-1);
+  if(start+3>dtrs.length)start=dtrs.length-3;
+  return dtrs.slice(start,start+3);
+}
+
+// ── 표 HTML (설정화면 모달: displayDtrs=null → 전체열 / 로스팅: 3열+wide) ──
+function buildTableHtml(hitRemain,displayDtrs){
   const ae=MODES[S.modeKey].autoEject;
   const bean=BEAN[S.beanType];
   const color=bean.color;
   const {rows,center}=POP_ROWS[S.modeKey];
-  const dtrs=bean.dtrs;
+  const dtrs=displayDtrs||bean.dtrs;
+  const wide=!!displayDtrs;
 
-  const thS=`style="background:${color}"`;
   const rowsHtml=rows.map(pr=>{
     const popSec=ae-pr;
     const isRef=pr===center;
@@ -176,11 +200,12 @@ function buildTableHtml(hitRemain){
     let trClass=isHit?"is-hit":isRef?"is-ref":"";
 
     const cols=dtrs.map(dtr=>{
+      const isSel=dtr===S.dtr;
       const {dev,rem,over,ejSec}=calcEject(popSec,dtr,ae);
       const remStr=over?`+${fmt(Math.abs(rem))}`:fmt(rem);
-      const devBg=over?"#ffe0d0":"#e6f2ee";
+      const devBg=over?"#ffe0d0":(isSel?"#c8e8dc":"#e6f2ee");
       const devCol=over?"#c05000":color;
-      return `<td>
+      return `<td class="${isSel?"sel-col":""}">
         <div class="dev-b" style="background:${devBg};color:${devCol}">${dev}초</div>
         <div class="rem-val${over?" over":""}">${remStr}</div>
         <div class="rem-sub-s">(${fmt(ejSec)})</div>
@@ -199,14 +224,18 @@ function buildTableHtml(hitRemain){
     </tr>`;
   }).join("");
 
-  const legendHtml=dtrs.map((d,i)=>`<p><span style="color:${color};font-weight:700">• DTR ${d}%</span>: ${bean.legend[i]}</p>`).join("");
+  const legendHtml=dtrs.map((d,i)=>{
+    const allIdx=bean.dtrs.indexOf(d);
+    const leg=allIdx!==-1?bean.legend[allIdx]:"";
+    return `<p><span style="color:${color};font-weight:700${d===S.dtr?";text-decoration:underline":""}">${d===S.dtr?"▶ ":"• "}DTR ${d}%</span>: ${leg}</p>`;
+  }).join("");
 
   return `
     <div class="inline-table-wrap">
-      <table class="itbl">
+      <table class="itbl${wide?" wide":""}">
         <thead><tr>
-          <th ${thS}>1차팝<br><span style="font-size:8px;opacity:0.8">남은(경과)</span></th>
-          ${dtrs.map(d=>`<th ${thS}>DTR ${d}%<br><span style="font-size:8px;opacity:0.8">발달·남은(경과)</span></th>`).join("")}
+          <th style="background:${color}">1차팝<br><span style="font-size:8px;opacity:0.8">남은(경과)</span></th>
+          ${dtrs.map(d=>`<th class="${d===S.dtr?"sel-col":""}" style="background:${color};${d===S.dtr?'':'opacity:0.72;'}">DTR ${d}%${d===S.dtr?" ★":""}<br><span style="font-size:8px;opacity:0.85">발달·남은(경과)</span></th>`).join("")}
         </tr></thead>
         <tbody>${rowsHtml}</tbody>
       </table>
@@ -232,10 +261,10 @@ function render(){
       <div class="modal-overlay" onclick="if(event.target===this)toggleTable()">
         <div class="modal">
           <div class="modal-header">
-            <div class="modal-title" style="color:${color}">${mode.label}번 · ${bean.label.replace("(워시드·전가공)","").trim()}</div>
+            <div class="modal-title" style="color:${color}">${mode.label}번 · ${bean.label.replace("(워시드·전가공)","").trim()} · DTR ${S.dtr}% 선택중</div>
             <div class="modal-close" onclick="toggleTable()">✕</div>
           </div>
-          <div class="modal-meta">자동배출 ${fmt(mode.autoEject)} · 남은시간 기준 · 괄호=경과</div>
+          <div class="modal-meta">자동배출 ${fmt(mode.autoEject)} · 남은시간 기준 · 괄호=경과 · ★=선택된 DTR</div>
           ${buildTableHtml(null)}
         </div>
       </div>`;
@@ -339,7 +368,7 @@ function render(){
       ${resultHtml}
       <div class="sec" style="padding:12px 10px;margin-bottom:12px">
         <div class="lbl" style="margin-bottom:6px">📋 ${mode.label}번 · ${bean.label.replace("(워시드·전가공)","").trim()} · DTR ${S.dtr}% 기준표</div>
-        ${buildTableHtml(hitRemain)}
+        ${buildTableHtml(hitRemain,getDisplayDtrs(bean.dtrs,S.dtr))}
       </div>
       <button class="reset-btn" onclick="handleReset()">↩ 처음으로</button>
     `;
