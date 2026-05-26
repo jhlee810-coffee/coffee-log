@@ -1,6 +1,8 @@
-let rFilterKey='all'; // origin or shop value
+const BINBON_MODES={2:445,3:399,4:406,5:470,6:362,7:405};
 
-/* DTR → 로스팅 레벨 자동 계산 (빈본 기준) */
+let rFilterKey='all';
+let rSortDir='desc'; // desc=최신순, asc=번호순(오래된것부터)
+
 function dtrToLevel(dtr){
   const d=parseFloat(dtr);
   if(!d||d<8) return '';
@@ -11,8 +13,15 @@ function dtrToLevel(dtr){
   return '다크';
 }
 
+function toggleRSort(){
+  rSortDir=rSortDir==='desc'?'asc':'desc';
+  const btn=document.getElementById('rSortBtn');
+  if(btn) btn.textContent=rSortDir==='desc'?'최신순↓':'번호순↑';
+  renderRoasts();
+}
+
 function renderRoasts(){
-  // 필터 칩 렌더
+  // 원산지·구매처 필터 칩
   const origins=[...new Set(db.beans.map(b=>b.origin).filter(Boolean))];
   const shops=[...new Set(db.beans.map(b=>b.shop).filter(Boolean))];
   document.getElementById('roastFilters').innerHTML=
@@ -25,14 +34,17 @@ function renderRoasts(){
   const serialMap={};
   sorted.forEach((r,i)=>serialMap[r.id]=i+1);
 
-  // 필터 적용 (날짜 내림차순 표시)
-  let list=[...sorted].reverse();
+  // 필터 적용
+  let list=[...sorted];
   if(rFilterKey!=='all'){
     list=list.filter(r=>{
       const bean=db.beans.find(b=>b.name===r.bean_name);
       return bean&&(bean.origin===rFilterKey||bean.shop===rFilterKey);
     });
   }
+
+  // 정렬 적용 (desc=최신순, asc=오래된순=번호순)
+  if(rSortDir==='desc') list=[...list].reverse();
 
   document.getElementById('roastList').innerHTML=list.map(r=>{
     const serial=serialMap[r.id];
@@ -41,7 +53,6 @@ function renderRoasts(){
     const beanMonth=bean.stock_date?bean.stock_date.slice(2,4)+'.'+bean.stock_date.slice(5,7):'';
     const beanPrice=bean.price?Math.round(parseFloat(bean.price)):'';
 
-    // 생두 헤더 라인: 케냐 카구모 AA / 2025  모모스  3  25.11
     const beanInfoParts=[bean.origin,r.bean_name].filter(Boolean).join('  ');
     const beanMetaParts=[beanYear,bean.shop,beanPrice,beanMonth].filter(Boolean).join('  ');
 
@@ -53,12 +64,7 @@ function renderRoasts(){
         const vals=brews.map(b=>+b[field]).filter(v=>v>0);
         return vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1):null;
       };
-      const scores=[
-        ['산미',avg('score_acid')],
-        ['단맛',avg('score_sweet')],
-        ['향',avg('score_aroma')],
-        ['맛',avg('score_taste')],
-      ].filter(([,v])=>v!==null);
+      const scores=[['산미',avg('score_acid')],['단맛',avg('score_sweet')],['향',avg('score_aroma')],['맛',avg('score_taste')]].filter(([,v])=>v!==null);
       if(scores.length){
         brewHTML=`<div class="rbrew">
           <span class="rbrew-lbl">브루잉 평균</span>
@@ -70,19 +76,19 @@ function renderRoasts(){
 
     const levelColor={'라이트':'var(--amber)','라이트-미디엄':'#f5c36e','미디엄':'var(--teal)','미디엄-다크':'#5ec4b8','다크':'var(--coral)'}[r.roast_level]||'var(--muted)';
 
-    return`<div class="rcard">
+    return`<div class="rcard" onclick="openRoastDetail('${r.id}')" style="cursor:pointer;">
       <div class="rhead">
         <span class="rserial">#${String(serial).padStart(2,'0')}</span>
         <div class="rdate">${r.date}</div>
         ${r.roast_level?`<span class="rlv" style="color:${levelColor};border-color:${levelColor}33;background:${levelColor}18">${r.roast_level}</span>`:''}
-        <div style="margin-left:auto"><button class="btn2" onclick="editRoast('${r.id}')">수정</button></div>
+        <div style="margin-left:auto"><button class="btn2" onclick="event.stopPropagation();editRoast('${r.id}')">수정</button></div>
       </div>
       <div class="rbeaninfo"><b>${beanInfoParts}</b>${beanMetaParts?`  /  ${beanMetaParts}`:''}</div>
       <div class="rstats">
-        ${r.mode?`<span>모드 <span>${r.mode}</span></span>`:''}
-        ${r.dtr_pct?`<span class="rdtr">DTR <span>${r.dtr_pct}%</span></span>`:''}
-        ${r.loss_pct?`<span>손실율 <span>${r.loss_pct}%</span></span>`:''}
-        ${r.input_g?`<span>투입 <span>${r.input_g}g</span></span>`:''}
+        ${r.mode?`<span>모드${r.mode}</span>`:''}
+        ${r.dtr_pct?`<span class="rdtr">DTR ${r.dtr_pct}%</span>`:''}
+        ${r.loss_pct?`<span>손실율 ${r.loss_pct}%</span>`:''}
+        ${r.input_g?`<span>투입 ${r.input_g}g</span>`:''}
       </div>
       ${r.notes?`<div class="rmemo">${r.notes}</div>`:''}
       ${brewHTML}
@@ -92,35 +98,71 @@ function renderRoasts(){
 
 function setRF(key){rFilterKey=key;renderRoasts();}
 
-/* ── 폼 UX 헬퍼 ── */
+function openRoastDetail(id){
+  const r=db.roasts.find(x=>x.id===id);
+  if(!r)return;
+  const sorted=[...db.roasts].sort((a,b)=>a.date>b.date?1:-1);
+  const serial=sorted.findIndex(x=>x.id===id)+1;
+  const bean=db.beans.find(b=>b.name===r.bean_name)||{};
+  const levelColor={'라이트':'var(--amber)','라이트-미디엄':'#f5c36e','미디엄':'var(--teal)','미디엄-다크':'#5ec4b8','다크':'var(--coral)'}[r.roast_level]||'var(--muted)';
+  const brews=db.brewlogs.filter(b=>b.roast_id===id);
+  const avgField=field=>{
+    const vals=brews.map(b=>+b[field]).filter(v=>v>0);
+    return vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1):null;
+  };
+  const brewScores=[['산미',avgField('score_acid')],['단맛',avgField('score_sweet')],['향',avgField('score_aroma')],['맛',avgField('score_taste')]].filter(([,v])=>v!==null);
+  const ring=(l,v)=>{const c=v>=8?'var(--teal)':v>=6?'var(--amber)':'var(--coral)';return`<div class="scitem"><div class="scring" style="border-color:${c}">${v}</div><div class="sclbl">${l}</div></div>`;};
+  document.getElementById('rdTitle').innerHTML=`<span style="font-size:12px;color:var(--muted);font-family:'DM Sans',sans-serif;font-weight:500;letter-spacing:.05em">#${String(serial).padStart(2,'0')} · ${r.date}</span><br>${r.bean_name}`;
+  document.getElementById('rdContent').innerHTML=`
+    <div class="ds">
+      <div class="dstitle">생두 정보</div>
+      ${dr('원산지',bean.origin||'')}
+      ${dr('구매처',bean.shop||'')}
+    </div>
+    <div class="ds">
+      <div class="dstitle">로스팅 수치</div>
+      ${r.roast_level?dr('레벨',`<span style="color:${levelColor};font-weight:700">${r.roast_level}</span>`):''}
+      ${dr('빈본 모드',r.mode?`모드${r.mode}`:'')}
+      ${dr('DTR',r.dtr_pct?r.dtr_pct+'%':'')}
+      ${dr('손실율',r.loss_pct?r.loss_pct+'%':'')}
+      ${dr('투입',r.input_g?r.input_g+'g':'')}
+      ${dr('배출',r.output_g?r.output_g+'g':'')}
+      ${dr('1팝 잔여',r.pop_time||'')}
+      ${dr('배출 잔여',r.eject_time||'')}
+    </div>
+    ${r.notes?`<div class="ds"><div class="dstitle">메모</div><div style="font-family:'Playfair Display',serif;font-size:13px;color:var(--text2);line-height:1.7;font-style:italic">${r.notes}</div></div>`:''}
+    ${brewScores.length?`<div class="ds"><div class="dstitle">브루잉 평균 (${brews.length}회)</div><div class="scores" style="margin-top:8px">${brewScores.map(([l,v])=>ring(l,v)).join('')}</div></div>`:''}
+  `;
+  document.getElementById('rdEditBtn').onclick=()=>{closeMo('moRoastDetail');editRoast(id);};
+  openMo('moRoastDetail');
+}
+
+/* ── 폼 UX 헬퍼 (로스팅 전용) ── */
 function setMode(m){
   document.getElementById('f_rm').value=m;
-  document.querySelectorAll('.mbtn').forEach(b=>{
+  document.querySelectorAll('#modeBtns .mbtn').forEach(b=>{
     b.classList.toggle('on',b.textContent==m);
   });
+  calcRoastLive();
 }
 
 function setWt(fieldId,val,chip){
   document.getElementById(fieldId).value=val;
-  // 같은 preset-chips 그룹에서 on 토글
   if(chip){
     chip.closest('.preset-chips').querySelectorAll('.pchip').forEach(c=>c.classList.remove('on'));
     chip.classList.add('on');
   }
   calcRoastLive();
 }
-
 function adjWt(fieldId,delta){
   const el=document.getElementById(fieldId);
   el.value=Math.max(0,(+el.value||0)+delta);
   calcRoastLive();
 }
-
 function setTm(fieldId,t){
   document.getElementById(fieldId).value=t;
   calcRoastLive();
 }
-
 function adjTm(fieldId,deltaSec){
   const el=document.getElementById(fieldId);
   const parts=(el.value||'0:00').split(':');
@@ -131,30 +173,38 @@ function adjTm(fieldId,deltaSec){
   calcRoastLive();
 }
 
+/* DTR 자동 계산 (빈본 모드 기준 잔여시간) */
 function calcRoastLive(){
   const ig=parseFloat(document.getElementById('f_ri').value)||0;
   const og=parseFloat(document.getElementById('f_ro').value)||0;
   const pop=document.getElementById('f_rp').value;
   const ej=document.getElementById('f_re').value;
-  const basis=document.getElementById('f_rb2').value||'잔여';
+  const mode=+document.getElementById('f_rm').value;
+  const autoEject=BINBON_MODES[mode];
 
-  let lossStr='—', dtrStr='—', levelStr='—';
-  if(ig&&og){ const lp=((ig-og)/ig*100); lossStr=lp.toFixed(1)+'%'; }
+  let lossStr='—',dtrStr='—',levelStr='—';
+
+  if(ig&&og){
+    lossStr=((ig-og)/ig*100).toFixed(1)+'%';
+  }
+
   if(pop&&ej){
     const ps=toSec(pop),es=toSec(ej);
-    if(ps>0){
-      let dtr;
-      if(basis==='잔여') dtr=(ps-es)/ps*100;
-      else dtr=(es-ps)/ps*100;
-      if(dtr>=0){ dtrStr=dtr.toFixed(1)+'%'; levelStr=dtrToLevel(dtr)||'—'; }
+    if(!autoEject){
+      dtrStr='모드 선택 필요';
+    } else if(ps>es&&(autoEject-es)>0){
+      // DTR = 개발시간 / 배출시점까지 총경과시간
+      // 개발시간 = pop잔여 - 배출잔여
+      // 배출시점경과 = autoEject - 배출잔여
+      const dtr=(ps-es)/(autoEject-es)*100;
+      dtrStr=dtr.toFixed(1)+'%';
+      levelStr=dtrToLevel(dtr)||'—';
     }
   }
 
   document.getElementById('ac_loss').textContent='손실율 '+lossStr;
   document.getElementById('ac_dtr').textContent='DTR '+dtrStr;
-  const lvEl=document.getElementById('ac_level');
-  lvEl.textContent='레벨 '+levelStr;
-  // 레벨 hidden field에 저장
+  document.getElementById('ac_level').textContent='레벨 '+levelStr;
   document.getElementById('f_rl').value=levelStr==='—'?'':levelStr;
 }
 
@@ -173,19 +223,17 @@ function openRoastForm(id){
   document.getElementById('f_rl').value=r.roast_level||'';
   document.getElementById('f_rb2').value=r.time_basis||'잔여';
 
-  // 모드 버튼 초기화
-  document.querySelectorAll('.mbtn').forEach(b=>b.classList.remove('on'));
-  if(r.mode) setMode(r.mode);
-
-  // preset-chips on 초기화
-  document.querySelectorAll('.preset-chips .pchip').forEach(c=>c.classList.remove('on'));
-
-  // 자동계산 초기값
-  if(r.roast_level){
-    document.getElementById('ac_level').textContent='레벨 '+r.roast_level;
+  document.querySelectorAll('#modeBtns .mbtn').forEach(b=>b.classList.remove('on'));
+  if(r.mode){
+    document.getElementById('f_rm').value=r.mode;
+    document.querySelectorAll('#modeBtns .mbtn').forEach(b=>{
+      b.classList.toggle('on',b.textContent==r.mode);
+    });
+  } else {
+    document.getElementById('f_rm').value='';
   }
-  if(r.dtr_pct) document.getElementById('ac_dtr').textContent='DTR '+r.dtr_pct+'%';
-  if(r.loss_pct) document.getElementById('ac_loss').textContent='손실율 '+r.loss_pct+'%';
+
+  document.querySelectorAll('#moRoastForm .preset-chips .pchip').forEach(c=>c.classList.remove('on'));
   calcRoastLive();
   openMo('moRoastForm');
 }
@@ -201,13 +249,13 @@ function saveRoast(){
   const lp=(ig&&og)?((ig-og)/ig*100).toFixed(1):'';
   const pop=document.getElementById('f_rp').value;
   const ej=document.getElementById('f_re').value;
-  const bs=document.getElementById('f_rb2').value||'잔여';
+  const mode=+document.getElementById('f_rm').value;
+  const autoEject=BINBON_MODES[mode];
   let dtr='';
-  if(pop&&ej&&bs){
+  if(pop&&ej&&autoEject){
     const ps=toSec(pop),es=toSec(ej);
-    if(ps>0){
-      const d=bs==='잔여'?(ps-es)/ps*100:(es-ps)/ps*100;
-      if(d>=0) dtr=d.toFixed(1);
+    if(ps>es&&(autoEject-es)>0){
+      dtr=((ps-es)/(autoEject-es)*100).toFixed(1);
     }
   }
   const autoLevel=dtr?dtrToLevel(dtr):'';
@@ -223,7 +271,7 @@ function saveRoast(){
     loss_pct:lp.toString(),
     pop_time:pop,
     eject_time:ej,
-    time_basis:bs,
+    time_basis:'잔여',
     dtr_pct:dtr.toString(),
     roast_level:autoLevel||manualLevel,
     notes:document.getElementById('f_rn').value.trim(),
