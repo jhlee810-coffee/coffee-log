@@ -312,11 +312,15 @@ function renderBrewLogs(){
     }
 
     let degasHtml='';
+    let roastNoteHtml='';
     if(isExt&&b.ext_roast_date){
       degasHtml=degassingHtml(b.ext_roast_date,b.date);
     }else if(!isExt&&b.roast_id){
       const roast=db.roasts.find(r=>r.id===b.roast_id);
-      if(roast)degasHtml=degassingHtml(roast.date,b.date);
+      if(roast){
+        degasHtml=degassingHtml(roast.date,b.date);
+        if(roast.notes)roastNoteHtml=`<div class="bl-roastnote"><span class="bl-rnlbl">🔥 로스팅 메모</span>${roast.notes}</div>`;
+      }
     }
 
     return`<div class="blcard">
@@ -339,6 +343,7 @@ function renderBrewLogs(){
       ${(sc_a||sc_sw||sc_r||sc_t)?`<div class="scores">
         ${sc_a?scRing('산미',sc_a):''}${sc_sw?scRing('단맛',sc_sw):''}${sc_r?scRing('향',sc_r):''}${sc_t?scRing('맛',sc_t):''}
       </div>`:''}
+      ${roastNoteHtml}
       ${b.memo?`<div class="blmemo">${b.memo}</div>`:''}
       ${b.neg_tags&&b.neg_tags.length?`<div class="negtags">${b.neg_tags.map(t=>`<span class="ntag">${t}</span>`).join('')}</div>`:''}
       <div class="ract"><button class="btn2" onclick="editBrewLog('${b.id}')">수정</button><button class="btnd" onclick="deleteBrewLog('${b.id}')">삭제</button></div>
