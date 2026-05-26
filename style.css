@@ -204,7 +204,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .blhead{display:flex;align-items:flex-start;gap:9px;margin-bottom:10px;}
 .bldate{font-size:10px;color:var(--teal);background:var(--teal2);border:1px solid var(--teal3);border-radius:4px;padding:2px 9px;font-weight:600;white-space:nowrap;}
 .blinfo{flex:1;}
-.blbean{font-family:'Playfair Display',serif;font-size:14px;color:var(--text);font-weight:700;margin-bottom:2px;}
+.blbean{font-family:'Josefin Sans',sans-serif;font-size:14px;color:var(--text);font-weight:600;margin-bottom:2px;letter-spacing:.01em;}
 .blchain{font-size:11px;color:var(--muted);}
 .blchain span{color:var(--text2);font-weight:500;}
 .blstats{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--muted);padding:9px 0;border-top:1px solid var(--b1);border-bottom:1px solid var(--b1);margin-bottom:10px;}
@@ -236,8 +236,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
 /* NEG TAG SELECTOR */
 .negselector{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px;}
-.nts{font-size:11px;padding:4px 11px;border-radius:20px;border:1px solid var(--b2);color:var(--muted);cursor:pointer;transition:all .15s;background:transparent;font-family:'DM Sans',sans-serif;}
-.nts.on{border-color:var(--coral);color:#ff8080;background:var(--coral2);}
+.nts{font-size:11px;padding:4px 11px;border-radius:20px;border:1px solid var(--b2);color:var(--text2);cursor:pointer;transition:all .15s;background:var(--bg3);font-family:'DM Sans',sans-serif;}
+.nts:hover{border-color:var(--coral3);color:#ff8080;}
+.nts.on{border-color:var(--coral);color:#fff;background:var(--coral);}
 
 /* EMPTY */
 .empty{text-align:center;padding:48px 20px;color:var(--muted);}
@@ -277,10 +278,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 /* ROAST FILTERS */
 .rfilters{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
 
-/* ROAST CARD KEY STATS */
-.rkey-row{display:flex;gap:16px;align-items:baseline;margin:6px 0 4px;}
-.rkey-dtr{font-size:12px;color:var(--teal);}.rkey-dtr b{font-size:18px;font-weight:700;font-family:'Bebas Neue',sans-serif;letter-spacing:.03em;margin-left:2px;}
-.rkey-loss{font-size:12px;color:var(--amber);}.rkey-loss b{font-size:18px;font-weight:700;font-family:'Bebas Neue',sans-serif;letter-spacing:.03em;margin-left:2px;}
+/* ROAST CARD — redesigned */
+.rbean-name{font-family:'Josefin Sans',sans-serif;font-size:15px;font-weight:600;color:var(--text);line-height:1.35;margin-bottom:3px;letter-spacing:.01em;}
+.rbean-meta{font-size:11px;color:var(--muted2);margin-bottom:7px;letter-spacing:.02em;}
+.rstats-line{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;font-weight:600;color:var(--text2);padding:6px 0;border-top:1px solid var(--b1);border-bottom:1px solid var(--b1);margin-bottom:6px;}
+.rdtr-inline{color:var(--teal)!important;}
+.rloss-inline{color:var(--amber)!important;}
+.rcupnotes{font-size:12px;color:var(--muted2);font-style:italic;font-family:'Playfair Display',serif;line-height:1.5;}
 
 /* DEGASSING */
 .degas-info{display:flex;align-items:center;gap:7px;margin-top:7px;}

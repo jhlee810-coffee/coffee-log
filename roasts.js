@@ -49,14 +49,10 @@ function renderRoasts(){
   document.getElementById('roastList').innerHTML=list.map(r=>{
     const serial=serialMap[r.id];
     const bean=db.beans.find(b=>b.name===r.bean_name)||{};
-    const beanYear=bean.stock_date?bean.stock_date.slice(0,4):'';
     const beanMonth=bean.stock_date?bean.stock_date.slice(2,4)+'.'+bean.stock_date.slice(5,7):'';
     const beanPrice=bean.price?Math.round(parseFloat(bean.price)):'';
 
-    const beanInfoParts=[bean.origin,r.bean_name].filter(Boolean).join('  ');
-    const beanMetaParts=[beanYear,bean.shop,beanPrice,beanMonth].filter(Boolean).join('  ');
-
-    // DTR 실시간 계산 (저장값 없으면 pop/eject 시간으로 재계산)
+    // DTR 실시간 계산
     let dtr=r.dtr_pct;
     if(!dtr&&r.pop_time&&r.eject_time&&r.mode){
       const ae=BINBON_MODES[+r.mode];
@@ -68,21 +64,14 @@ function renderRoasts(){
     const brews=db.brewlogs.filter(b=>b.roast_id===r.id);
     let brewHTML='';
     if(brews.length){
-      const avg=field=>{
-        const vals=brews.map(b=>+b[field]).filter(v=>v>0);
-        return vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1):null;
-      };
+      const avg=field=>{const vals=brews.map(b=>+b[field]).filter(v=>v>0);return vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1):null;};
       const scores=[['산미',avg('score_acid')],['단맛',avg('score_sweet')],['향',avg('score_aroma')],['맛',avg('score_taste')]].filter(([,v])=>v!==null);
-      if(scores.length){
-        brewHTML=`<div class="rbrew">
-          <span class="rbrew-lbl">브루잉 평균</span>
-          ${scores.map(([l,v])=>`<span class="rbrew-score">${l} <span>${v}</span></span>`).join('')}
-          <span class="rbrew-cnt">(${brews.length}회)</span>
-        </div>`;
-      }
+      if(scores.length) brewHTML=`<div class="rbrew"><span class="rbrew-lbl">브루잉 평균</span>${scores.map(([l,v])=>`<span class="rbrew-score">${l} <span>${v}</span></span>`).join('')}<span class="rbrew-cnt">(${brews.length}회)</span></div>`;
     }
 
     const levelColor={'라이트':'var(--amber)','라이트-미디엄':'#f5c36e','미디엄':'var(--teal)','미디엄-다크':'#5ec4b8','다크':'var(--coral)'}[r.roast_level]||'var(--muted)';
+    const metaParts=[bean.origin,bean.shop,beanPrice?beanPrice+'만':'',beanMonth].filter(Boolean).join('  ·  ');
+    const statsLine=[r.mode?`모드${r.mode}`:'',dtr?`DTR ${dtr}%`:'',loss?`손실율 ${loss}%`:'',r.input_g?`투입 ${r.input_g}g`:''].filter(Boolean).join('   ');
 
     return`<div class="rcard" onclick="openRoastDetail('${r.id}')" style="cursor:pointer;">
       <div class="rhead">
@@ -91,16 +80,10 @@ function renderRoasts(){
         ${r.roast_level?`<span class="rlv" style="color:${levelColor};border-color:${levelColor}33;background:${levelColor}18">${r.roast_level}</span>`:''}
         <div style="margin-left:auto"><button class="btn2" onclick="event.stopPropagation();editRoast('${r.id}')">수정</button></div>
       </div>
-      <div class="rbeaninfo"><b>${beanInfoParts}</b>${beanMetaParts?`  /  ${beanMetaParts}`:''}</div>
-      <div class="rkey-row">
-        ${dtr?`<span class="rkey-dtr">DTR <b>${dtr}%</b></span>`:''}
-        ${loss?`<span class="rkey-loss">손실율 <b>${loss}%</b></span>`:''}
-      </div>
-      <div class="rstats">
-        ${r.mode?`<span>모드${r.mode}</span>`:''}
-        ${r.input_g?`<span>투입 ${r.input_g}g</span>`:''}
-        ${r.output_g?`<span>배출 ${r.output_g}g</span>`:''}
-      </div>
+      <div class="rbean-name">${r.bean_name}</div>
+      ${metaParts?`<div class="rbean-meta">${metaParts}</div>`:''}
+      ${statsLine?`<div class="rstats-line"><span class="${dtr?'rdtr-inline':''}">모드${r.mode||'?'}</span>${dtr?`<span class="rdtr-inline">DTR ${dtr}%</span>`:''}${loss?`<span class="rloss-inline">손실율 ${loss}%</span>`:''}${r.input_g?`<span>투입 ${r.input_g}g</span>`:''}</div>`:''}
+      ${bean.cup_notes?`<div class="rcupnotes">${bean.cup_notes}</div>`:''}
       ${r.notes?`<div class="rmemo">${r.notes}</div>`:''}
       ${brewHTML}
     </div>`;
@@ -141,6 +124,7 @@ function openRoastDetail(id){
       ${dr('1팝 잔여',r.pop_time||'')}
       ${dr('배출 잔여',r.eject_time||'')}
     </div>
+    ${bean.cup_notes?`<div class="ds"><div class="dstitle">컵노트</div><div style="font-family:'Playfair Display',serif;font-size:13px;color:var(--muted2);line-height:1.7;font-style:italic">${bean.cup_notes}</div></div>`:''}
     ${r.notes?`<div class="ds"><div class="dstitle">메모</div><div style="font-family:'Playfair Display',serif;font-size:13px;color:var(--text2);line-height:1.7;font-style:italic">${r.notes}</div></div>`:''}
     ${brewScores.length?`<div class="ds"><div class="dstitle">브루잉 평균 (${brews.length}회)</div><div class="scores" style="margin-top:8px">${brewScores.map(([l,v])=>ring(l,v)).join('')}</div></div>`:''}
   `;
