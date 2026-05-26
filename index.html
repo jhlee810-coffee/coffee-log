@@ -49,7 +49,13 @@
 
 <!-- 로스팅 로그 -->
 <div id="tab-roasts" class="sec">
-  <div class="sh"><div class="stl">로스팅 로그</div><button class="btn btn-sm" onclick="openRoastForm()">+ 추가</button></div>
+  <div class="sh">
+    <div class="stl">로스팅 로그</div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button class="adj-btn" id="rSortBtn" onclick="toggleRSort()" style="font-size:11px;padding:5px 10px">최신순↓</button>
+      <button class="btn btn-sm" onclick="openRoastForm()">+ 추가</button>
+    </div>
+  </div>
   <div class="rfilters" id="roastFilters"></div>
   <div class="rlist" id="roastList"></div>
 </div>
@@ -244,11 +250,133 @@
   <div class="mbox">
     <div class="mtitle">브루잉 기록</div>
     <input type="hidden" id="blId">
-    <div class="fr"><div class="fg"><label class="fl">날짜</label><input class="inp" type="date" id="f_bld"></div><div class="fg"><label class="fl">생두</label><select class="sel" id="f_blbean"><option value="">선택...</option></select></div></div>
-    <div class="fr"><div class="fg"><label class="fl">로스팅 배치</label><select class="sel" id="f_blroast"><option value="">선택...</option></select></div><div class="fg"><label class="fl">레시피</label><select class="sel" id="f_blrec"><option value="">선택...</option></select></div></div>
-    <div class="fr"><div class="fg"><label class="fl">원두량(g)</label><input class="inp" type="number" step="0.1" id="f_blc"></div><div class="fg"><label class="fl">물량(ml)</label><input class="inp" type="number" id="f_blw"></div></div>
-    <div class="fr"><div class="fg"><label class="fl">수온(°C)</label><input class="inp" type="number" id="f_blt"></div><div class="fg"><label class="fl">분쇄도</label><input class="inp" id="f_blg" placeholder="코만단테 22클릭"></div></div>
-    <div class="fg"><label class="fl">가수 비율</label><input class="inp" id="f_blwater" placeholder="백산수10:딥스골드1"></div>
+
+    <!-- 날짜 -->
+    <div class="fg"><label class="fl">날짜</label><input class="inp" type="date" id="f_bld" oninput="showBrewDegassing();showExtDegassing()"></div>
+
+    <!-- 원두 유형 토글 -->
+    <div class="fg">
+      <label class="fl">원두 유형</label>
+      <div class="mode-btns" id="brewTypeBtns">
+        <div class="mbtn on" onclick="setBrewType('own')">내 로스팅</div>
+        <div class="mbtn" onclick="setBrewType('ext')">구매 원두</div>
+      </div>
+    </div>
+
+    <!-- 내 로스팅 섹션 -->
+    <div id="bl_own_sec">
+      <div class="fg"><label class="fl">생두</label><select class="sel" id="f_blbean"><option value="">선택...</option></select></div>
+      <div class="fg">
+        <label class="fl">로스팅 배치</label>
+        <select class="sel" id="f_blroast" onchange="showBrewDegassing()"><option value="">선택...</option></select>
+        <div id="bl_degas_own" class="degas-info" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- 구매 원두 섹션 -->
+    <div id="bl_ext_sec" style="display:none">
+      <div class="fg"><label class="fl">로스터리</label><input class="inp" id="f_ext_roastery" placeholder="모모스, 리브레, 펠트 등"></div>
+      <div class="fg"><label class="fl">원두명</label><input class="inp" id="f_ext_bean" placeholder="케냐 카구모 AA"></div>
+      <div class="fg">
+        <label class="fl">로스팅 날짜</label>
+        <input class="inp" type="date" id="f_ext_roast_date" oninput="showExtDegassing()">
+        <div id="bl_degas_ext" class="degas-info" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- 레시피 -->
+    <div class="fg"><label class="fl">레시피</label><select class="sel" id="f_blrec"><option value="">선택...</option></select></div>
+
+    <!-- 원두량 -->
+    <div class="fg">
+      <label class="fl">원두량(g)</label>
+      <div class="preset-chips">
+        <span class="pchip" onclick="chipSet('f_blc',10,this)">10</span>
+        <span class="pchip" onclick="chipSet('f_blc',12,this)">12</span>
+        <span class="pchip" onclick="chipSet('f_blc',15,this)">15</span>
+        <span class="pchip" onclick="chipSet('f_blc',18,this)">18</span>
+        <span class="pchip" onclick="chipSet('f_blc',20,this)">20</span>
+        <span class="pchip" onclick="chipSet('f_blc',22,this)">22</span>
+        <span class="pchip" onclick="chipSet('f_blc',25,this)">25</span>
+        <span class="pchip" onclick="chipSet('f_blc',28,this)">28</span>
+        <span class="pchip" onclick="chipSet('f_blc',30,this)">30</span>
+      </div>
+      <div class="adj-row">
+        <button class="adj-btn" onclick="chipAdj('f_blc',-1,1)">−1</button>
+        <input class="inp adj-inp" type="number" step="0.1" id="f_blc">
+        <button class="adj-btn" onclick="chipAdj('f_blc',1,1)">+1</button>
+      </div>
+    </div>
+
+    <!-- 물량 -->
+    <div class="fg">
+      <label class="fl">물량(ml)</label>
+      <div class="preset-chips">
+        <span class="pchip" onclick="chipSet('f_blw',140,this)">140</span>
+        <span class="pchip" onclick="chipSet('f_blw',150,this)">150</span>
+        <span class="pchip" onclick="chipSet('f_blw',160,this)">160</span>
+        <span class="pchip" onclick="chipSet('f_blw',180,this)">180</span>
+        <span class="pchip" onclick="chipSet('f_blw',200,this)">200</span>
+        <span class="pchip" onclick="chipSet('f_blw',240,this)">240</span>
+        <span class="pchip" onclick="chipSet('f_blw',300,this)">300</span>
+      </div>
+      <div class="adj-row">
+        <button class="adj-btn" onclick="chipAdj('f_blw',-10,50)">−10</button>
+        <input class="inp adj-inp" type="number" id="f_blw">
+        <button class="adj-btn" onclick="chipAdj('f_blw',10)">+10</button>
+      </div>
+    </div>
+
+    <!-- 수온 -->
+    <div class="fg">
+      <label class="fl">수온(°C)</label>
+      <div class="preset-chips">
+        <span class="pchip" onclick="chipSet('f_blt',88,this)">88</span>
+        <span class="pchip" onclick="chipSet('f_blt',90,this)">90</span>
+        <span class="pchip" onclick="chipSet('f_blt',92,this)">92</span>
+        <span class="pchip" onclick="chipSet('f_blt',93,this)">93</span>
+        <span class="pchip" onclick="chipSet('f_blt',94,this)">94</span>
+        <span class="pchip" onclick="chipSet('f_blt',96,this)">96</span>
+        <span class="pchip" onclick="chipSet('f_blt',98,this)">98</span>
+      </div>
+      <div class="adj-row">
+        <button class="adj-btn" onclick="chipAdj('f_blt',-1,60,100)">−1</button>
+        <input class="inp adj-inp" type="number" id="f_blt">
+        <button class="adj-btn" onclick="chipAdj('f_blt',1,60,100)">+1</button>
+      </div>
+    </div>
+
+    <!-- 분쇄도 -->
+    <div class="fg">
+      <label class="fl">분쇄도 (코만단테)</label>
+      <div class="preset-chips">
+        <span class="pchip" data-v="16" onclick="setGrind(16,this)">16</span>
+        <span class="pchip" data-v="18" onclick="setGrind(18,this)">18</span>
+        <span class="pchip" data-v="20" onclick="setGrind(20,this)">20</span>
+        <span class="pchip" data-v="22" onclick="setGrind(22,this)">22</span>
+        <span class="pchip" data-v="24" onclick="setGrind(24,this)">24</span>
+        <span class="pchip" data-v="26" onclick="setGrind(26,this)">26</span>
+      </div>
+      <div class="adj-row">
+        <button class="adj-btn" onclick="adjGrind(-1)">−1</button>
+        <input class="inp adj-inp" id="f_blg" placeholder="코만단테 22클릭" readonly style="text-align:center;cursor:default">
+        <button class="adj-btn" onclick="adjGrind(1)">+1</button>
+      </div>
+    </div>
+
+    <!-- 가수 -->
+    <div class="fg">
+      <label class="fl">가수 <span style="font-size:9px;color:var(--muted);text-transform:none;font-style:italic;letter-spacing:0">백딥=백산수10:딥스골드1</span></label>
+      <div class="preset-chips">
+        <span class="pchip" onclick="chipSet('f_blwater','백딥75+에비앙25',this)">백딥75+에비앙25</span>
+        <span class="pchip" onclick="chipSet('f_blwater','백딥100',this)">백딥100</span>
+        <span class="pchip" onclick="chipSet('f_blwater','에비앙100',this)">에비앙100</span>
+        <span class="pchip" onclick="chipSet('f_blwater','백산수100',this)">백산수100</span>
+      </div>
+      <input class="inp" id="f_blwater" placeholder="직접 입력">
+    </div>
+
+    <!-- 맛 점수 -->
     <div class="fg">
       <label class="fl">맛 점수</label>
       <div class="sliders">
@@ -258,6 +386,7 @@
         <div class="slrow"><div class="sllbl">맛</div><input type="range" class="slider" min="1" max="10" value="5" id="f_blta" oninput="document.getElementById('vt').textContent=this.value"><div class="slval" id="vt">5</div></div>
       </div>
     </div>
+
     <div class="fg"><label class="fl">안 좋은 부분</label><div class="negselector" id="negSel"></div></div>
     <div class="fg"><label class="fl">메모</label><textarea class="ta" id="f_blmemo" placeholder="마셨을 때의 느낌을 자유롭게"></textarea></div>
     <div class="fa"><button class="btn2" onclick="closeMo('moBrewLog')">취소</button><button class="btn btn-sm" onclick="saveBrewLog()">저장</button></div>

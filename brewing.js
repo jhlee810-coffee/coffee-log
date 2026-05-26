@@ -1,3 +1,92 @@
+let brewType='own';
+
+function setBrewType(t){
+  brewType=t;
+  document.getElementById('bl_own_sec').style.display=t==='own'?'':'none';
+  document.getElementById('bl_ext_sec').style.display=t==='ext'?'':'none';
+  document.querySelectorAll('#brewTypeBtns .mbtn').forEach(b=>{
+    b.classList.toggle('on',(b.textContent==='내 로스팅'&&t==='own')||(b.textContent==='구매 원두'&&t==='ext'));
+  });
+}
+
+function setGrind(n,chip){
+  document.getElementById('f_blg').value=`코만단테 ${n}클릭`;
+  if(chip){
+    chip.closest('.preset-chips').querySelectorAll('.pchip').forEach(c=>c.classList.remove('on'));
+    chip.classList.add('on');
+  }
+}
+
+function adjGrind(delta){
+  const el=document.getElementById('f_blg');
+  const m=el.value.match(/(\d+)/);
+  let n=m?+m[1]+delta:22+delta;
+  n=Math.max(1,Math.min(40,n));
+  el.value=`코만단테 ${n}클릭`;
+  document.querySelectorAll('#moBrewLog .pchip[data-v]').forEach(c=>{
+    c.classList.toggle('on',+c.dataset.v===n);
+  });
+}
+
+function degassingHtml(roastDateStr,brewDateStr){
+  if(!roastDateStr)return'';
+  const ref=brewDateStr?new Date(brewDateStr):new Date();
+  ref.setHours(0,0,0,0);
+  const roast=new Date(roastDateStr);
+  roast.setHours(0,0,0,0);
+  const days=Math.floor((ref-roast)/86400000);
+  if(days<0)return'';
+  let color,label;
+  if(days<3){color='var(--coral)';label='이른 편';}
+  else if(days<7){color='var(--amber)';label='디개싱 중';}
+  else if(days<21){color='var(--teal)';label='최적기 ✓';}
+  else if(days<35){color='var(--amber)';label='양호';}
+  else if(days<50){color='var(--muted2)';label='후반기';}
+  else{color='var(--coral)';label='노화';}
+  return`<div class="degas-info"><span class="degas-days">${days}일 경과</span><span class="degas-badge" style="color:${color};border-color:${color}33;background:${color}18">${label}</span></div>`;
+}
+
+function showBrewDegassing(){
+  const roastId=document.getElementById('f_blroast').value;
+  const brewDate=document.getElementById('f_bld').value;
+  const el=document.getElementById('bl_degas_own');
+  if(!roastId){el.style.display='none';el.innerHTML='';return;}
+  const roast=db.roasts.find(r=>r.id===roastId);
+  if(!roast){el.style.display='none';el.innerHTML='';return;}
+  el.innerHTML=degassingHtml(roast.date,brewDate);
+  el.style.display=el.innerHTML?'':'none';
+}
+
+function showExtDegassing(){
+  const roastDate=document.getElementById('f_ext_roast_date').value;
+  const brewDate=document.getElementById('f_bld').value;
+  const el=document.getElementById('bl_degas_ext');
+  el.innerHTML=degassingHtml(roastDate,brewDate);
+  el.style.display=el.innerHTML?'':'none';
+}
+
+function fillBeanSel(selId,selectedName){
+  const sel=document.getElementById(selId);
+  const byOrigin={};
+  db.beans.forEach(b=>{
+    const o=b.origin||'기타';
+    if(!byOrigin[o])byOrigin[o]=[];
+    byOrigin[o].push(b.name);
+  });
+  sel.innerHTML='<option value="">선택...</option>';
+  Object.entries(byOrigin).sort((a,b)=>a[0].localeCompare(b[0],'ko')).forEach(([origin,names])=>{
+    const og=document.createElement('optgroup');
+    og.label=origin;
+    names.forEach(n=>{
+      const opt=document.createElement('option');
+      opt.value=n;opt.textContent=n;
+      if(n===selectedName)opt.selected=true;
+      og.appendChild(opt);
+    });
+    sel.appendChild(og);
+  });
+}
+
 function renderBrewing(){
   renderRecipes();
   renderBrewLogs();
@@ -63,10 +152,10 @@ function renderTimerViews(){
 
 function toggleTimer(id){
   const el=document.getElementById('tv_'+id);
-  if(!el) return;
+  if(!el)return;
   if(openTimerId&&openTimerId!==id){
     const prev=document.getElementById('tv_'+openTimerId);
-    if(prev) prev.style.display='none';
+    if(prev)prev.style.display='none';
   }
   if(el.style.display==='none'||!el.style.display){
     el.style.display='block';
@@ -80,7 +169,7 @@ function toggleTimer(id){
 
 function closeTimer(id){
   const el=document.getElementById('tv_'+id);
-  if(el) el.style.display='none';
+  if(el)el.style.display='none';
   openTimerId=null;
 }
 
@@ -132,13 +221,31 @@ function saveRecipe(){
 function renderBrewLogs(){
   const el=document.getElementById('brewLogList');
   el.innerHTML=[...db.brewlogs].reverse().map(b=>{
+    const isExt=b.brew_type==='ext';
     const sc_a=b.score_acid,sc_sw=b.score_sweet,sc_r=b.score_aroma,sc_t=b.score_taste;
+
+    let chainStr;
+    if(isExt){
+      chainStr=`${b.ext_roastery?`<span>${b.ext_roastery}</span> · `:''}구매 원두`;
+    }else{
+      chainStr=`${b.roast_ref?`로스팅 <span>${b.roast_ref}</span> · `:''}레시피 <span>${b.recipe_name||'—'}</span>`;
+    }
+
+    let degasHtml='';
+    if(isExt&&b.ext_roast_date){
+      degasHtml=degassingHtml(b.ext_roast_date,b.date);
+    }else if(!isExt&&b.roast_id){
+      const roast=db.roasts.find(r=>r.id===b.roast_id);
+      if(roast)degasHtml=degassingHtml(roast.date,b.date);
+    }
+
     return`<div class="blcard">
       <div class="blhead">
         <div class="bldate">${b.date}</div>
         <div class="blinfo">
           <div class="blbean">${b.bean_name}</div>
-          <div class="blchain">${b.roast_ref?`로스팅 <span>${b.roast_ref}</span> · `:''}레시피 <span>${b.recipe_name||'—'}</span></div>
+          <div class="blchain">${chainStr}</div>
+          ${degasHtml}
         </div>
       </div>
       <div class="blstats">
@@ -164,19 +271,44 @@ function scRing(l,v){
 }
 
 function openBrewLogForm(id){
-  fillSel('f_blbean',db.beans.map(b=>b.name));
+  fillBeanSel('f_blbean','');
   const allRecs=[...OFFICIAL_RECIPES.map(r=>r.name),...db.recipes.map(r=>r.name)];
   fillSel('f_blrec',allRecs);
   document.getElementById('blId').value=id||'';
   const b=id?db.brewlogs.find(x=>x.id===id):{};
+
   document.getElementById('f_bld').value=b.date||today();
-  document.getElementById('f_blbean').value=b.bean_name||'';
+
+  const bt=b.brew_type||'own';
+  setBrewType(bt);
+
+  if(bt==='own'){
+    fillBeanSel('f_blbean',b.bean_name||'');
+    updateRoastSel(b.bean_name||'',b.roast_id||'');
+    showBrewDegassing();
+  }
+
+  document.getElementById('f_ext_roastery').value=b.ext_roastery||'';
+  document.getElementById('f_ext_bean').value=b.ext_bean_name||'';
+  document.getElementById('f_ext_roast_date').value=b.ext_roast_date||'';
+  showExtDegassing();
+
   document.getElementById('f_blrec').value=b.recipe_name||'';
   document.getElementById('f_blc').value=b.coffee_g||'';
   document.getElementById('f_blw').value=b.water_g||'';
   document.getElementById('f_blt').value=b.temp||'';
   document.getElementById('f_blg').value=b.grind||'';
   document.getElementById('f_blwater').value=b.water_ratio||'';
+
+  ['f_blc','f_blw','f_blt','f_blwater'].forEach(syncChips);
+  const gm=(b.grind||'').match(/(\d+)/);
+  if(gm){
+    const n=+gm[1];
+    document.querySelectorAll('#moBrewLog .pchip[data-v]').forEach(c=>c.classList.toggle('on',+c.dataset.v===n));
+  }else{
+    document.querySelectorAll('#moBrewLog .pchip[data-v]').forEach(c=>c.classList.remove('on'));
+  }
+
   document.getElementById('f_bla').value=b.score_acid||5;
   document.getElementById('f_blsw').value=b.score_sweet||5;
   document.getElementById('f_blar').value=b.score_aroma||5;
@@ -185,34 +317,51 @@ function openBrewLogForm(id){
   document.getElementById('vs').textContent=b.score_sweet||5;
   document.getElementById('vr').textContent=b.score_aroma||5;
   document.getElementById('vt').textContent=b.score_taste||5;
+
   document.getElementById('f_blmemo').value=b.memo||'';
-  updateRoastSel(b.bean_name||'',b.roast_id||'');
   document.getElementById('negSel').innerHTML=NEG.map(t=>`<div class="nts${b.neg_tags&&b.neg_tags.includes(t)?' on':''}" onclick="this.classList.toggle('on')">${t}</div>`).join('');
+
   openMo('moBrewLog');
 }
 
 function updateRoastSel(beanName,selId){
   const roasts=db.roasts.filter(r=>r.bean_name===beanName).reverse();
   const sel=document.getElementById('f_blroast');
-  sel.innerHTML='<option value="">선택...</option>'+roasts.map(r=>`<option value="${r.id}" ${r.id===selId?'selected':''}>${r.date} 모드${r.mode||'?'} DTR${r.dtr_pct||'?'}%</option>`).join('');
+  sel.innerHTML='<option value="">선택...</option>'+roasts.map(r=>`<option value="${r.id}" ${r.id===selId?'selected':''}>${r.date} 모드${r.mode||'?'} DTR${r.dtr_pct||'--'}%</option>`).join('');
 }
 
 function editBrewLog(id){openBrewLogForm(id);}
 
 function saveBrewLog(){
   const id=document.getElementById('blId').value;
-  const bn=document.getElementById('f_blbean').value;
-  if(!bn){alert('생두를 선택하세요');return;}
-  const roastId=document.getElementById('f_blroast').value;
-  const roast=db.roasts.find(r=>r.id===roastId);
-  const roastRef=roast?`${roast.date} 모드${roast.mode||'?'} DTR${roast.dtr_pct||'?'}%`:'';
+  const bt=brewType;
+  let bn,roastId='',roastRef='',extRoastery='',extBeanName='',extRoastDate='';
+
+  if(bt==='own'){
+    bn=document.getElementById('f_blbean').value;
+    if(!bn){alert('생두를 선택하세요');return;}
+    roastId=document.getElementById('f_blroast').value;
+    const roast=db.roasts.find(r=>r.id===roastId);
+    roastRef=roast?`${roast.date} 모드${roast.mode||'?'} DTR${roast.dtr_pct||'--'}%`:'';
+  }else{
+    extRoastery=document.getElementById('f_ext_roastery').value.trim();
+    extBeanName=document.getElementById('f_ext_bean').value.trim();
+    extRoastDate=document.getElementById('f_ext_roast_date').value;
+    if(!extBeanName){alert('원두명을 입력하세요');return;}
+    bn=extBeanName;
+  }
+
   const neg=[...document.querySelectorAll('#negSel .nts.on')].map(e=>e.textContent);
   const data={
     id:id||genId(),
     date:document.getElementById('f_bld').value,
+    brew_type:bt,
     bean_name:bn,
     roast_id:roastId,
     roast_ref:roastRef,
+    ext_roastery:extRoastery,
+    ext_bean_name:extBeanName,
+    ext_roast_date:extRoastDate,
     recipe_name:document.getElementById('f_blrec').value,
     coffee_g:document.getElementById('f_blc').value,
     water_g:document.getElementById('f_blw').value,

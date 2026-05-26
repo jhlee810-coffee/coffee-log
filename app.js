@@ -80,9 +80,36 @@ function closeMo(id){document.getElementById(id).classList.remove('open');}
 
 function dr(k,v){return v?`<div class="dr"><div class="dk">${k}</div><div class="dv">${v}</div></div>`:''}
 
+/* 범용 프리셋 칩 헬퍼 */
+function chipSet(id,val,chip){
+  document.getElementById(id).value=val;
+  if(chip){
+    chip.closest('.preset-chips').querySelectorAll('.pchip').forEach(c=>c.classList.remove('on'));
+    chip.classList.add('on');
+  }
+}
+function chipAdj(id,delta,min,max){
+  const el=document.getElementById(id);
+  let v=(+el.value||0)+delta;
+  if(min!==undefined)v=Math.max(min,v);
+  if(max!==undefined)v=Math.min(max,v);
+  el.value=v;
+}
+/* 저장된 값으로 칩 하이라이트 동기화 */
+function syncChips(inputId){
+  const el=document.getElementById(inputId);
+  if(!el)return;
+  const val=String(el.value).trim();
+  const fg=el.closest('.fg');
+  if(!fg)return;
+  fg.querySelectorAll('.pchip').forEach(c=>{
+    c.classList.toggle('on',c.textContent.trim()===val||c.dataset.v===val);
+  });
+}
+
 document.querySelectorAll('.mo').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');}));
 
-document.getElementById('f_blbean').addEventListener('change',function(){updateRoastSel(this.value,'');});
+document.getElementById('f_blbean').addEventListener('change',function(){updateRoastSel(this.value,'');showBrewDegassing();});
 
 renderDash();
 document.getElementById('saveInd').textContent='로드됨 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});

@@ -277,6 +277,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 /* ROAST FILTERS */
 .rfilters{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
 
+/* DEGASSING */
+.degas-info{display:flex;align-items:center;gap:7px;margin-top:7px;}
+.degas-days{font-size:11px;color:var(--muted);font-weight:500;}
+.degas-badge{font-size:10px;padding:2px 9px;border-radius:20px;font-weight:700;border:1px solid;}
+
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-track{background:var(--bg);}
 ::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px;}
