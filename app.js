@@ -50,6 +50,31 @@ function saveDB(){
 function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5);}
 function toSec(t){const p=t.split(':');return+p[0]*60+ +p[1];}
 
+function exportData(){
+  const json=localStorage.getItem(SK)||'{}';
+  const blob=new Blob([json],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='coffee-log-backup-'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+}
+
+function importData(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const parsed=JSON.parse(e.target.result);
+      if(!parsed.beans)throw new Error('올바른 백업 파일이 아닙니다');
+      if(!confirm(`데이터를 가져오면 현재 기기의 데이터가 덮어씌워집니다.\n생두 ${(parsed.beans||[]).length}개 / 로스팅 ${(parsed.roasts||[]).length}개 / 커핑 ${(parsed.cuppings||[]).length}개\n\n계속하시겠습니까?`))return;
+      localStorage.setItem(SK,JSON.stringify(parsed));
+      location.reload();
+    }catch(err){alert('가져오기 실패: '+err.message);}
+  };
+  reader.readAsText(file);
+  input.value='';
+}
+
 function showTab(name,el){
   document.querySelectorAll('.sec').forEach(s=>s.classList.remove('on'));
   document.querySelectorAll('.tb').forEach(t=>t.classList.remove('on'));
