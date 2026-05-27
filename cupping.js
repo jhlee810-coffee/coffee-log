@@ -139,6 +139,7 @@ function getSerialMap(){
 function roastLabel(r, serialMap){
   const sn    = serialMap[r.id] ? `#${String(serialMap[r.id]).padStart(2,'0')} ` : '';
   const level = r.roast_level ? ` [${r.roast_level}]` : '';
+  const mode  = r.mode ? ` 모드${r.mode}` : '';
   let dtrVal  = r.dtr_pct;
   if(!dtrVal && r.pop_time && r.eject_time && r.mode){
     const ae = BINBON_MODES[+r.mode];
@@ -149,7 +150,7 @@ function roastLabel(r, serialMap){
     ? ((+r.input_g - +r.output_g) / +r.input_g * 100).toFixed(1)
     : null;
   const loss  = (r.loss_pct || calcLoss) ? ` 손실${r.loss_pct || calcLoss}%` : '';
-  return `${sn}${r.date}${level}${dtr}${loss}`;
+  return `${sn}${r.date}${level}${mode}${dtr}${loss}`;
 }
 
 function clearWizTimer(){
