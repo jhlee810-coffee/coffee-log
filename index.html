@@ -90,7 +90,7 @@
 <div id="tab-cupping" class="sec">
   <div class="sh">
     <div class="stl">커핑 로그</div>
-    <button class="btn btn-sm" onclick="openCuppingForm()">+ 새 세션</button>
+    <button class="btn btn-sm" onclick="openCuppingWizard()">+ 새 세션</button>
   </div>
   <div id="cuppingList"></div>
 </div>
@@ -538,7 +538,14 @@
   </div>
 </div>
 
-<!-- MODAL: Cupping Form -->
+<!-- MODAL: Cupping Wizard -->
+<div class="mo" id="moCuppingWizard">
+  <div class="mbox mbox-wizard">
+    <div id="wizContent"></div>
+  </div>
+</div>
+
+<!-- MODAL: Cupping Form (legacy, unused) -->
 <div class="mo" id="moCuppingForm">
   <div class="mbox">
     <div class="mtitle">커핑 세션</div>

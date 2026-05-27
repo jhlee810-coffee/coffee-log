@@ -395,6 +395,84 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .ccup-mini-pos{color:var(--teal);}
 .ccup-mini-neg{color:var(--coral);}
 
+/* CUPPING WIZARD ──────────────────────────────────────────── */
+.mbox-wizard{max-width:900px;max-height:95vh;}
+
+/* Progress */
+.wiz-top{margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--b1);}
+.wiz-prog-bar{height:3px;background:var(--b1);border-radius:2px;margin-bottom:8px;overflow:hidden;}
+.wiz-prog-fill{height:100%;background:var(--purple);border-radius:2px;transition:width .35s;}
+.wiz-prog-dots{display:flex;gap:5px;justify-content:center;margin-bottom:4px;}
+.wpd{width:8px;height:8px;border-radius:50%;background:var(--b2);transition:all .2s;flex-shrink:0;cursor:default;}
+.wpd.done{background:var(--purple);opacity:.5;}
+.wpd.cur{width:22px;border-radius:4px;background:var(--purple);}
+.wiz-prog-lbl{font-size:10px;color:var(--muted);text-align:center;letter-spacing:.05em;}
+
+/* Screen header */
+.wiz-screen-hd{margin-bottom:14px;}
+.wiz-screen-title{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--text);letter-spacing:.08em;margin-bottom:3px;}
+.wiz-screen-guide{font-size:12px;color:var(--muted2);line-height:1.5;}
+
+/* Setup cups */
+.wiz-setup-cups{display:flex;flex-direction:column;gap:9px;}
+.wiz-setup-cup{background:var(--bg3);border:1px solid var(--b1);border-radius:9px;padding:12px;}
+.wiz-scu-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.wiz-scu-num{font-size:12px;font-weight:700;color:var(--purple);letter-spacing:.08em;}
+
+/* Cups row (scoring screens) */
+.wiz-cups-row{display:flex;gap:10px;overflow-x:auto;padding-bottom:8px;-webkit-overflow-scrolling:touch;}
+.wiz-cups-row::-webkit-scrollbar{height:3px;}
+.wiz-cups-row::-webkit-scrollbar-track{background:var(--b1);}
+.wiz-cups-row::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px;}
+
+/* Cup card */
+.wiz-cup-card{background:var(--bg3);border:1px solid var(--b1);border-top:2px solid var(--purple);border-radius:10px;padding:12px;min-width:230px;max-width:300px;flex-shrink:0;}
+.wiz-cup-hd{margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--b1);}
+.wiz-cup-name{font-family:'Josefin Sans',sans-serif;font-size:13px;font-weight:600;color:var(--text);display:block;margin-bottom:2px;}
+.wiz-cup-roast{font-size:10px;color:var(--muted2);display:block;margin-bottom:2px;line-height:1.4;}
+.wiz-cup-origin{font-size:10px;color:var(--muted);display:block;}
+
+/* Score group */
+.wiz-score-grp{padding:7px 0;border-bottom:1px solid var(--b1);}
+.wiz-score-grp:last-child{border-bottom:none;}
+.wiz-score-lbl{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:5px;}
+
+/* Tags */
+.wiz-tags{padding:8px 0;border-top:1px solid var(--b1);margin-top:4px;}
+.wiz-tags-hd{font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--teal);margin-bottom:4px;}
+.wiz-tags-hd.neg{color:var(--coral);margin-top:7px;}
+.wiz-tags-list{display:flex;flex-wrap:wrap;gap:3px;}
+
+/* Per-cup note */
+.wiz-cup-note-wrap{margin-top:8px;}
+.wiz-cup-note{min-height:38px!important;font-size:12px;resize:none;}
+
+/* Score summary (overall screen) */
+.wiz-sum{padding:8px 0;border-top:1px solid var(--b1);margin-top:8px;}
+.wiz-sum-total{font-family:'Bebas Neue',sans-serif;font-size:40px;color:var(--amber);text-align:center;line-height:1;letter-spacing:.04em;}
+.wiz-sum-sub{font-size:10px;color:var(--muted);text-align:center;margin-bottom:8px;margin-top:2px;}
+
+/* Session notes (overall screen) */
+.wiz-session-notes{margin-top:14px;}
+
+/* Timer */
+.wiz-timer-wrap{text-align:center;padding:20px 0 14px;}
+.wiz-timer-disp{font-family:'Bebas Neue',sans-serif;font-size:80px;color:var(--text);letter-spacing:.04em;line-height:1;margin-bottom:10px;transition:color .3s;}
+.wiz-timer-disp.done{color:var(--teal);}
+.wiz-timer-bar{width:220px;height:4px;background:var(--b1);border-radius:2px;margin:0 auto 16px;overflow:hidden;}
+.wiz-timer-bar-fill{height:100%;background:var(--teal);border-radius:2px;transition:width 1s linear;}
+.wiz-timer-btns{display:flex;gap:8px;justify-content:center;}
+
+/* Timer cups summary */
+.wiz-tmr-cups{margin-top:14px;padding:12px;background:var(--bg3);border-radius:8px;border:1px solid var(--b1);}
+.wiz-tmr-cup{display:flex;align-items:center;gap:8px;padding:5px 0;border-top:1px solid var(--b1);}
+.wiz-tmr-cup:first-child{border-top:none;}
+.wiz-tmr-cup-name{font-family:'Josefin Sans',sans-serif;font-size:12px;color:var(--text);font-weight:600;}
+.wiz-tmr-cup-roast{font-size:11px;color:var(--muted2);}
+
+/* Wizard nav */
+.wiz-nav{display:flex;justify-content:space-between;align-items:center;margin-top:18px;padding-top:14px;border-top:1px solid var(--b1);}
+
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-track{background:var(--bg);}
 ::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px;}
