@@ -139,13 +139,17 @@ function getSerialMap(){
 function roastLabel(r, serialMap){
   const sn    = serialMap[r.id] ? `#${String(serialMap[r.id]).padStart(2,'0')} ` : '';
   const level = r.roast_level ? ` [${r.roast_level}]` : '';
-  const input = r.input_g     ? ` ${r.input_g}g`      : '';
-  const dtr   = r.dtr_pct     ? ` DTR${r.dtr_pct}%`  : '';
+  let dtrVal  = r.dtr_pct;
+  if(!dtrVal && r.pop_time && r.eject_time && r.mode){
+    const ae = BINBON_MODES[+r.mode];
+    if(ae){ const ps=toSec(r.pop_time), es=toSec(r.eject_time); if(ps>es&&(ae-es)>0) dtrVal=((ps-es)/(ae-es)*100).toFixed(1); }
+  }
+  const dtr  = dtrVal ? ` DTR${dtrVal}%` : '';
   const calcLoss = (r.input_g && r.output_g)
     ? ((+r.input_g - +r.output_g) / +r.input_g * 100).toFixed(1)
     : null;
   const loss  = (r.loss_pct || calcLoss) ? ` 손실${r.loss_pct || calcLoss}%` : '';
-  return `${sn}${r.date}${level}${input}${dtr}${loss}`;
+  return `${sn}${r.date}${level}${dtr}${loss}`;
 }
 
 function clearWizTimer(){
@@ -236,9 +240,19 @@ function _renderWizSetup(){
   const serialMap = getSerialMap();
 
   const cupsHtml = _wiz.cups.map((cup, i) => {
-    const beanOpts = db.beans
-      .map(b => `<option value="${escQ(b.name)}" ${cup.bean_name===b.name?'selected':''}>${b.name}</option>`)
-      .join('');
+    const byOrigin = {};
+    db.beans.forEach(b => {
+      const o = b.origin || '기타';
+      if(!byOrigin[o]) byOrigin[o] = [];
+      byOrigin[o].push(b);
+    });
+    const beanOpts = Object.entries(byOrigin)
+      .sort((a,b) => a[0].localeCompare(b[0], 'ko'))
+      .map(([origin, beans]) =>
+        `<optgroup label="${escQ(origin)}">${beans.map(b =>
+          `<option value="${escQ(b.name)}" ${cup.bean_name===b.name?'selected':''}>${b.name}</option>`
+        ).join('')}</optgroup>`
+      ).join('');
     const roastOpts = cup.bean_name
       ? db.roasts
           .filter(r => r.bean_name === cup.bean_name)
