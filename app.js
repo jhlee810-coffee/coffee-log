@@ -1,4 +1,5 @@
 const SK='coffee_v3';
+const GAS_URL='https://script.google.com/macros/s/AKfycbz2vHupdUOhyN7Tj4Pjm92X4rkVkyjUC0VFJ-46gk2UM8Da_u2WJRzUjDYjYbgtA3eJ/exec';
 const NEG=['강한 쓴맛','역함','떫음','흙냄새','곰팡이냄새','과발효','밋밋함','텁텁함','연기냄새','너무 신맛','잡미','고무냄새','약품냄새','발효취','퀴퀴함','풀냄새','쓴 여운','금속맛','너무 진함','너무 묽음','건조함','떫은 여운','과추출','미추출','식은맛','탄맛','굽내','풋내'];
 
 const OFFICIAL_RECIPES=[
@@ -43,15 +44,63 @@ function loadDB(){
 }
 
 function saveDB(){
+  db._savedAt=Date.now();
   localStorage.setItem(SK,JSON.stringify(db));
   document.getElementById('saveInd').textContent='저장됨 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+  pushToSheets();
+}
+
+async function pushToSheets(){
+  try{
+    await fetch(GAS_URL,{method:'POST',body:JSON.stringify(db),headers:{'Content-Type':'text/plain'}});
+  }catch(e){console.warn('Sheets 저장 실패:',e);}
+}
+
+async function syncFromSheets(){
+  const ind=document.getElementById('saveInd');
+  try{
+    const res=await fetch(GAS_URL+'?t='+Date.now());
+    const json=await res.json();
+    if(json.ok&&json.data){
+      const remote=json.data;
+      const remoteAt=remote._savedAt||0;
+      const localAt=db._savedAt||0;
+      if(remoteAt>localAt){
+        /* 클라우드가 더 최신 → 로컬 업데이트 */
+        db=remote;
+        if(!db.recipes)db.recipes=[];
+        if(!db.brewlogs)db.brewlogs=[];
+        if(!db.wishlist)db.wishlist=[];
+        if(!db.cuppings)db.cuppings=[];
+        localStorage.setItem(SK,JSON.stringify(db));
+        ind.textContent='☁ 동기화 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+        renderDash();
+      }else if(localAt>remoteAt){
+        /* 로컬이 더 최신 → 클라우드 업데이트 */
+        pushToSheets();
+        ind.textContent='↑ 업로드 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+      }else{
+        ind.textContent='✓ 동기화됨 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+      }
+    }else{
+      /* 시트가 비어 있음 → 현재 데이터 첫 업로드 */
+      db._savedAt=Date.now();
+      localStorage.setItem(SK,JSON.stringify(db));
+      ind.textContent='⬆ 업로드 중...';
+      await pushToSheets();
+      ind.textContent='☁ 업로드 완료 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+    }
+  }catch(e){
+    console.warn('Sheets 동기화 실패:',e);
+    ind.textContent='로드됨 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+  }
 }
 
 function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5);}
 function toSec(t){const p=t.split(':');return+p[0]*60+ +p[1];}
 
 function exportData(){
-  const json=localStorage.getItem(SK)||'{}';
+  const json=JSON.stringify(db);
   const blob=new Blob([json],{type:'application/json'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
@@ -138,4 +187,5 @@ document.querySelectorAll('.mo').forEach(el=>el.addEventListener('click',e=>{if(
 document.getElementById('f_blbean').addEventListener('change',function(){updateRoastSel(this.value,'');showBrewDegassing();});
 
 renderDash();
-document.getElementById('saveInd').textContent='로드됨 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+document.getElementById('saveInd').textContent='☁ 동기화 중...';
+syncFromSheets();
