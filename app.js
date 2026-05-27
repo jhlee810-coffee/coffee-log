@@ -65,8 +65,8 @@ async function syncFromSheets(){
       const remote=json.data;
       const remoteAt=remote._savedAt||0;
       const localAt=db._savedAt||0;
-      if(remoteAt>localAt){
-        /* 클라우드가 더 최신 → 로컬 업데이트 */
+      if(remoteAt>=localAt){
+        /* 클라우드가 같거나 최신 → 항상 클라우드 우선 */
         db=remote;
         if(!db.recipes)db.recipes=[];
         if(!db.brewlogs)db.brewlogs=[];
@@ -74,13 +74,10 @@ async function syncFromSheets(){
         if(!db.cuppings)db.cuppings=[];
         localStorage.setItem(SK,JSON.stringify(db));
         ind.textContent='☁ 동기화 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
-        renderDash();
-      }else if(localAt>remoteAt){
+      }else{
         /* 로컬이 더 최신 → 클라우드 업데이트 */
         pushToSheets();
         ind.textContent='↑ 업로드 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
-      }else{
-        ind.textContent='✓ 동기화됨 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
       }
     }else{
       /* 시트가 비어 있음 → 현재 데이터 첫 업로드 */
