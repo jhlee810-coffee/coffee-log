@@ -336,6 +336,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .ccard-tags.pos{color:var(--teal);}
 .ccard-tags.neg{color:var(--coral);}
 .ccard-note{font-size:12px;color:var(--muted2);font-style:italic;font-family:'Playfair Display',serif;margin-top:3px;}
+.ccard-draft{border-top-color:var(--amber);cursor:default;}
+.badge-draft{font-size:10px;color:var(--amber);background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.3);border-radius:4px;padding:2px 8px;font-weight:600;}
+.ccard-draft-actions{display:flex;gap:6px;margin-top:10px;}
 
 /* Cup form block */
 .cup-block{background:var(--bg3);border:1px solid var(--b2);border-radius:10px;padding:14px;margin-bottom:14px;}

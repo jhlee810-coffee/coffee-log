@@ -117,11 +117,13 @@ let _wizTmrRunning = false;
 function escQ(s){ return (s||'').replace(/'/g,"\\'"); }
 
 function calcCupTotal(cupOrScores){
-  // cup 객체(step_scores 포함) 또는 점수 평면 객체 모두 허용
+  // cup 객체(step_scores / scores 포함) 또는 점수 평면 객체 모두 허용
   const scores = (cupOrScores && cupOrScores.step_scores)
     ? cupOrScores.step_scores
+    : (cupOrScores && cupOrScores.scores)
+    ? cupOrScores.scores
     : (cupOrScores || {});
-  const vals = Object.values(scores).filter(v => v > 0);
+  const vals = Object.values(scores).filter(v => typeof v==='number' && v > 0);
   return vals.length ? vals.reduce((a,b) => a+b, 0) : 0;
 }
 
@@ -225,7 +227,10 @@ function renderWiz(){
       <button class="btn2" onclick="closeCuppingWizard()">취소</button>
       <div style="display:flex;gap:8px;align-items:center">
         ${!isFirst ? `<button class="btn2 wiz-back" onclick="wizPrev()">← 이전</button>` : ''}
-        ${isLast
+        ${isFirst
+          ? `<button class="btn2" onclick="saveDraftCupping()" title="나중에 커핑 진행">💾 저장만</button>
+             <button class="btn wiz-go" onclick="wizNext()">▶ 시작</button>`
+          : isLast
           ? `<button class="btn wiz-go" onclick="saveWizardCupping()">✓ 저장 완료</button>`
           : `<button class="btn wiz-go" onclick="wizNext()">다음 →</button>`
         }
@@ -607,6 +612,7 @@ function saveWizardCupping(){
   const data = {
     id: _wiz.editId || genId(),
     date: _wiz.date,
+    status: 'done',
     cups,
     session_notes: (_wiz.sessionNotes||'').trim(),
   };
@@ -627,6 +633,68 @@ function saveWizardCupping(){
 function saveCupping(){ saveWizardCupping(); }
 
 // ──────────────────────────────────────────────────────────────
+// 드래프트 저장 (원두만 설정, 커핑 나중에 진행)
+// ──────────────────────────────────────────────────────────────
+function saveDraftCupping(){
+  if(!_wiz.date){ alert('날짜를 입력하세요'); return; }
+  _wiz.date = document.getElementById('wiz_date')?.value || _wiz.date;
+  if(!_wiz.cups.some(c => c.bean_name)){ alert('생두를 하나 이상 선택하세요'); return; }
+  const data = {
+    id: _wiz.editId || genId(),
+    date: _wiz.date,
+    status: 'draft',
+    cups: _wiz.cups.filter(c => c.bean_name).map(c => JSON.parse(JSON.stringify(c))),
+    session_notes: '',
+  };
+  if(!db.cuppings) db.cuppings = [];
+  if(_wiz.editId){
+    const idx = db.cuppings.findIndex(x => x.id === _wiz.editId);
+    if(idx >= 0) db.cuppings[idx] = data; else db.cuppings.push(data);
+  } else {
+    db.cuppings.push(data);
+  }
+  saveDB();
+  clearWizTimer();
+  closeMo('moCuppingWizard');
+  renderCupping();
+}
+
+// ──────────────────────────────────────────────────────────────
+// 드래프트에서 커핑 시작 (향 평가부터)
+// ──────────────────────────────────────────────────────────────
+function startCuppingFromDraft(id){
+  clearWizTimer();
+  _wiz.editId = id;
+  _wiz.sessionNotes = '';
+  _wizTmrSec = 240;
+  const s = db.cuppings.find(x => x.id === id);
+  if(s){
+    _wiz.date = s.date;
+    _wiz.cups = s.cups.map(c => {
+      const cup = JSON.parse(JSON.stringify(c));
+      if(!cup.step_scores) cup.step_scores = {};
+      if(!cup.step_notes)  cup.step_notes  = {};
+      if(!cup.positives)   cup.positives   = [];
+      if(!cup.negatives)   cup.negatives   = [];
+      return cup;
+    });
+  }
+  _wiz.phase = 1; // 준비 건너뛰고 건식향 평가부터 시작
+  renderWiz();
+  openMo('moCuppingWizard');
+}
+
+// ──────────────────────────────────────────────────────────────
+// 커핑 세션 삭제 (카드에서 직접 삭제)
+// ──────────────────────────────────────────────────────────────
+function deleteCuppingSession(id){
+  if(!confirm('이 커핑 세션을 삭제하시겠습니까?')) return;
+  db.cuppings = db.cuppings.filter(x => x.id !== id);
+  saveDB();
+  renderCupping();
+}
+
+// ──────────────────────────────────────────────────────────────
 // 세션 목록
 // ──────────────────────────────────────────────────────────────
 function renderCupping(){
@@ -638,12 +706,38 @@ function renderCupping(){
 
 function cuppingCard(s){
   const beanNames = s.cups.map(c => c.bean_name).filter(Boolean).join('  ·  ');
-  const topPos    = [...new Set(s.cups.flatMap(c => c.positives||[]))].slice(0,5).join(' · ');
-  const topNeg    = [...new Set(s.cups.flatMap(c => c.negatives||[]))].slice(0,3).join(' · ');
+  const isDraft = s.status === 'draft' ||
+    (!s.status && !s.cups.some(c => calcCupTotal(c) > 0));
+
+  if(isDraft){
+    return `<div class="ccard ccard-draft">
+      <div class="ccard-head">
+        <span class="ccard-date">${s.date}</span>
+        <span class="badge-draft">준비중</span>
+      </div>
+      <div class="ccard-beans">${beanNames||'—'}</div>
+      <div class="ccard-draft-actions">
+        <button class="btn btn-sm" style="flex:1"
+          onclick="event.stopPropagation();startCuppingFromDraft('${s.id}')">▶ 커핑 시작</button>
+        <button class="btn2"
+          onclick="event.stopPropagation();openCuppingWizard('${s.id}')">설정 수정</button>
+        <button class="btnd"
+          onclick="event.stopPropagation();deleteCuppingSession('${s.id}')">삭제</button>
+      </div>
+    </div>`;
+  }
+
+  const topPos = [...new Set(s.cups.flatMap(c => c.positives||[]))].slice(0,5).join(' · ');
+  const topNeg = [...new Set(s.cups.flatMap(c => c.negatives||[]))].slice(0,3).join(' · ');
+  const scores = s.cups.map(c => {
+    const t = calcCupTotal(c);
+    return t > 0 ? `<span class="ccard-score">${t.toFixed(1)}</span>` : '';
+  }).join('');
   return `<div class="ccard" onclick="openCuppingDetail('${s.id}')">
     <div class="ccard-head">
       <span class="ccard-date">${s.date}</span>
       <span class="ccard-cnt">${s.cups.length}종 비교</span>
+      ${scores}
     </div>
     <div class="ccard-beans">${beanNames||'—'}</div>
     ${topPos ? `<div class="ccard-tags pos">${topPos}</div>` : ''}
@@ -714,10 +808,8 @@ function openCuppingDetail(id){
     closeMo('moCuppingDetail'); openCuppingWizard(id);
   };
   document.getElementById('cdDeleteBtn').onclick = () => {
-    if(confirm('이 커핑 세션을 삭제하시겠습니까?')){
-      db.cuppings = db.cuppings.filter(x => x.id !== id);
-      saveDB(); closeMo('moCuppingDetail'); renderCupping();
-    }
+    closeMo('moCuppingDetail');
+    deleteCuppingSession(id);
   };
   openMo('moCuppingDetail');
 }
