@@ -168,6 +168,7 @@ function openRoastDetail(id){
       ${brewScores.length?`<div class="scores" style="margin-top:8px;margin-bottom:10px">${brewScores.map(([l,v])=>ring(l,v)).join('')}</div>`:''}
       ${brewDetailHTML}
     </div>`:''}
+    ${(()=>{const cs=getCuppingsForRoast(id,r.bean_name);return cs.length?`<div class="ds"><div class="dstitle">커핑 ${cs.length}회</div>${cuppingMiniHtml(cs,r.bean_name)}</div>`:''})()}
   `;
   document.getElementById('rdEditBtn').onclick=()=>{closeMo('moRoastDetail');editRoast(id);};
   openMo('moRoastDetail');

@@ -52,7 +52,8 @@ function showBeanDetail(id){
     </div>
     ${(b.score_momos||b.score_wonderroom)?`<div class="ds"><div class="dstitle">스코어</div>${dr('모모스',b.score_momos)}${dr('원더룸',b.score_wonderroom)}</div>`:''}
     ${b.cup_notes?`<div class="ds"><div class="dstitle">컵노트</div><div style="font-family:'Playfair Display',serif;font-size:13px;color:var(--muted2);line-height:1.7;font-style:italic">${b.cup_notes}</div></div>`:''}
-    <div class="ds"><div class="dstitle">기록</div>${dr('로스팅',rc+'회')}${dr('브루잉',bl+'회')}</div>
+    <div class="ds"><div class="dstitle">기록</div>${dr('로스팅',rc+'회')}${dr('브루잉',bl+'회')}${dr('커핑',getCuppingsForBean(b.name).length+'회')}</div>
+    ${(()=>{const cs=getCuppingsForBean(b.name);return cs.length?`<div class="ds"><div class="dstitle">커핑 히스토리</div>${cuppingMiniHtml(cs,b.name)}</div>`:''})()}
     <div style="display:flex;gap:8px;margin-top:4px">
       <button class="btn2" onclick="editBean('${b.id}');closeMo('moBeanDetail')">수정</button>
       <button class="btnd" onclick="deleteBean('${b.id}')">삭제</button>

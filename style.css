@@ -323,6 +323,78 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .rstep-del{background:transparent;border:1px solid var(--b2);color:var(--muted);border-radius:4px;cursor:pointer;padding:4px 7px;font-size:13px;margin-top:20px;font-family:'DM Sans',sans-serif;flex-shrink:0;}
 .rstep-del:hover{color:var(--coral);border-color:var(--coral3);}
 
+/* ── CUPPING ── */
+.ccard{background:var(--card);border:1px solid var(--b1);border-top:2px solid var(--purple);border-radius:var(--r);padding:14px;margin-bottom:9px;cursor:pointer;transition:all .15s;}
+.ccard:hover{background:var(--card2);}
+.ccard-head{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+.ccard-date{font-size:10px;color:var(--purple);background:var(--purple2);border:1px solid var(--purple3);border-radius:4px;padding:2px 9px;font-weight:600;white-space:nowrap;}
+.ccard-cnt{font-size:11px;color:var(--muted2);}
+.ccard-score{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--amber);margin-left:auto;letter-spacing:.03em;}
+.ccard-beans{font-family:'Josefin Sans',sans-serif;font-size:13px;color:var(--text);font-weight:600;margin-bottom:4px;letter-spacing:.01em;}
+.ccard-tags{font-size:11px;margin-bottom:2px;line-height:1.5;}
+.ccard-tags.pos{color:var(--teal);}
+.ccard-tags.neg{color:var(--coral);}
+.ccard-note{font-size:12px;color:var(--muted2);font-style:italic;font-family:'Playfair Display',serif;margin-top:3px;}
+
+/* Cup form block */
+.cup-block{background:var(--bg3);border:1px solid var(--b2);border-radius:10px;padding:14px;margin-bottom:14px;}
+.cup-block-head{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--b1);}
+.cup-num{font-family:'Bebas Neue',sans-serif;font-size:17px;color:var(--purple);letter-spacing:.06em;}
+.cup-total{font-size:13px;font-weight:700;color:var(--amber);}
+
+/* Step scoring */
+.cup-steps{display:flex;flex-direction:column;gap:0;}
+.cup-step{padding:8px 0;border-bottom:1px solid var(--b1);}
+.cup-step:last-child{border-bottom:none;}
+.cup-step-top{display:flex;align-items:baseline;gap:8px;margin-bottom:5px;}
+.cup-step-label{font-size:12px;font-weight:600;color:var(--text2);white-space:nowrap;}
+.cup-step-guide{font-size:10px;color:var(--muted);line-height:1.4;font-style:italic;}
+.cup-score-chips{display:flex;gap:4px;flex-wrap:wrap;}
+.sc-chip{font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--b2);color:var(--muted2);cursor:pointer;background:var(--bg4);transition:all .12s;font-family:'DM Sans',sans-serif;font-weight:500;user-select:none;}
+.sc-chip:hover{border-color:var(--purple3);color:var(--purple);}
+.sc-chip.on{border-color:var(--amber);color:var(--amber);background:var(--amber2);}
+
+/* Tag sections */
+.ctag-section{display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;padding:4px 0;}
+.ctag-cat{margin-bottom:2px;}
+.ctag-cat-label{font-size:10px;color:var(--muted);letter-spacing:.07em;text-transform:none;margin-bottom:4px;font-weight:600;}
+.ctag-list{display:flex;flex-wrap:wrap;gap:4px;}
+.ctag{font-size:11px;padding:3px 9px;border-radius:20px;cursor:pointer;transition:all .12s;border:1px solid var(--b2);background:var(--bg3);color:var(--text2);user-select:none;}
+.ctag.cpos:hover{border-color:var(--teal3);color:var(--teal);}
+.ctag.cpos.on{border-color:var(--teal);color:#fff;background:rgba(78,205,196,.8);}
+.ctag.cneg:hover{border-color:var(--coral3);color:#ff8080;}
+.ctag.cneg.on{border-color:var(--coral);color:#fff;background:rgba(255,107,107,.75);}
+
+/* Small tags (detail/card view) */
+.ctag-sm{font-size:10px;padding:2px 8px;border-radius:20px;border:1px solid;display:inline-block;line-height:1.5;}
+.ctag-sm.cpos{color:var(--teal);border-color:var(--teal3);background:var(--teal2);}
+.ctag-sm.cneg{color:#ff8080;border-color:var(--coral3);background:var(--coral2);}
+.ctag-row{display:flex;flex-wrap:wrap;gap:4px;}
+
+/* Cupping detail */
+.cdet-cup{background:var(--bg3);border:1px solid var(--b1);border-radius:10px;padding:14px;margin-bottom:12px;}
+.cdet-cup-head{display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;}
+.cdet-cup-name{font-family:'Josefin Sans',sans-serif;font-size:14px;color:var(--text);font-weight:600;flex:1;letter-spacing:.01em;}
+.cdet-cup-roast{font-size:10px;color:var(--muted2);}
+.cdet-cup-total{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--amber);letter-spacing:.04em;}
+.cdet-steps{display:flex;flex-direction:column;gap:5px;margin-top:8px;}
+.cdet-step{display:flex;align-items:center;gap:8px;}
+.cdet-step-lbl{font-size:11px;color:var(--muted);width:54px;flex-shrink:0;}
+.cdet-bar-wrap{flex:1;height:4px;background:var(--b2);border-radius:2px;overflow:hidden;}
+.cdet-bar{height:100%;border-radius:2px;transition:width .4s;}
+.cdet-step-val{font-size:12px;font-weight:700;width:34px;text-align:right;flex-shrink:0;}
+.cdet-note{font-family:'Playfair Display',serif;font-size:12px;color:var(--muted2);font-style:italic;line-height:1.6;margin-top:8px;}
+
+/* Mini cupping section (in roast/bean detail) */
+.ccup-section{margin-top:2px;}
+.ccup-lbl{font-size:10px;color:var(--purple);font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px;}
+.ccup-mini{padding:5px 0;border-top:1px solid var(--b1);font-size:11px;display:flex;align-items:center;flex-wrap:wrap;gap:6px;}
+.ccup-mini:first-of-type{border-top:none;}
+.ccup-mini-date{color:var(--muted2);font-weight:500;}
+.ccup-mini-score{color:var(--amber);font-weight:700;}
+.ccup-mini-pos{color:var(--teal);}
+.ccup-mini-neg{color:var(--coral);}
+
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-track{background:var(--bg);}
 ::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px;}

@@ -33,11 +33,12 @@ function loadDB(){
       if(!p.recipes) p.recipes=[];
       if(!p.brewlogs) p.brewlogs=[];
       if(!p.wishlist) p.wishlist=[];
+      if(!p.cuppings) p.cuppings=[];
       return p;
     }
   }catch(e){}
   const d=JSON.parse(JSON.stringify(INITIAL_DATA));
-  d.recipes=[];d.brewlogs=[];d.wishlist=[];
+  d.recipes=[];d.brewlogs=[];d.wishlist=[];d.cuppings=[];
   return d;
 }
 
@@ -58,7 +59,7 @@ function showTab(name,el){
     const fr=document.getElementById('timerFrame');
     if(!fr.getAttribute('src'))fr.src='binbon_timer.html';
   }
-  const fn={dash:renderDash,beans:renderBeans,roasts:renderRoasts,brewing:renderBrewing,wishlist:renderWishlist};
+  const fn={dash:renderDash,beans:renderBeans,roasts:renderRoasts,brewing:renderBrewing,wishlist:renderWishlist,cupping:renderCupping};
   if(fn[name]) fn[name]();
 }
 
