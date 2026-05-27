@@ -138,10 +138,14 @@ function getSerialMap(){
 
 function roastLabel(r, serialMap){
   const sn    = serialMap[r.id] ? `#${String(serialMap[r.id]).padStart(2,'0')} ` : '';
-  const level = r.roast_level   ? ` [${r.roast_level}]`  : '';
-  const input = r.input_g       ? ` ${r.input_g}g`        : '';
-  const dtr   = r.dtr_pct       ? ` DTR${r.dtr_pct}%`    : '';
-  return `${sn}${r.date}${level}${input}${dtr}`;
+  const level = r.roast_level ? ` [${r.roast_level}]` : '';
+  const input = r.input_g     ? ` ${r.input_g}g`      : '';
+  const dtr   = r.dtr_pct     ? ` DTR${r.dtr_pct}%`  : '';
+  const calcLoss = (r.input_g && r.output_g)
+    ? ((+r.input_g - +r.output_g) / +r.input_g * 100).toFixed(1)
+    : null;
+  const loss  = (r.loss_pct || calcLoss) ? ` 손실${r.loss_pct || calcLoss}%` : '';
+  return `${sn}${r.date}${level}${input}${dtr}${loss}`;
 }
 
 function clearWizTimer(){
@@ -281,9 +285,9 @@ function _renderWizSetup(){
         onchange="_wiz.date=this.value">
     </div>
     <div class="wiz-setup-cups">${cupsHtml}</div>
-    ${_wiz.cups.length < 5
+    ${_wiz.cups.length < 6
       ? `<button class="btn2" style="width:100%;margin-top:8px;margin-bottom:4px"
-           onclick="wizAddCup()">+ 컵 추가 (최대 5)</button>`
+           onclick="wizAddCup()">+ 컵 추가 (최대 6)</button>`
       : ''}
   `;
 }
@@ -490,7 +494,7 @@ function closeCuppingWizard(){
 // 컵 관리
 // ──────────────────────────────────────────────────────────────
 function wizAddCup(){
-  if(_wiz.cups.length >= 5){ alert('최대 5개까지 비교할 수 있습니다'); return; }
+  if(_wiz.cups.length >= 6){ alert('최대 6개까지 비교할 수 있습니다'); return; }
   _wiz.cups.push(newCup());
   renderWiz();
 }
