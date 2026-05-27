@@ -94,6 +94,7 @@ async function syncFromSheets(){
     console.warn('Sheets 동기화 실패:',e);
     ind.textContent='로드됨 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
   }
+  try{renderDash();}catch(e){}
 }
 
 function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5);}
@@ -116,6 +117,7 @@ function importData(input){
       const parsed=JSON.parse(e.target.result);
       if(!parsed.beans)throw new Error('올바른 백업 파일이 아닙니다');
       if(!confirm(`데이터를 가져오면 현재 기기의 데이터가 덮어씌워집니다.\n생두 ${(parsed.beans||[]).length}개 / 로스팅 ${(parsed.roasts||[]).length}개 / 커핑 ${(parsed.cuppings||[]).length}개\n\n계속하시겠습니까?`))return;
+      parsed._savedAt=Date.now(); /* 가져온 데이터가 클라우드보다 항상 최신으로 인식되도록 */
       localStorage.setItem(SK,JSON.stringify(parsed));
       location.reload();
     }catch(err){alert('가져오기 실패: '+err.message);}
@@ -186,6 +188,6 @@ document.querySelectorAll('.mo').forEach(el=>el.addEventListener('click',e=>{if(
 
 document.getElementById('f_blbean').addEventListener('change',function(){updateRoastSel(this.value,'');showBrewDegassing();});
 
-renderDash();
+try{renderDash();}catch(e){}
 document.getElementById('saveInd').textContent='☁ 동기화 중...';
 syncFromSheets();
