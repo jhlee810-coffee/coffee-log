@@ -1,11 +1,21 @@
 function renderBeans(){
   const origins=[...new Set(db.beans.map(b=>b.origin).filter(Boolean))];
+  const shops=[...new Set(db.beans.map(b=>b.shop).filter(Boolean))];
+  const varieties=[...new Set(db.beans.map(b=>b.variety).filter(Boolean))];
+  const fc=(key,lbl)=>`<div class="fc ${cf===key?'on':''}" onclick="setF('${key}')">${lbl}</div>`;
   document.getElementById('originFilters').innerHTML=
-    `<div class="fc ${cf==='all'?'on':''}" onclick="setF('all')">전체</div>`+
-    origins.map(o=>`<div class="fc ${cf===o?'on':''}" onclick="setF('${o}')">${o}</div>`).join('');
+    fc('all','전체')+
+    (origins.length?`<span class="flabel">원산지</span>`+origins.map(o=>fc(`origin:${o}`,o)).join(''):'')+
+    (shops.length?`<span class="flabel">구매처</span>`+shops.map(s=>fc(`shop:${s}`,s)).join(''):'')+
+    (varieties.length?`<span class="flabel">품종</span>`+varieties.map(v=>fc(`variety:${v}`,v)).join(''):'');
   let beans=db.beans;
-  if(cf!=='all') beans=beans.filter(b=>b.origin===cf);
-  if(cs){const q=cs.toLowerCase();beans=beans.filter(b=>(b.name+b.origin+(b.cup_notes||'')+(b.shop||'')).toLowerCase().includes(q));}
+  if(cf!=='all'){
+    if(cf.startsWith('origin:')){const val=cf.slice(7);beans=beans.filter(b=>b.origin===val);}
+    else if(cf.startsWith('shop:')){const val=cf.slice(5);beans=beans.filter(b=>b.shop===val);}
+    else if(cf.startsWith('variety:')){const val=cf.slice(8);beans=beans.filter(b=>b.variety===val);}
+    else beans=beans.filter(b=>b.origin===cf);
+  }
+  if(cs){const q=cs.toLowerCase();beans=beans.filter(b=>(b.name+b.origin+(b.variety||'')+(b.cup_notes||'')+(b.shop||'')).toLowerCase().includes(q));}
   document.getElementById('beanCards').innerHTML=beans.map(beanCard).join('')||
     '<div class="empty"><div class="empty-icon">🫘</div><div class="empty-text">생두가 없습니다</div></div>';
 }
@@ -13,6 +23,9 @@ function renderBeans(){
 function beanCard(b){
   const oc=ORIGIN_COLORS[b.origin]||'var(--teal)';
   const isSogin=b.status==='소진';
+  const isSample=b.status==='샘플';
+  const isDimmed=isSogin||isSample;
+  const bc=isSogin?'var(--coral)':isSample?'var(--amber)':oc;
   const price=b.price?Math.round(parseFloat(b.price)):'';
   const dateStr=b.stock_date?b.stock_date.slice(2,4)+'.'+b.stock_date.slice(5,7):'—';
   const metaParts=[b.shop||'—'];
@@ -20,8 +33,8 @@ function beanCard(b){
   metaParts.push(dateStr);
   const meta=metaParts.join('  ');
   const sc=b.score_momos||b.score_wonderroom||'';
-  return`<div class="bcard${isSogin?' sogin':''}" style="border-top-color:${isSogin?'var(--coral)':oc}" onclick="showBeanDetail('${b.id}')">
-    <div class="bog" style="color:${isSogin?'var(--coral)':oc}">${b.origin||'—'}</div>
+  return`<div class="bcard${isDimmed?' sogin':''}" style="border-top-color:${bc}" onclick="showBeanDetail('${b.id}')">
+    <div class="bog" style="color:${bc}">${b.origin||'—'}</div>
     <div class="bnm">${b.name}</div>
     <div class="bsub">${[b.variety,b.process].filter(Boolean).join(' · ')||'&nbsp;'}</div>
     ${b.cup_notes?`<div class="bnote">${b.cup_notes}</div>`:''}
@@ -29,6 +42,7 @@ function beanCard(b){
       <span class="bfmeta">${meta}</span>
       <span style="display:flex;align-items:center;gap:6px">
         ${isSogin?'<span class="sogin-bdg">소진</span>':''}
+        ${isSample?'<span class="sample-bdg">샘플</span>':''}
         ${sc?`<span class="bfscore">★ ${sc}</span>`:''}
       </span>
     </div>

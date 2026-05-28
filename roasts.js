@@ -21,13 +21,16 @@ function toggleRSort(){
 }
 
 function renderRoasts(){
-  // 원산지·구매처 필터 칩
+  // 원산지·구매처·품종 필터 칩
   const origins=[...new Set(db.beans.map(b=>b.origin).filter(Boolean))];
   const shops=[...new Set(db.beans.map(b=>b.shop).filter(Boolean))];
+  const varieties=[...new Set(db.beans.map(b=>b.variety).filter(Boolean))];
+  const fc=(key,lbl)=>`<div class="fc ${rFilterKey===key?'on':''}" onclick="setRF('${key}')">${lbl}</div>`;
   document.getElementById('roastFilters').innerHTML=
-    `<div class="fc ${rFilterKey==='all'?'on':''}" onclick="setRF('all')">전체</div>`+
-    origins.map(o=>`<div class="fc ${rFilterKey===o?'on':''}" onclick="setRF('${o}')">${o}</div>`).join('')+
-    shops.map(s=>`<div class="fc ${rFilterKey===s?'on':''}" onclick="setRF('${s}')">${s}</div>`).join('');
+    fc('all','전체')+
+    (origins.length?`<span class="flabel">원산지</span>`+origins.map(o=>fc(`origin:${o}`,o)).join(''):'')+
+    (shops.length?`<span class="flabel">구매처</span>`+shops.map(s=>fc(`shop:${s}`,s)).join(''):'')+
+    (varieties.length?`<span class="flabel">품종</span>`+varieties.map(v=>fc(`variety:${v}`,v)).join(''):'');
 
   // 일련번호: 날짜 오름차순 → #1=가장 오래된 것
   const sorted=[...db.roasts].sort((a,b)=>a.date>b.date?1:-1);
@@ -39,7 +42,11 @@ function renderRoasts(){
   if(rFilterKey!=='all'){
     list=list.filter(r=>{
       const bean=db.beans.find(b=>b.name===r.bean_name);
-      return bean&&(bean.origin===rFilterKey||bean.shop===rFilterKey);
+      if(!bean) return false;
+      if(rFilterKey.startsWith('origin:')) return bean.origin===rFilterKey.slice(7);
+      if(rFilterKey.startsWith('shop:')) return bean.shop===rFilterKey.slice(5);
+      if(rFilterKey.startsWith('variety:')) return bean.variety===rFilterKey.slice(8);
+      return bean.origin===rFilterKey||bean.shop===rFilterKey;
     });
   }
 
