@@ -32,8 +32,8 @@ function renderRoasts(){
     (shops.length?`<span class="flabel">구매처</span>`+shops.map(s=>fc(`shop:${s}`,s)).join(''):'')+
     (varieties.length?`<span class="flabel">품종</span>`+varieties.map(v=>fc(`variety:${v}`,v)).join(''):'');
 
-  // 일련번호: 날짜 오름차순 → #1=가장 오래된 것
-  const sorted=[...db.roasts].sort((a,b)=>a.date>b.date?1:-1);
+  // 일련번호: 날짜 오름차순, 같은 날은 id 오름차순(저장순) → #1=가장 오래된 것
+  const sorted=[...db.roasts].sort((a,b)=>a.date!==b.date?(a.date>b.date?1:-1):(a.id>b.id?1:-1));
   const serialMap={};
   sorted.forEach((r,i)=>serialMap[r.id]=i+1);
 
