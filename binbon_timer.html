@@ -93,6 +93,13 @@ body { font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-seri
 <div id="modal-area"></div>
 
 <script>
+let beansList=[];
+window.addEventListener('message',function(e){
+  if(!e.data||e.data.type!=='beans_list')return;
+  beansList=e.data.beans||[];
+  if(S.screen==='setup')render();
+});
+
 const MODES = {
   2:{label:"2번",autoEject:445},
   3:{label:"3번",autoEject:399},
@@ -120,7 +127,8 @@ const POP_ROWS = {
 const COOLING=[0,0,1,2,3];
 
 let S={screen:"setup",modeKey:5,beanType:"kenya",dtr:16,batchNum:1,
-  elapsed:0,popElapsed:null,result:null,countdown:null,countdownDone:false,showTable:false};
+  elapsed:0,popElapsed:null,result:null,countdown:null,countdownDone:false,showTable:false,
+  beanName:'',inputG:'',outputG:''};
 let timerIv=null,cdIv=null,startTime=null,audioCtx=null;
 
 function fmt(s){
@@ -169,8 +177,49 @@ function handlePop(){
 }
 function handleReset(){
   clearInterval(timerIv);clearInterval(cdIv);
-  Object.assign(S,{screen:"setup",elapsed:0,popElapsed:null,result:null,countdown:null,countdownDone:false,showTable:false});
+  Object.assign(S,{screen:"setup",elapsed:0,popElapsed:null,result:null,countdown:null,countdownDone:false,showTable:false,outputG:''});
   render();
+}
+
+function adjOutput(delta){
+  const cur=parseFloat(S.outputG)||0;
+  S.outputG=String(Math.max(1,Math.round(cur+delta)));
+  render();
+}
+function setOutput(v){S.outputG=String(v);render();}
+
+function calcTimerDtrLoss(){
+  const ae=MODES[S.modeKey].autoEject;
+  const popSec=S.popElapsed;
+  const ejSec=S.result?S.result.ejSec:null;
+  let dtr=null,loss=null;
+  if(popSec!==null&&ejSec!==null&&(ae-ejSec)>0&&popSec>ejSec){
+    dtr=((popSec-ejSec)/(ae-ejSec)*100).toFixed(1);
+  }
+  const ig=parseFloat(S.inputG)||0;
+  const og=parseFloat(S.outputG)||0;
+  if(ig>0&&og>0) loss=((ig-og)/ig*100).toFixed(1);
+  return{dtr,loss};
+}
+
+function sendRoastLog(){
+  const ae=MODES[S.modeKey].autoEject;
+  const {dtr,loss}=calcTimerDtrLoss();
+  const popSec=S.popElapsed;
+  const ejSec=S.result?S.result.ejSec:null;
+  const fmtRem=s=>s!==null?fmt(ae-s):null;
+  const data={
+    date:new Date().toISOString().slice(0,10),
+    bean_name:S.beanName||'',
+    mode:String(S.modeKey),
+    input_g:S.inputG||'',
+    output_g:S.outputG||'',
+    pop_time:popSec!==null?fmtRem(popSec):'',
+    eject_time:ejSec!==null?fmtRem(ejSec):'',
+    dtr_pct:dtr||'',
+    loss_pct:loss||'',
+  };
+  window.parent.postMessage({type:'roast_done',data},'*');
 }
 function toggleTable(){S.showTable=!S.showTable;render();}
 
@@ -319,6 +368,24 @@ function render(){
           <div class="info-lab">${bean.label.split("·")[0]}</div>
         </div>
       </div>
+      ${beansList.length?`
+      <div class="sec">
+        <div class="lbl">생두 선택 <span style="color:#bbb;font-weight:400">(선택사항)</span></div>
+        <select style="width:100%;padding:9px 10px;border-radius:8px;border:2px solid #ddd;font-size:13px;font-weight:600;color:#333;background:#fff;font-family:inherit" onchange="S.beanName=this.value;render()">
+          <option value="">선택 안 함</option>
+          ${beansList.map(b=>`<option value="${b.name}"${S.beanName===b.name?' selected':''}>${b.name}</option>`).join('')}
+        </select>
+      </div>
+      <div class="sec">
+        <div class="lbl">투입량(g) <span style="color:#bbb;font-weight:400">(선택사항)</span></div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="chip" onclick="S.inputG=String(Math.max(0,(+S.inputG||0)-10));render()">−10</button>
+          <input type="number" value="${S.inputG}" placeholder="120"
+            style="flex:1;padding:9px 10px;border-radius:8px;border:2px solid #ddd;font-size:15px;font-weight:700;text-align:center;font-family:inherit"
+            oninput="S.inputG=this.value">
+          <button class="chip" onclick="S.inputG=String(Math.max(0,(+S.inputG||0)+10));render()">+10</button>
+        </div>
+      </div>`:``}
       <button class="table-btn" style="border-color:${color};color:${color}" onclick="toggleTable()">
         📋 ${S.showTable?"표 닫기":"전체 표 보기"}</button>
       <button class="start-btn" style="background:${color}" onclick="doStart()">▶ 로스팅 시작</button>
@@ -370,6 +437,39 @@ function render(){
         <div class="lbl" style="margin-bottom:6px">📋 ${mode.label}번 · ${bean.label.replace("(워시드·전가공)","").trim()} · DTR ${S.dtr}% 기준표</div>
         ${buildTableHtml(hitRemain,getDisplayDtrs(bean.dtrs,S.dtr))}
       </div>
+      ${S.countdownDone||S.result?.over?`
+      <div style="background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.07)">
+        <div style="font-size:11px;font-weight:700;color:#888;margin-bottom:10px;letter-spacing:0.5px">📋 로스트 로그 등록</div>
+        ${(()=>{
+          const ig=parseFloat(S.inputG)||0;
+          const og=parseFloat(S.outputG)||(ig?Math.round(ig*0.845):0);
+          if(!S.outputG&&ig) S.outputG=String(Math.round(ig*0.845));
+          const {dtr,loss}=calcTimerDtrLoss();
+          const presets=ig>0?[-4,-2,0,2,4].map(d=>Math.max(1,Math.round(ig*0.845+d))):[];
+          return`
+          <div style="font-size:11px;color:#666;margin-bottom:6px">배출량(g)</div>
+          ${presets.length?`<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">
+            ${presets.map(v=>`<button class="chip" style="${S.outputG==v?`background:${color};border-color:${color};color:#fff`:''}" onclick="setOutput('${v}')">${v}</button>`).join('')}
+          </div>`:''}
+          <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px">
+            <button class="chip" onclick="adjOutput(-5)">−5</button>
+            <button class="chip" onclick="adjOutput(-1)">−1</button>
+            <input type="number" value="${S.outputG}" placeholder="${ig?Math.round(ig*0.845):''}"
+              style="flex:1;padding:9px 10px;border-radius:8px;border:2px solid #ddd;font-size:15px;font-weight:700;text-align:center;font-family:inherit"
+              oninput="S.outputG=this.value;render()">
+            <button class="chip" onclick="adjOutput(1)">+1</button>
+            <button class="chip" onclick="adjOutput(5)">+5</button>
+          </div>
+          <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px">
+            ${dtr?`<span style="background:#5b9cf612;border:1px solid #5b9cf644;color:#5b9cf6;padding:5px 12px;border-radius:6px;font-size:13px;font-weight:700">DTR ${dtr}%</span>`:'<span style="background:#f0f0f0;padding:5px 12px;border-radius:6px;font-size:12px;color:#aaa">DTR — (1차팝 필요)</span>'}
+            ${loss?`<span style="background:#e07b3012;border:1px solid #e07b3044;color:#e07b30;padding:5px 12px;border-radius:6px;font-size:13px;font-weight:700">손실율 ${loss}%</span>`:(ig?'<span style="background:#f0f0f0;padding:5px 12px;border-radius:6px;font-size:12px;color:#aaa">배출량 입력 시 계산</span>':'')}
+          </div>
+          <button onclick="sendRoastLog()"
+            style="width:100%;padding:14px;border-radius:12px;border:none;background:${color};color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit">
+            ✅ 로스트 로그 등록
+          </button>`;
+        })()}
+      </div>`:``}
       <button class="reset-btn" onclick="handleReset()">↩ 처음으로</button>
     `;
   }

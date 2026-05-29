@@ -200,7 +200,9 @@
       </div>
       <div class="adj-row">
         <button class="adj-btn" onclick="adjWt('f_ro',-5)">−5</button>
+        <button class="adj-btn" onclick="adjWt('f_ro',-1)">−1</button>
         <input class="inp adj-inp" type="number" id="f_ro" oninput="calcRoastLive()">
+        <button class="adj-btn" onclick="adjWt('f_ro',1)">+1</button>
         <button class="adj-btn" onclick="adjWt('f_ro',5)">+5</button>
       </div>
     </div>
@@ -243,8 +245,8 @@
 
     <!-- 자동 계산 표시 -->
     <div class="auto-row" id="autoCalc">
-      <span class="auto-badge" id="ac_loss">손실율 —</span>
-      <span class="auto-badge" id="ac_dtr">DTR —</span>
+      <span class="auto-badge ac-loss" id="ac_loss">손실율 —</span>
+      <span class="auto-badge ac-dtr" id="ac_dtr">DTR —</span>
       <span class="auto-badge hi" id="ac_level">레벨 —</span>
     </div>
     <input type="hidden" id="f_rl">
@@ -589,5 +591,19 @@
 <script src="brewing.js?v=20260528f"></script>
 <script src="wishlist.js?v=20260528f"></script>
 <script src="cupping.js?v=20260528f"></script>
+<script>
+// 빈본 타이머 ↔ 로스트 로그 연계
+window.addEventListener('message', function(e){
+  if(!e.data||typeof e.data!=='object') return;
+  if(e.data.type==='roast_done'){
+    const d=e.data.data||{};
+    // 로스팅 탭으로 전환
+    const tb=document.querySelector('.tb[onclick*="roasts"]');
+    if(tb) showTab('roasts',tb);
+    // 폼 prefill로 열기
+    openRoastForm(null, d);
+  }
+});
+</script>
 </body>
 </html>

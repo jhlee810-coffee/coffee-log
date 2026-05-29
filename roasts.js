@@ -196,11 +196,13 @@ function setWt(fieldId,val,chip){
     chip.closest('.preset-chips').querySelectorAll('.pchip').forEach(c=>c.classList.remove('on'));
     chip.classList.add('on');
   }
+  if(fieldId==='f_ri') updateOutputPresets();
   calcRoastLive();
 }
 function adjWt(fieldId,delta){
   const el=document.getElementById(fieldId);
   el.value=Math.max(0,(+el.value||0)+delta);
+  if(fieldId==='f_ri') updateOutputPresets();
   calcRoastLive();
 }
 function setTm(fieldId,t){
@@ -253,33 +255,57 @@ function calcRoastLive(){
 }
 
 /* ── 폼 열기/저장 ── */
-function openRoastForm(id){
+function openRoastForm(id, prefill){
   fillSel('f_rb',db.beans.map(b=>b.name));
   document.getElementById('rfId').value=id||'';
   const r=id?db.roasts.find(x=>x.id===id):{};
-  document.getElementById('f_rd').value=r.date||today();
-  document.getElementById('f_rb').value=r.bean_name||'';
-  document.getElementById('f_rp').value=r.pop_time||'';
-  document.getElementById('f_re').value=r.eject_time||'';
-  document.getElementById('f_rn').value=r.notes||'';
-  document.getElementById('f_ri').value=r.input_g||'';
-  document.getElementById('f_ro').value=r.output_g||'';
-  document.getElementById('f_rl').value=r.roast_level||'';
+  const p=prefill||{};
+  document.getElementById('f_rd').value=r.date||p.date||today();
+  document.getElementById('f_rb').value=r.bean_name||p.bean_name||'';
+  document.getElementById('f_rp').value=r.pop_time||p.pop_time||'';
+  document.getElementById('f_re').value=r.eject_time||p.eject_time||'';
+  document.getElementById('f_rn').value=r.notes||p.notes||'';
+  document.getElementById('f_ri').value=r.input_g||p.input_g||'';
+  document.getElementById('f_ro').value=r.output_g||p.output_g||'';
+  document.getElementById('f_rl').value=r.roast_level||p.roast_level||'';
   document.getElementById('f_rb2').value=r.time_basis||'잔여';
 
   document.querySelectorAll('#modeBtns .mbtn').forEach(b=>b.classList.remove('on'));
-  if(r.mode){
-    document.getElementById('f_rm').value=r.mode;
+  const modeVal=r.mode||p.mode||'';
+  if(modeVal){
+    document.getElementById('f_rm').value=modeVal;
     document.querySelectorAll('#modeBtns .mbtn').forEach(b=>{
-      b.classList.toggle('on',b.textContent==r.mode);
+      b.classList.toggle('on',b.textContent==modeVal);
     });
   } else {
     document.getElementById('f_rm').value='';
   }
 
   document.querySelectorAll('#moRoastForm .preset-chips .pchip').forEach(c=>c.classList.remove('on'));
+  // 투입량 기준으로 배출량 프리셋 동적 생성
+  updateOutputPresets();
   calcRoastLive();
   openMo('moRoastForm');
+}
+
+/* 투입량 기준 배출량 프리셋 동적 생성 */
+function updateOutputPresets(){
+  const ig=parseFloat(document.getElementById('f_ri').value)||0;
+  const chips=document.getElementById('roChips');
+  if(!chips)return;
+  if(ig>0){
+    // 투입량 기준 83~88% 범위 5개 프리셋 (1g 단위)
+    const base=Math.round(ig*0.845);
+    const vals=[base-4,base-2,base,base+2,base+4].map(v=>Math.max(1,v));
+    chips.innerHTML=vals.map(v=>`<span class="pchip" onclick="setWt('f_ro',${v},this)">${v}</span>`).join('');
+  } else {
+    chips.innerHTML=`
+      <span class="pchip" onclick="setWt('f_ro',85,this)">85</span>
+      <span class="pchip" onclick="setWt('f_ro',125,this)">125</span>
+      <span class="pchip" onclick="setWt('f_ro',170,this)">170</span>
+      <span class="pchip" onclick="setWt('f_ro',215,this)">215</span>
+      <span class="pchip" onclick="setWt('f_ro',260,this)">260</span>`;
+  }
 }
 
 function editRoast(id){openRoastForm(id);}

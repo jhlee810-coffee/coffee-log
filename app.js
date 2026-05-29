@@ -130,7 +130,14 @@ function showTab(name,el){
   el.classList.add('on');
   if(name==='timer'){
     const fr=document.getElementById('timerFrame');
-    if(!fr.getAttribute('src'))fr.src='binbon_timer.html';
+    if(!fr.getAttribute('src')){
+      fr.src='binbon_timer.html';
+      fr.addEventListener('load',function(){
+        fr.contentWindow.postMessage({type:'beans_list',beans:db.beans},'*');
+      },{once:true});
+    } else {
+      fr.contentWindow.postMessage({type:'beans_list',beans:db.beans},'*');
+    }
   }
   const fn={dash:renderDash,beans:renderBeans,roasts:renderRoasts,brewing:renderBrewing,wishlist:renderWishlist,cupping:renderCupping};
   if(fn[name]) fn[name]();
