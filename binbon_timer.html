@@ -375,7 +375,7 @@ function render(){
           <option value="">선택 안 함</option>
           ${beansList.map(b=>`<option value="${b.name}"${S.beanName===b.name?' selected':''}>${b.name}</option>`).join('')}
         </select>
-      </div>
+      </div>`:``}
       <div class="sec">
         <div class="lbl">투입량(g) <span style="color:#bbb;font-weight:400">(선택사항)</span></div>
         <div style="display:flex;gap:6px;align-items:center">
@@ -385,7 +385,7 @@ function render(){
             oninput="S.inputG=this.value">
           <button class="chip" onclick="S.inputG=String(Math.max(0,(+S.inputG||0)+10));render()">+10</button>
         </div>
-      </div>`:``}
+      </div>
       <button class="table-btn" style="border-color:${color};color:${color}" onclick="toggleTable()">
         📋 ${S.showTable?"표 닫기":"전체 표 보기"}</button>
       <button class="start-btn" style="background:${color}" onclick="doStart()">▶ 로스팅 시작</button>
