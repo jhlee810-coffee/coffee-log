@@ -442,10 +442,10 @@ function render(){
         <div style="font-size:11px;font-weight:700;color:#888;margin-bottom:10px;letter-spacing:0.5px">📋 로스트 로그 등록</div>
         ${(()=>{
           const ig=parseFloat(S.inputG)||0;
-          const og=parseFloat(S.outputG)||(ig?Math.round(ig*0.845):0);
-          if(!S.outputG&&ig) S.outputG=String(Math.round(ig*0.845));
+          const og=parseFloat(S.outputG)||(ig?Math.round(ig*0.9):0);
+          if(!S.outputG&&ig) S.outputG=String(Math.round(ig*0.9));
           const {dtr,loss}=calcTimerDtrLoss();
-          const presets=ig>0?[-4,-2,0,2,4].map(d=>Math.max(1,Math.round(ig*0.845+d))):[];
+          const presets=ig>0?[-4,-2,0,2,4].map(d=>Math.max(1,Math.round(ig*0.9+d))):[];
           return`
           <div style="font-size:11px;color:#666;margin-bottom:6px">배출량(g)</div>
           ${presets.length?`<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">
@@ -454,7 +454,7 @@ function render(){
           <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px">
             <button class="chip" onclick="adjOutput(-5)">−5</button>
             <button class="chip" onclick="adjOutput(-1)">−1</button>
-            <input type="number" value="${S.outputG}" placeholder="${ig?Math.round(ig*0.845):''}"
+            <input type="number" value="${S.outputG}" placeholder="${ig?Math.round(ig*0.9):''}"
               style="flex:1;padding:9px 10px;border-radius:8px;border:2px solid #ddd;font-size:15px;font-weight:700;text-align:center;font-family:inherit"
               oninput="S.outputG=this.value;render()">
             <button class="chip" onclick="adjOutput(1)">+1</button>
