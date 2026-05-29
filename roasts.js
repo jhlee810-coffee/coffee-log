@@ -265,8 +265,8 @@ function openRoastForm(id, prefill){
   document.getElementById('f_rp').value=r.pop_time||p.pop_time||'';
   document.getElementById('f_re').value=r.eject_time||p.eject_time||'';
   document.getElementById('f_rn').value=r.notes||p.notes||'';
-  document.getElementById('f_ri').value=r.input_g||p.input_g||'';
-  document.getElementById('f_ro').value=r.output_g||p.output_g||'';
+  document.getElementById('f_ri').value=r.input_g||p.input_g||'120';
+  document.getElementById('f_ro').value=r.output_g||p.output_g||'100';
   document.getElementById('f_rl').value=r.roast_level||p.roast_level||'';
   document.getElementById('f_rb2').value=r.time_basis||'잔여';
 
