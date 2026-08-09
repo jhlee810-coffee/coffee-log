@@ -131,7 +131,7 @@ function showTab(name,el){
   if(name==='timer'){
     const fr=document.getElementById('timerFrame');
     if(!fr.getAttribute('src')){
-      fr.src='binbon_timer.html';
+      fr.src='binbon_timer.html?v=20260809a';
       fr.addEventListener('load',function(){
         fr.contentWindow.postMessage({type:'beans_list',beans:db.beans},'*');
       },{once:true});

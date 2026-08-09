@@ -113,8 +113,8 @@ const BEAN = {
     legend:["라이트 — 꽃향기·산미 극대화","꽃향기·산미 강조","향기 우선, 밝은 산미","단맛 균형","미디엄 — 단맛·바디 강조"]},
   natural:{label:"내추럴·허니·무산소",color:"#0D6E54",dtrs:[12,13,14,15,16],
     legend:["라이트 — 과일향·꽃향기 선명","과일향·꽃향기 강조","향기·단맛 균형","단맛·복합향 강조","미디엄 — 진한 단맛·바디"]},
-  kenya:  {label:"케냐 (워시드·전가공)",color:"#7A3B10",dtrs:[12,14,16,18,20,22],
-    legend:["라이트 — 꽃향기·산미·블랙커런트","라이트미디엄 — 꽃향기·산미 강조","미디엄 — 단맛·바디 균형","미디엄다크 — 단맛·진한 바디","다크 — 진한 바디 (라떼·더치)","풀시티 — 강한 바디·쓴맛"]},
+  kenya:  {label:"케냐 (워시드·전가공)",color:"#7A3B10",dtrs:[16,18,20,22,24,26],
+    legend:["미디엄 — 단맛·바디 균형","미디엄다크 — 단맛·진한 바디","다크 — 진한 바디 (라떼·더치)","풀시티 — 강한 바디·쓴맛","프렌치 — 오일리·진한 스모키","이탈리안 — 최대 바디·강한 탄맛"]},
 };
 const POP_ROWS = {
   2:{rows:[75,70,65,60,55,50,45,40,35],center:55},
@@ -381,7 +381,7 @@ function render(){
         <div style="display:flex;gap:6px;align-items:center">
           <button class="chip" onclick="S.inputG=String(Math.max(0,(+S.inputG||0)-10));render()">−10</button>
           <input type="number" value="${S.inputG}" placeholder="120"
-            style="flex:1;padding:9px 10px;border-radius:8px;border:2px solid #ddd;font-size:15px;font-weight:700;text-align:center;font-family:inherit"
+            style="flex:1;min-width:0;padding:9px 10px;border-radius:8px;border:2px solid #ddd;font-size:15px;font-weight:700;text-align:center;font-family:inherit"
             oninput="S.inputG=this.value">
           <button class="chip" onclick="S.inputG=String(Math.max(0,(+S.inputG||0)+10));render()">+10</button>
         </div>
@@ -455,7 +455,7 @@ function render(){
             <button class="chip" onclick="adjOutput(-5)">−5</button>
             <button class="chip" onclick="adjOutput(-1)">−1</button>
             <input type="number" value="${S.outputG}" placeholder="${ig?Math.round(ig*0.9):''}"
-              style="flex:1;padding:9px 10px;border-radius:8px;border:2px solid #ddd;font-size:15px;font-weight:700;text-align:center;font-family:inherit"
+              style="flex:1;min-width:0;padding:9px 10px;border-radius:8px;border:2px solid #ddd;font-size:15px;font-weight:700;text-align:center;font-family:inherit"
               oninput="S.outputG=this.value;render()">
             <button class="chip" onclick="adjOutput(1)">+1</button>
             <button class="chip" onclick="adjOutput(5)">+5</button>
