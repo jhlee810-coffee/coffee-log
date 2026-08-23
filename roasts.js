@@ -1,4 +1,4 @@
-const BINBON_MODES={2:445,3:399,4:406,5:470,6:362,7:405};
+const BINBON_MODES={1:460,2:445,3:397,4:406,5:470,6:363,7:406,8:459};
 
 let rFilterKey='all';
 let rSortDir='desc'; // desc=최신순, asc=번호순(오래된것부터)

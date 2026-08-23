@@ -17,7 +17,7 @@
 |------|------|
 | GitHub 레포 | `jhlee810-coffee/coffee-log` |
 | GitHub PAT | `ghp_****` (jhlee810@gmail.com → GitHub Settings → Developer Settings에서 재발급) |
-| Mac Mini SSH | `JHLee@192.168.0.5` |
+| Mac Mini SSH | `jhlee@<IP>` (IP 유동적 — DHCP로 바뀔 수 있음, 확인법은 별도 메모 참고) |
 | Mac Mini 프로젝트 경로 | `~/coffee-log/` |
 | Mac Mini HTTP 서버 | `python3 -m http.server 8899` (백그라운드 실행) |
 | Google Sheets ID | `1VclS_5T-vCXr4fnfGGJY3-DyY3oUf11PmThT9bVrmlo` |
@@ -28,17 +28,21 @@
 ## 배포 절차
 
 ```bash
-# 1. Windows에서 파일 수정 (D:\BI_T1m\coffee-log\)
+# 1. Windows에서 파일 수정 (D:\coffee-log\)
 
 # 2. index.html 캐시버스팅 버전 올리기 (모든 ?v= 일괄 변경)
 #    예: ?v=20260528d → ?v=20260529a
 
 # 3. Mac Mini에 SCP 전송
-scp 파일.js 파일.css JHLee@192.168.0.5:~/coffee-log/
+scp 파일.js 파일.css jhlee@<IP>:~/coffee-log/
 
-# 4. Mac Mini에서 git commit & push (SSH로)
-ssh JHLee@192.168.0.5 "cd ~/coffee-log && git add 파일명 && git commit -m '커밋메시지' && git push https://[PAT]@github.com/jhlee810-coffee/coffee-log.git main"
+# 4. Mac Mini에서 git commit (SSH 키 인증, PAT 불필요)
+ssh jhlee@<IP> "cd ~/coffee-log && git add 파일명 && git commit -m '커밋메시지'"
+
+# 5. push는 PAT 필요 (키체인 SSO 문제로 SSH 세션에선 자동 인증 안 됨) — 사용자가 직접 실행 권장:
+ssh jhlee@<IP> "cd ~/coffee-log && git push https://x-access-token:[PAT]@github.com/jhlee810-coffee/coffee-log.git main"
 # PAT는 GitHub → Settings → Developer Settings → Personal Access Tokens에서 확인/재발급
+# 주의: TOKEN@host 단독이나 TOKEN:@host 형식은 GitHub가 거부함. x-access-token:TOKEN@host 형식만 동작 (2026-08-24 확인)
 ```
 
 > Git 저장소는 Mac Mini에만 있음. Windows 로컬은 git repo 아님.
@@ -215,7 +219,7 @@ Invoke-WebRequest -Uri $url -Method POST -Body $bodyBytes -ContentType "text/pla
 | `app.js` | `OFFICIAL_RECIPES[]` | 484 레시피, 4:6, Switch, Hoffmann |
 | `app.js` | `ORIGIN_COLORS{}` | 원산지별 색상 맵 |
 | `app.js` | `db` | 전역 데이터 객체 |
-| `roasts.js` | `BINBON_MODES{}` | `{2:445, 3:399, 4:406, 5:470, 6:362, 7:405}` — 모드별 에어종료시간(초) |
+| `roasts.js` | `BINBON_MODES{}` | `{1:460, 2:445, 3:397, 4:406, 5:470, 6:363, 7:406, 8:459}` — 모드별 에어종료시간(초), 2026-08-24 갱신 |
 | `cupping.js` | `WIZ_SCREENS[]` | 커핑 위저드 8단계 정의 |
 | `cupping.js` | `CUP_STEPS[]` | SCA 10개 항목 키/레이블 |
 

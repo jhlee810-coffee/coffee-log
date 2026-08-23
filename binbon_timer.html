@@ -101,34 +101,44 @@ window.addEventListener('message',function(e){
 });
 
 const MODES = {
+  1:{label:"1번",autoEject:460},
   2:{label:"2번",autoEject:445},
-  3:{label:"3번",autoEject:399},
+  3:{label:"3번",autoEject:397},
   4:{label:"4번",autoEject:406},
   5:{label:"5번",autoEject:470},
-  6:{label:"6번",autoEject:362},
-  7:{label:"7번",autoEject:405},
+  6:{label:"6번",autoEject:363},
+  7:{label:"7번",autoEject:406},
+  8:{label:"8번",autoEject:459},
 };
-const BEAN = {
-  washed: {label:"워시드",color:"#0D6E54",dtrs:[11,12,13,14,15],
-    legend:["라이트 — 꽃향기·산미 극대화","꽃향기·산미 강조","향기 우선, 밝은 산미","단맛 균형","미디엄 — 단맛·바디 강조"]},
-  natural:{label:"내추럴·허니·무산소",color:"#0D6E54",dtrs:[12,13,14,15,16],
-    legend:["라이트 — 과일향·꽃향기 선명","과일향·꽃향기 강조","향기·단맛 균형","단맛·복합향 강조","미디엄 — 진한 단맛·바디"]},
-  kenya:  {label:"케냐 (워시드·전가공)",color:"#7A3B10",dtrs:[16,18,20,22,24,26],
-    legend:["미디엄 — 단맛·바디 균형","미디엄다크 — 단맛·진한 바디","다크 — 진한 바디 (라떼·더치)","풀시티 — 강한 바디·쓴맛","프렌치 — 오일리·진한 스모키","이탈리안 — 최대 바디·강한 탄맛"]},
+// 모드별 DTR 선택 목록 (2026-08-24 확정: 원두종류 대신 모드+DTR로만 구성)
+const MODE_DTRS = {
+  1:{group:"라이트",list:[10,11,12,13,14,15,16,17,18,19]},
+  2:{group:"라이트",list:[12,13,14,15,16,17,18,19,20,21]},
+  3:{group:"라이트",list:[13,14,15,16,17,18,19,20,21,22]},
+  4:{group:"미디움",list:[15,17,19,21,23,25,27,29,31,32]},
+  5:{group:"미디움",list:[16,18,20,22,24,26,28,30,31]},
+  6:{group:"다크",list:[18,20,22,24,26,28,30,32,34,35]},
+  7:{group:"다크",list:[20,22,24,26,28,30,32,34,35]},
+  8:{group:"다크",list:[22,24,26,28,30,32,34,35]},
 };
+const GROUP_COLOR = {"라이트":"#0D6E54","미디움":"#C77A1F","다크":"#7A3B10"};
+function currentGroup(){return MODE_DTRS[S.modeKey].group;}
+function currentColor(){return GROUP_COLOR[currentGroup()];}
 const POP_ROWS = {
+  1:{rows:[70,65,60,55,50,45,40,35,30],center:50},
   2:{rows:[75,70,65,60,55,50,45,40,35],center:55},
-  3:{rows:[85,80,75,70,65,60,55,50,45],center:65},
-  4:{rows:[90,85,80,75,70,65,60,55,50],center:70},
+  3:{rows:[87,82,77,72,67,62,57,52,47],center:67},
+  4:{rows:[91,86,81,76,71,66,61,56,51],center:71},
   5:{rows:[110,105,100,95,90,85,80,75,70],center:90},
-  6:{rows:[125,120,115,110,105,100,95,90,85],center:105},
-  7:{rows:[130,125,120,115,110,105,100,95,90],center:110},
+  6:{rows:[123,118,113,108,103,98,93,88,83],center:103},
+  7:{rows:[131,126,121,116,111,106,101,96,91],center:111},
+  8:{rows:[149,144,139,134,129,124,119,114,109],center:129},
 };
 const COOLING=[0,0,1,2,3];
 
-let S={screen:"setup",modeKey:5,beanType:"kenya",dtr:16,batchNum:1,
+let S={screen:"setup",modeKey:3,dtr:MODE_DTRS[3].list[0],batchNum:1,
   elapsed:0,popElapsed:null,result:null,countdown:null,countdownDone:false,showTable:false,
-  beanName:'',inputG:'',outputG:''};
+  beanName:'',inputG:'',outputG:'100'};
 let timerIv=null,cdIv=null,startTime=null,audioCtx=null;
 
 function fmt(s){
@@ -177,13 +187,13 @@ function handlePop(){
 }
 function handleReset(){
   clearInterval(timerIv);clearInterval(cdIv);
-  Object.assign(S,{screen:"setup",elapsed:0,popElapsed:null,result:null,countdown:null,countdownDone:false,showTable:false,outputG:''});
+  Object.assign(S,{screen:"setup",elapsed:0,popElapsed:null,result:null,countdown:null,countdownDone:false,showTable:false,outputG:'100'});
   render();
 }
 
 function adjOutput(delta){
   const cur=parseFloat(S.outputG)||0;
-  S.outputG=String(Math.max(1,Math.round(cur+delta)));
+  S.outputG=String(Math.max(0.1,Math.round((cur+delta)*10)/10));
   render();
 }
 function setOutput(v){S.outputG=String(v);render();}
@@ -236,10 +246,9 @@ function getDisplayDtrs(dtrs,selectedDtr){
 // ── 표 HTML (설정화면 모달: displayDtrs=null → 전체열 / 로스팅: 3열+wide) ──
 function buildTableHtml(hitRemain,displayDtrs){
   const ae=MODES[S.modeKey].autoEject;
-  const bean=BEAN[S.beanType];
-  const color=bean.color;
+  const color=currentColor();
   const {rows,center}=POP_ROWS[S.modeKey];
-  const dtrs=displayDtrs||bean.dtrs;
+  const dtrs=displayDtrs||MODE_DTRS[S.modeKey].list;
   const wide=!!displayDtrs;
 
   const rowsHtml=rows.map(pr=>{
@@ -273,12 +282,6 @@ function buildTableHtml(hitRemain,displayDtrs){
     </tr>`;
   }).join("");
 
-  const legendHtml=dtrs.map((d,i)=>{
-    const allIdx=bean.dtrs.indexOf(d);
-    const leg=allIdx!==-1?bean.legend[allIdx]:"";
-    return `<p><span style="color:${color};font-weight:700${d===S.dtr?";text-decoration:underline":""}">${d===S.dtr?"▶ ":"• "}DTR ${d}%</span>: ${leg}</p>`;
-  }).join("");
-
   return `
     <div class="inline-table-wrap">
       <table class="itbl${wide?" wide":""}">
@@ -289,7 +292,6 @@ function buildTableHtml(hitRemain,displayDtrs){
         <tbody>${rowsHtml}</tbody>
       </table>
     </div>
-    <div class="tbl-legend">${legendHtml}</div>
     <div class="tbl-warn">+표시 → 자동배출(${fmt(ae)}) 초과 · 강제배출 불가</div>
   `;
 }
@@ -301,8 +303,8 @@ function render(){
   const hdrS=document.getElementById("hdr-sub");
   const modalArea=document.getElementById("modal-area");
   const mode=MODES[S.modeKey];
-  const bean=BEAN[S.beanType];
-  const color=bean.color;
+  const group=currentGroup();
+  const color=currentColor();
 
   // 설정화면 모달
   if(S.screen==="setup"&&S.showTable){
@@ -310,7 +312,7 @@ function render(){
       <div class="modal-overlay" onclick="if(event.target===this)toggleTable()">
         <div class="modal">
           <div class="modal-header">
-            <div class="modal-title" style="color:${color}">${mode.label}번 · ${bean.label.replace("(워시드·전가공)","").trim()} · DTR ${S.dtr}% 선택중</div>
+            <div class="modal-title" style="color:${color}">${mode.label}번 · ${group} · DTR ${S.dtr}% 선택중</div>
             <div class="modal-close" onclick="toggleTable()">✕</div>
           </div>
           <div class="modal-meta">자동배출 ${fmt(mode.autoEject)} · 남은시간 기준 · 괄호=경과 · ★=선택된 DTR</div>
@@ -326,25 +328,23 @@ function render(){
     hdrT.textContent="☕ 빈본 로스팅 타이머";
     hdrS.textContent="1차 팝 → 배출 시간 즉시 계산";
     const cooling=COOLING[Math.min(S.batchNum,4)];
+    const dtrList=MODE_DTRS[S.modeKey].list;
     app.innerHTML=`
       <div class="sec">
         <div class="lbl">빈본 모드</div>
         <div class="btn-row">
-          ${Object.entries(MODES).map(([k,v])=>`
-            <button class="chip" style="${S.modeKey===+k?`background:${color};border-color:${color};color:#fff`:""}"
-              onclick="S.modeKey=${k};render()">${v.label}</button>`).join("")}
+          ${Object.entries(MODES).map(([k,v])=>{
+            const c=GROUP_COLOR[MODE_DTRS[+k].group];
+            return `<button class="chip" style="${S.modeKey===+k?`background:${c};border-color:${c};color:#fff`:""}"
+              onclick="S.modeKey=${k};S.dtr=MODE_DTRS[${k}].list[0];render()">${v.label}</button>`;
+          }).join("")}
         </div>
-      </div>
-      <div class="sec">
-        <div class="lbl">원두 / 가공</div>
-        ${Object.entries(BEAN).map(([k,v])=>`
-          <button class="bean-btn" style="${S.beanType===k?`background:${v.color};border-color:${v.color};color:#fff`:""}"
-            onclick="S.beanType='${k}';S.dtr=${v.dtrs[0]};render()">${v.label}</button>`).join("")}
+        <div style="font-size:11px;color:#888;margin-top:8px">${group} 로스팅 · 자동배출 ${fmt(mode.autoEject)}</div>
       </div>
       <div class="sec">
         <div class="lbl">DTR 목표</div>
         <div class="btn-row">
-          ${bean.dtrs.map(d=>`
+          ${dtrList.map(d=>`
             <button class="chip" style="${S.dtr===d?`background:${color};border-color:${color};color:#fff`:""}"
               onclick="S.dtr=${d};render()">${d}%</button>`).join("")}
         </div>
@@ -365,7 +365,7 @@ function render(){
         </div>
         <div class="info-card" style="border-top:3px solid ${color}">
           <div class="info-val">DTR ${S.dtr}%</div>
-          <div class="info-lab">${bean.label.split("·")[0]}</div>
+          <div class="info-lab">${group}</div>
         </div>
       </div>
       ${beansList.length?`
@@ -373,7 +373,20 @@ function render(){
         <div class="lbl">생두 선택 <span style="color:#bbb;font-weight:400">(선택사항)</span></div>
         <select style="width:100%;padding:9px 10px;border-radius:8px;border:2px solid #ddd;font-size:13px;font-weight:600;color:#333;background:#fff;font-family:inherit" onchange="S.beanName=this.value;render()">
           <option value="">선택 안 함</option>
-          ${beansList.map(b=>`<option value="${b.name}"${S.beanName===b.name?' selected':''}>${b.name}</option>`).join('')}
+          ${(()=>{
+            const byOrigin={};
+            beansList.forEach(b=>{
+              const o=b.origin||"기타";
+              (byOrigin[o]=byOrigin[o]||[]).push(b);
+            });
+            return Object.keys(byOrigin).sort((a,b)=>a.localeCompare(b,"ko"))
+              .map(origin=>{
+                const beans=byOrigin[origin].slice().sort((a,b)=>a.name.localeCompare(b.name,"ko"));
+                return `<optgroup label="${origin}">${beans.map(b=>
+                  `<option value="${b.name}"${S.beanName===b.name?' selected':''}>${b.name}</option>`
+                ).join('')}</optgroup>`;
+              }).join('');
+          })()}
         </select>
       </div>`:``}
       <div class="sec">
@@ -395,7 +408,7 @@ function render(){
     const hdrBg=S.popElapsed!==null?(S.result?.over?"#e05c00":color):"#333";
     hdr.style.background=hdrBg;
     hdrT.textContent=S.popElapsed===null?"🔥 로스팅 중...":(S.result?.over?"⚠ 자동배출 초과":"✅ 배출 시간");
-    hdrS.textContent=`${mode.label} · DTR ${S.dtr}% · ${bean.label.split("·")[0]}`;
+    hdrS.textContent=`${mode.label} · DTR ${S.dtr}% · ${group}`;
     const remDisplay=Math.max(0,mode.autoEject-S.elapsed);
 
     // 1차팝 하이라이트 행
@@ -434,8 +447,8 @@ function render(){
         :`<div class="pop-info">1차 팝: 경과 <b>${fmt(S.popElapsed)}</b> / 잔여 ≈ <b>${fmt(mode.autoEject-S.popElapsed)}</b></div>`}
       ${resultHtml}
       <div class="sec" style="padding:12px 10px;margin-bottom:12px">
-        <div class="lbl" style="margin-bottom:6px">📋 ${mode.label}번 · ${bean.label.replace("(워시드·전가공)","").trim()} · DTR ${S.dtr}% 기준표</div>
-        ${buildTableHtml(hitRemain,getDisplayDtrs(bean.dtrs,S.dtr))}
+        <div class="lbl" style="margin-bottom:6px">📋 ${mode.label}번 · ${group} · DTR ${S.dtr}% 기준표</div>
+        ${buildTableHtml(hitRemain,getDisplayDtrs(MODE_DTRS[S.modeKey].list,S.dtr))}
       </div>
       ${S.countdownDone||S.result?.over?`
       <div style="background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.07)">
@@ -451,14 +464,18 @@ function render(){
           ${presets.length?`<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">
             ${presets.map(v=>`<button class="chip" style="${S.outputG==v?`background:${color};border-color:${color};color:#fff`:''}" onclick="setOutput('${v}')">${v}</button>`).join('')}
           </div>`:''}
-          <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px">
+          <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
             <button class="chip" onclick="adjOutput(-5)">−5</button>
             <button class="chip" onclick="adjOutput(-1)">−1</button>
-            <input type="number" value="${S.outputG}" placeholder="${ig?Math.round(ig*0.9):''}"
+            <input type="number" step="0.1" value="${S.outputG}" placeholder="${ig?Math.round(ig*0.9):''}"
               style="flex:1;min-width:0;padding:9px 10px;border-radius:8px;border:2px solid #ddd;font-size:15px;font-weight:700;text-align:center;font-family:inherit"
               oninput="S.outputG=this.value;render()">
             <button class="chip" onclick="adjOutput(1)">+1</button>
             <button class="chip" onclick="adjOutput(5)">+5</button>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px">
+            <button class="chip" style="flex:1" onclick="adjOutput(-0.1)">−0.1g</button>
+            <button class="chip" style="flex:1" onclick="adjOutput(0.1)">+0.1g</button>
           </div>
           <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px">
             ${dtr?`<span style="background:#5b9cf612;border:1px solid #5b9cf644;color:#5b9cf6;padding:5px 12px;border-radius:6px;font-size:13px;font-weight:700">DTR ${dtr}%</span>`:'<span style="background:#f0f0f0;padding:5px 12px;border-radius:6px;font-size:12px;color:#aaa">DTR — (1차팝 필요)</span>'}
