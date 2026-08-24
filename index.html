@@ -52,7 +52,7 @@
 
 <!-- 빈본 타이머 -->
 <div id="tab-timer" class="sec">
-  <iframe id="timerFrame" style="width:100%;height:calc(100vh - 130px);border:none;border-radius:10px;display:block;"></iframe>
+  <iframe id="timerFrame" allow="autoplay" style="width:100%;height:calc(100vh - 130px);border:none;border-radius:10px;display:block;"></iframe>
 </div>
 
 <!-- 로스팅 로그 -->
@@ -203,9 +203,13 @@
       <div class="adj-row">
         <button class="adj-btn" onclick="adjWt('f_ro',-5)">−5</button>
         <button class="adj-btn" onclick="adjWt('f_ro',-1)">−1</button>
-        <input class="inp adj-inp" type="number" id="f_ro" oninput="calcRoastLive()">
+        <input class="inp adj-inp" type="number" step="0.1" id="f_ro" oninput="calcRoastLive()">
         <button class="adj-btn" onclick="adjWt('f_ro',1)">+1</button>
         <button class="adj-btn" onclick="adjWt('f_ro',5)">+5</button>
+      </div>
+      <div class="adj-row" style="margin-top:6px">
+        <button class="adj-btn" style="flex:1" onclick="adjWt('f_ro',-0.1)">−0.1</button>
+        <button class="adj-btn" style="flex:1" onclick="adjWt('f_ro',0.1)">+0.1</button>
       </div>
     </div>
 
@@ -590,10 +594,10 @@
 </div>
 
 <script src="data.js?v=20260528f"></script>
-<script src="app.js?v=20260809a"></script>
+<script src="app.js?v=20260824a"></script>
 <script src="dashboard.js?v=20260528f"></script>
 <script src="beans.js?v=20260528f"></script>
-<script src="roasts.js?v=20260529a"></script>
+<script src="roasts.js?v=20260824a"></script>
 <script src="brewing.js?v=20260528f"></script>
 <script src="wishlist.js?v=20260528f"></script>
 <script src="cupping.js?v=20260528f"></script>
@@ -603,10 +607,7 @@ window.addEventListener('message', function(e){
   if(!e.data||typeof e.data!=='object') return;
   if(e.data.type==='roast_done'){
     const d=e.data.data||{};
-    // 로스팅 탭으로 전환
-    const tb=document.querySelector('.tb[onclick*="roasts"]');
-    if(tb) showTab('roasts',tb);
-    // 폼 prefill로 열기
+    // 폼만 prefill로 열기 (탭 전환은 저장 성공 시로 미룸 — 취소하면 빈본 타이머 화면 그대로 유지)
     openRoastForm(null, d);
   }
 });

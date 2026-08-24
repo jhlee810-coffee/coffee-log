@@ -96,6 +96,7 @@ async function syncFromSheets(){
 
 function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5);}
 function toSec(t){const p=t.split(':');return+p[0]*60+ +p[1];}
+function fmtMS(s){const a=Math.max(0,Math.round(s)),m=Math.floor(a/60),sec=a%60;return `${m}:${String(sec).padStart(2,'0')}`;}
 
 function exportData(){
   const json=JSON.stringify(db);
@@ -131,7 +132,7 @@ function showTab(name,el){
   if(name==='timer'){
     const fr=document.getElementById('timerFrame');
     if(!fr.getAttribute('src')){
-      fr.src='binbon_timer.html?v=20260824e';
+      fr.src='binbon_timer.html?v=20260824f';
       fr.addEventListener('load',function(){
         fr.contentWindow.postMessage({type:'beans_list',beans:db.beans},'*');
       },{once:true});

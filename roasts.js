@@ -125,6 +125,14 @@ function openRoastDetail(id){
   const serial=sorted.findIndex(x=>x.id===id)+1;
   const bean=db.beans.find(b=>b.name===r.bean_name)||{};
   const levelColor={'라이트':'var(--amber)','라이트-미디엄':'#f5c36e','미디엄':'var(--teal)','미디엄-다크':'#5ec4b8','다크':'var(--coral)'}[r.roast_level]||'var(--muted)';
+  const ae2=BINBON_MODES[+r.mode];
+  let popElapsedStr='',ejElapsedStr='',devSec=null;
+  if(ae2&&r.pop_time) popElapsedStr=fmtMS(ae2-toSec(r.pop_time));
+  if(ae2&&r.eject_time) ejElapsedStr=fmtMS(ae2-toSec(r.eject_time));
+  if(r.pop_time&&r.eject_time){
+    const ps=toSec(r.pop_time),es=toSec(r.eject_time);
+    if(ps>es) devSec=ps-es;
+  }
   const brews=db.brewlogs.filter(b=>
     b.roast_id===id||
     (b.brew_type==='own'&&b.bean_name===r.bean_name&&!b.roast_id)
@@ -165,8 +173,9 @@ function openRoastDetail(id){
       ${dr('손실율',r.loss_pct?r.loss_pct+'%':'')}
       ${dr('투입',r.input_g?r.input_g+'g':'')}
       ${dr('배출',r.output_g?r.output_g+'g':'')}
-      ${dr('1팝 잔여',r.pop_time||'')}
-      ${dr('배출 잔여',r.eject_time||'')}
+      ${dr('1팝 경과',popElapsedStr?`${popElapsedStr}${r.pop_time?`<span style="color:var(--muted);font-size:11px"> (잔여 ${r.pop_time})</span>`:''}`:(r.pop_time||''))}
+      ${dr('배출 경과',ejElapsedStr?`${ejElapsedStr}${r.eject_time?`<span style="color:var(--muted);font-size:11px"> (잔여 ${r.eject_time})</span>`:''}`:(r.eject_time||''))}
+      ${dr('디벨롭타임',devSec!==null?devSec+'초':'')}
     </div>
     ${bean.cup_notes?`<div class="ds"><div class="dstitle">컵노트</div><div style="font-family:'Playfair Display',serif;font-size:13px;color:var(--muted2);line-height:1.7;font-style:italic">${bean.cup_notes}</div></div>`:''}
     ${r.notes?`<div class="ds"><div class="dstitle">로스팅 메모</div><div style="font-size:13px;color:var(--text2);line-height:1.7;font-style:italic">${r.notes}</div></div>`:''}
@@ -201,7 +210,7 @@ function setWt(fieldId,val,chip){
 }
 function adjWt(fieldId,delta){
   const el=document.getElementById(fieldId);
-  el.value=Math.max(0,(+el.value||0)+delta);
+  el.value=Math.max(0,Math.round(((+el.value||0)+delta)*10)/10);
   if(fieldId==='f_ri') updateOutputPresets();
   calcRoastLive();
 }
@@ -349,4 +358,6 @@ function saveRoast(){
   if(id){const i=db.roasts.findIndex(r=>r.id===id);if(i>=0)db.roasts[i]=data;}
   else db.roasts.push(data);
   saveDB();closeMo('moRoastForm');renderRoasts();
+  const tb=document.querySelector('.tb[onclick*="roasts"]');
+  if(tb) showTab('roasts',tb);
 }
