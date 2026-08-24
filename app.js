@@ -17,7 +17,7 @@ const ORIGIN_COLORS={
   '온두라스':'var(--teal)',
   '파나마':'#c084fc',
   '과테말라':'#fb923c',
-  '페루':'#94a3b8',
+  '페루':'#c9a876',
 };
 
 let db=loadDB();
@@ -132,7 +132,7 @@ function showTab(name,el){
   if(name==='timer'){
     const fr=document.getElementById('timerFrame');
     if(!fr.getAttribute('src')){
-      fr.src='binbon_timer.html?v=20260824g';
+      fr.src='binbon_timer.html?v=20260824h';
       fr.addEventListener('load',function(){
         fr.contentWindow.postMessage({type:'beans_list',beans:db.beans},'*');
       },{once:true});

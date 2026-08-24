@@ -95,7 +95,7 @@ function renderRoasts(){
       </div>`;
     }
 
-    const levelColor={'라이트':'var(--amber)','라이트-미디엄':'#f5c36e','미디엄':'var(--teal)','미디엄-다크':'#5ec4b8','다크':'var(--coral)'}[r.roast_level]||'var(--muted)';
+    const levelColor={'라이트':'var(--amber)','라이트-미디엄':'var(--amber)','미디엄':'var(--amber)','미디엄-다크':'var(--amber)','다크':'var(--coral)'}[r.roast_level]||'var(--muted)';
     const metaParts=[bean.origin,bean.shop,beanPrice?String(beanPrice):'',beanMonth].filter(Boolean).join('  ·  ');
     const statsLine=[r.mode?`모드${r.mode}`:'',dtr?`DTR ${dtr}%`:'',loss?`손실율 ${loss}%`:'',r.input_g?`투입 ${r.input_g}g`:''].filter(Boolean).join('   ');
 
@@ -124,7 +124,7 @@ function openRoastDetail(id){
   const sorted=[...db.roasts].sort((a,b)=>a.date>b.date?1:-1);
   const serial=sorted.findIndex(x=>x.id===id)+1;
   const bean=db.beans.find(b=>b.name===r.bean_name)||{};
-  const levelColor={'라이트':'var(--amber)','라이트-미디엄':'#f5c36e','미디엄':'var(--teal)','미디엄-다크':'#5ec4b8','다크':'var(--coral)'}[r.roast_level]||'var(--muted)';
+  const levelColor={'라이트':'var(--amber)','라이트-미디엄':'var(--amber)','미디엄':'var(--amber)','미디엄-다크':'var(--amber)','다크':'var(--coral)'}[r.roast_level]||'var(--muted)';
   const ae2=BINBON_MODES[+r.mode];
   let popElapsedStr='',ejElapsedStr='',devSec=null;
   if(ae2&&r.pop_time) popElapsedStr=fmtMS(ae2-toSec(r.pop_time));
