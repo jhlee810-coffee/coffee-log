@@ -184,6 +184,7 @@ function doStart(){
   timerIv=setInterval(()=>{S.elapsed=Math.floor((Date.now()-startTime)/1000);render();},200);
   requestWakeLock();
   beep(660,0.2);render();
+  window.scrollTo(0,0);
 }
 function handlePop(){
   if(S.popElapsed!==null)return;
@@ -210,6 +211,7 @@ function handleReset(){
   releaseWakeLock();
   Object.assign(S,{screen:"setup",elapsed:0,popElapsed:null,result:null,countdown:null,countdownDone:false,showTable:false,outputG:'100'});
   render();
+  window.scrollTo(0,0);
 }
 
 function adjOutput(delta){
