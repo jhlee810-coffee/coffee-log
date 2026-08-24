@@ -138,7 +138,20 @@ const POP_ROWS = {
 let S={screen:"setup",modeKey:3,dtr:MODE_DTRS[3].list[0],
   elapsed:0,popElapsed:null,result:null,countdown:null,countdownDone:false,showTable:false,
   beanName:'',inputG:'',outputG:'100'};
-let timerIv=null,cdIv=null,startTime=null,audioCtx=null;
+let timerIv=null,cdIv=null,startTime=null,audioCtx=null,wakeLock=null;
+
+async function requestWakeLock(){
+  try{
+    wakeLock=await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release',()=>{wakeLock=null;});
+  }catch(e){}
+}
+function releaseWakeLock(){
+  if(wakeLock){wakeLock.release().catch(()=>{});wakeLock=null;}
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&S.screen==='running'&&!wakeLock)requestWakeLock();
+});
 
 function fmt(s){
   const a=Math.abs(Math.round(s)),m=Math.floor(a/60),sec=a%60;
@@ -165,6 +178,7 @@ function doStart(){
   Object.assign(S,{elapsed:0,popElapsed:null,result:null,countdown:null,countdownDone:false,showTable:false,screen:"running"});
   startTime=Date.now();
   timerIv=setInterval(()=>{S.elapsed=Math.floor((Date.now()-startTime)/1000);render();},200);
+  requestWakeLock();
   beep(660,0.2);render();
 }
 function handlePop(){
@@ -186,6 +200,7 @@ function handlePop(){
 }
 function handleReset(){
   clearInterval(timerIv);clearInterval(cdIv);
+  releaseWakeLock();
   Object.assign(S,{screen:"setup",elapsed:0,popElapsed:null,result:null,countdown:null,countdownDone:false,showTable:false,outputG:'100'});
   render();
 }
