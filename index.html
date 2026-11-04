@@ -6,7 +6,7 @@
 <title>Coffee Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=Josefin+Sans:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261104e">
+<link rel="stylesheet" href="style.css?v=20261104f">
 </head>
 <body>
 
@@ -25,6 +25,7 @@
     <div class="tb" onclick="showTab('roasts',this)">로스팅 로그</div>
     <div class="tb" onclick="showTab('brewing',this)">브루잉</div>
     <div class="tb" onclick="showTab('cupping',this)">커핑</div>
+    <div class="tb" onclick="showTab('easycup',this)">쉬운 커핑</div>
     <div class="tb" onclick="showTab('wishlist',this)">구매 검토</div>
   </div>
   <!-- 로스팅 중 다른 탭에서 보이는 미니바 (빈본 타이머 상태) -->
@@ -106,6 +107,9 @@
   </div>
   <div id="cuppingList"></div>
 </div>
+
+<!-- 쉬운 커핑 (2개 비교, easycup.js) -->
+<div id="tab-easycup" class="sec"><div id="ecRoot"></div></div>
 
 <!-- 구매 검토 -->
 <div id="tab-wishlist" class="sec">
@@ -614,14 +618,51 @@
   </div>
 </div>
 
+<!-- MODAL: 쉬운 커핑 — 로스팅 기록 고르기 -->
+<div class="mo" id="moEcPick">
+  <div class="mbox">
+    <div class="mtitle" id="ecPickTitle">로스팅 고르기</div>
+    <input class="search" id="ecPickSearch" placeholder="생두 이름으로 거르기..." oninput="ecRenderPickList()">
+    <div id="ecPickList" class="ec-pick-list"></div>
+    <div class="fa"><button class="btn2" onclick="closeMo('moEcPick')">닫기</button></div>
+  </div>
+</div>
+
+<!-- MODAL: 쉬운 커핑 — 직접 입력 -->
+<div class="mo" id="moEcManual">
+  <div class="mbox">
+    <div class="mtitle" id="ecManTitle">직접 입력</div>
+    <div class="fg"><label class="fl">생두 이름 *</label><input class="inp" id="ecManBean" list="ecManBeans" placeholder="생두 이름"><datalist id="ecManBeans"></datalist></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">로스팅 날짜</label><input class="inp" type="date" id="ecManDate"></div>
+      <div class="fg"><label class="fl">모드</label><select class="sel" id="ecManMode"><option value="">-</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></div>
+    </div>
+    <div class="fg"><label class="fl">DTR (%)</label><input class="inp" id="ecManDtr" inputmode="decimal" placeholder="예: 12"></div>
+    <div class="fg"><label class="fl">메모</label><input class="inp" id="ecManMemo" placeholder="선택"></div>
+    <div class="fa"><button class="btn2" onclick="closeMo('moEcManual')">취소</button><button class="btn btn-sm" onclick="ecSaveManual()">넣기</button></div>
+  </div>
+</div>
+
+<!-- MODAL: 쉬운 커핑 — 비김일 때 남길 원두 -->
+<div class="mo" id="moEcKeep">
+  <div class="mbox">
+    <div class="mtitle">비겼어요 · 둘 중 하나를 남기기</div>
+    <div class="ec-hint" style="margin-bottom:12px">남긴 원두가 다음 비교의 A 자리에 들어가요.</div>
+    <button class="ec-bigbtn" id="ecKeepA" onclick="ecKeep('A')">A 남기기</button>
+    <button class="ec-bigbtn" id="ecKeepB" onclick="ecKeep('B')" style="margin-top:8px">B 남기기</button>
+    <div class="fa"><button class="btn2" onclick="closeMo('moEcKeep')">취소</button></div>
+  </div>
+</div>
+
 <script src="data.js?v=20260528f"></script>
-<script src="app.js?v=20261104i"></script>
+<script src="app.js?v=20261104j"></script>
 <script src="dashboard.js?v=20260528f"></script>
 <script src="beans.js?v=20261104d"></script>
 <script src="roasts.js?v=20260824b"></script>
 <script src="brewing.js?v=20260528f"></script>
 <script src="wishlist.js?v=20261104a"></script>
 <script src="cupping.js?v=20260528f"></script>
+<script src="easycup.js?v=20261104a"></script>
 <script>
 // 빈본 타이머 ↔ 로스트 로그 연계
 window.addEventListener('message', function(e){

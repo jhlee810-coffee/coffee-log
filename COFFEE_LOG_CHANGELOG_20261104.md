@@ -136,3 +136,15 @@
 ## 빈본 타이머 5번 모드 DTR 12·13% 추가 (2026-11-04)
 - `MODE_DTRS[5]`: `[14,16,18,20,22]` → `[12,13,14,16,18,20,22]`
 - 버전: `binbon_timer.html?v=20261104h` (app.js), `app.js?v=20261104i` (index.html)
+
+## 쉬운 커핑 (원두 2개 비교) 탭 추가 (2026-11-04)
+- 새 파일 `easycup.js`, 새 탭 "쉬운 커핑"(커핑 탭 오른쪽). 기존 커핑(`db.cuppings`, cupping.js)은 손대지 않음
+- **저장: localStorage `easyCuppingLog` (배열) — `coffee_v3`/Sheets 동기화와 분리.** 기기 간 동기화 안 됨 → 화면의 백업(JSON)/CSV/텍스트 복사로 보관
+- 흐름: 커핑 날짜(기본 오늘) → A·B 선택(로스팅 기록에서 고르기: 생두명 필터, 다른 쪽 생두로 자동 필터 / 직접 입력) → 블라인드(켜면 1·2번 컵 무작위, 정답 보기는 확인창, 저장 시 공개) → 진행 체크 5단계 → 향·단맛·뒷맛(선택)·최종(필수) + 한 줄 메모
+- 기록 필드: `id, date, A, B({roast_id,bean,roast_date,mode,dtr,loss,batch,memo,manual,degas_days}), blind, blind_order, steps[5], picks{aroma,sweet,after,final}('A'|'B'|'same'), memo, tournament_id, round, keep, summary, created_at, updated_at`
+- 배치 순서 = 같은 날짜 로스팅 중 기록 순서(그날 n번째). 디개싱 = 커핑 날짜 − 로스팅 날짜
+- 토너먼트: 저장 후 "승자로 다음 비교하기" → 승자가 A로, 비김이면 남길 쪽 선택(`keep`). 같은 `tournament_id`끼리 목록에서 묶고 마지막 승자 표시
+- 목록(최신순, 생두명 필터) · 생두+모드+DTR별 승패 집계 · 수정/삭제(확인창) · 텍스트 복사 · CSV(UTF-8 BOM) · JSON 백업 받기/불러오기(id 중복은 건너뜀)
+- 검증(로컬, 375px): 예시 3건(블라인드 1, 토너먼트 이어 하기·비김 남기기 포함) 저장→목록·집계·복사·CSV·백업 재불러오기(0건 추가/3건 건너뜀)·수정·새로고침 후 유지·삭제 확인, 기존 커핑/로스팅 로그 정상, 콘솔 에러 없음. 예시 데이터 삭제함
+- 버전: `easycup.js?v=20261104a`, `app.js?v=20261104j`(showTab에 easycup 렌더 연결), `style.css?v=20261104f`
+- ⚠ 발견: Sheets 동기화 JSON이 49,994자 — Google Sheets 셀 한도 50,000자에 거의 닿음 (아래 미해결 참고)

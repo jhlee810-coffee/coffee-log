@@ -143,7 +143,7 @@ function showTab(name,el){
       fr.contentWindow.postMessage({type:'beans_list',beans:db.beans,roasts:db.roasts},'*');
     }
   }
-  const fn={dash:renderDash,beans:renderBeans,roasts:renderRoasts,brewing:renderBrewing,wishlist:renderWishlist,cupping:renderCupping};
+  const fn={dash:renderDash,beans:renderBeans,roasts:renderRoasts,brewing:renderBrewing,wishlist:renderWishlist,cupping:renderCupping,easycup:typeof renderEasyCup==='function'?renderEasyCup:null};
   if(fn[name]) fn[name]();
   if(window.updateRoastBar) updateRoastBar();
 }

@@ -63,6 +63,7 @@ coffee-log/
 ├── brewing.js          — 브루잉 탭 (renderBrewing, 레시피/로그)
 ├── wishlist.js         — 구매검토 탭 (renderWishlist)
 ├── cupping.js          — 커핑 탭 (위저드, 드래프트/완료 워크플로우)
+├── easycup.js          — 쉬운 커핑 탭 (원두 2개 비교·토너먼트·CSV/백업). 저장은 localStorage `easyCuppingLog` 별도 키 (Sheets 동기화 안 됨)
 ├── binbon_timer.html   — 빈본 로스팅 타이머 (iframe으로 탑재)
 ├── COFFEE_LOG_STRUCTURE.md     — 이 파일 (프로젝트 구조 참조)
 └── COFFEE_LOG_CHANGELOG_*.md   — 날짜별 작업 로그
@@ -266,3 +267,5 @@ Invoke-WebRequest -Uri $url -Method POST -Body $bodyBytes -ContentType "text/pla
 6. **캐시버스팅 연쇄** — `binbon_timer.html` 수정 시 `app.js`의 타이머 `?v=` + `index.html`의 `app.js?v=`까지 올려야 폰에 반영됨.
 7. **로컬 테스트 = 실데이터 위험** — `saveDB()`가 바로 Sheets에 업로드함. 브라우저 테스트 전 `localStorage coffee_v3`의 `_savedAt`을 1로, 로드 후 `saveDB`/`pushToSheets`를 빈 함수로 막고 테스트.
 8. **로스팅 시작 버튼엔 확인창/지연 금지** — 빈본 구동 직후 누르는 버튼(사용자 요구).
+9. **Sheets 셀 50,000자 한도 임박** — 2026-11-04 기준 동기화 JSON 49,994자. 넘으면 GAS `setValue`가 실패하고 `pushToSheets`는 오류를 조용히 삼킴 → 폰에만 저장되고 Sheets는 멈춤. 해결하려면 GAS를 여러 셀(A1, A2…)에 나눠 저장하도록 바꿔야 함.
+10. **쉬운 커핑은 `easyCuppingLog` 별도 키** — `db`에 넣지 않은 이유: 사용자 요청(기존 데이터와 분리) + 위 셀 한도.
