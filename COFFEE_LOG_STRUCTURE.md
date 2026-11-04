@@ -262,7 +262,7 @@ Invoke-WebRequest -Uri $url -Method POST -Body $bodyBytes -ContentType "text/pla
 2. **renderDash ReferenceError** — app.js가 dashboard.js보다 먼저 로드되어 발생. `try-catch`로 처리 중. 콘솔 에러는 무해.
 3. **구버전 커핑 데이터** — `step_scores` 없이 `scores`만 있거나 `status` 없는 데이터. `calcCupTotal`과 `isDraft` 로직이 처리.
 4. **Sheets 동기화 충돌** — 마지막 저장이 항상 이김 (last-write-wins). 두 기기에서 동시 편집 시 한쪽 변경 유실 가능.
+5. **Sheets 셀 한도** — Google Sheets 셀 최대 50,000자. 현재 데이터 약 19,000자. 데이터 대폭 늘면 재설계 필요.
 6. **캐시버스팅 연쇄** — `binbon_timer.html` 수정 시 `app.js`의 타이머 `?v=` + `index.html`의 `app.js?v=`까지 올려야 폰에 반영됨.
 7. **로컬 테스트 = 실데이터 위험** — `saveDB()`가 바로 Sheets에 업로드함. 브라우저 테스트 전 `localStorage coffee_v3`의 `_savedAt`을 1로, 로드 후 `saveDB`/`pushToSheets`를 빈 함수로 막고 테스트.
 8. **로스팅 시작 버튼엔 확인창/지연 금지** — 빈본 구동 직후 누르는 버튼(사용자 요구).
-5. **Sheets 셀 한도** — Google Sheets 셀 최대 50,000자. 현재 데이터 약 19,000자. 데이터 대폭 늘면 재설계 필요.
