@@ -92,9 +92,14 @@ coffee-log/
 db = {
   beans: [
     {
-      id, name, origin, farm, variety, process, altitude,
-      purchase_date, purchase_from, price_per_100g,
-      roast_profile, notes, stock_g, target_roast
+      id, name, origin, region, variety, process,
+      altitude,         // "1600" 또는 "1600~1900" (옛 데이터 "1700 1800"은 수정·저장 시 ~로 정규화)
+      shop, price,      // price = 만원/kg
+      stock_initial,    // 구매량(g) 문자열, 보통 "1000"~"5000"
+      stock_date,       // 구매일 YYYY-MM-DD
+      status,           // '재고있음' | '잔량부족' | '소진' | '재고량미입력' | (옛) '샘플'
+      cup_notes, cup_notes_source, score_momos, score_wonderroom,
+      soldout_skip_used // 소진 확인에서 "아직 있음" 답한 시점의 누적 투입량(g) — 이보다 더 볶기 전까진 안 물음
     }
   ],
   roasts: [
@@ -220,6 +225,13 @@ Invoke-WebRequest -Uri $url -Method POST -Body $bodyBytes -ContentType "text/pla
 | `app.js` | `ORIGIN_COLORS{}` | 원산지별 색상 맵 |
 | `app.js` | `db` | 전역 데이터 객체 |
 | `roasts.js` | `BINBON_MODES{}` | `{1:460, 2:445, 3:397, 4:406, 5:470, 6:363, 7:406, 8:459}` — 모드별 에어종료시간(초), 2026-08-24 갱신 |
+| `binbon_timer.html` | `MODE_DTRS{}` | 모드별 DTR 선택지 (2·3번은 10~16%, 2026-11-04) |
+| `binbon_timer.html` | `postTimerState()` / `timer_pop` 메시지 | 로스팅 상태를 부모창에 전달 ↔ 부모 미니바의 1차팝 |
+| `index.html`(하단 script) | `updateRoastBar()` 등 | 로스팅 중 다른 탭 상단 미니바 + 당겨서 새로고침 차단(`html.roasting`) |
+| `beans.js` | `BEAN_ORIGINS` `BEAN_PROCESSES` `BEAN_SHOPS` `BEAN_VARIETIES` `BEAN_CUPNOTES` | 생두 폼 선택지 (드롭다운/칩) |
+| `beans.js` | `fillPickSelect()` `setPickValue()` | 드롭다운 + "직접 입력" (목록 밖 기존값 보존) |
+| `beans.js` | `SOLDOUT_REMAIN_G=120` `SOLDOUT_MIN_COUNT=8` | 소진 추정: 구매량−투입량 < 120g, 구매량 없으면 8회↑ → 앱 실행 시 `checkSoldOutCandidates()` |
+| `beans.js` | `openStockFill()` | 구매량 미입력 생두 일괄 입력(1~5kg 버튼) |
 | `cupping.js` | `WIZ_SCREENS[]` | 커핑 위저드 8단계 정의 |
 | `cupping.js` | `CUP_STEPS[]` | SCA 10개 항목 키/레이블 |
 
@@ -250,4 +262,7 @@ Invoke-WebRequest -Uri $url -Method POST -Body $bodyBytes -ContentType "text/pla
 2. **renderDash ReferenceError** — app.js가 dashboard.js보다 먼저 로드되어 발생. `try-catch`로 처리 중. 콘솔 에러는 무해.
 3. **구버전 커핑 데이터** — `step_scores` 없이 `scores`만 있거나 `status` 없는 데이터. `calcCupTotal`과 `isDraft` 로직이 처리.
 4. **Sheets 동기화 충돌** — 마지막 저장이 항상 이김 (last-write-wins). 두 기기에서 동시 편집 시 한쪽 변경 유실 가능.
+6. **캐시버스팅 연쇄** — `binbon_timer.html` 수정 시 `app.js`의 타이머 `?v=` + `index.html`의 `app.js?v=`까지 올려야 폰에 반영됨.
+7. **로컬 테스트 = 실데이터 위험** — `saveDB()`가 바로 Sheets에 업로드함. 브라우저 테스트 전 `localStorage coffee_v3`의 `_savedAt`을 1로, 로드 후 `saveDB`/`pushToSheets`를 빈 함수로 막고 테스트.
+8. **로스팅 시작 버튼엔 확인창/지연 금지** — 빈본 구동 직후 누르는 버튼(사용자 요구).
 5. **Sheets 셀 한도** — Google Sheets 셀 최대 50,000자. 현재 데이터 약 19,000자. 데이터 대폭 늘면 재설계 필요.
