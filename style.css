@@ -93,6 +93,13 @@ html.roasting,html.roasting body{overscroll-behavior-y:none;}
 .bfmeta{font-size:13px;color:var(--muted2);}
 .bfscore{font-size:13px;color:var(--amber);font-weight:600;}
 .sogin-bdg{font-size:12px;font-weight:700;padding:2px 8px;border-radius:20px;background:var(--coral2);color:var(--coral);border:1px solid var(--coral3);letter-spacing:0.08em;}
+/* 잔량 표시 + 소진 확인 모달 (2026-11-04) */
+.bstock{font-size:12px;color:var(--text2);margin:6px 0 2px;}
+.bstock.low{color:var(--coral);font-weight:600;}
+.so-row{padding:10px 0;border-top:1px solid var(--b1);}
+.so-name{font-size:15px;font-weight:600;color:var(--text);}
+.so-why{font-size:12px;color:var(--text2);margin:3px 0 8px;}
+.so-btns{display:flex;gap:8px;}
 .sample-bdg{font-size:12px;font-weight:700;padding:2px 8px;border-radius:20px;background:var(--amber2);color:var(--amber);border:1px solid var(--amber3);letter-spacing:0.08em;}
 
 /* DASHBOARD */

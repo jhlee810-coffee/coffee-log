@@ -92,6 +92,8 @@ async function syncFromSheets(){
     ind.textContent='로드됨 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
   }
   try{renderDash();}catch(e){}
+  // 동기화 끝난 최신 데이터로 소진 후보 확인 (앱 실행당 1번, beans.js)
+  setTimeout(()=>{try{checkSoldOutCandidates();}catch(e){}},400);
 }
 
 function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5);}

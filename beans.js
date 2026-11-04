@@ -16,6 +16,8 @@ function renderBeans(){
     else beans=beans.filter(b=>b.origin===cf);
   }
   if(cs){const q=cs.toLowerCase();beans=beans.filter(b=>(b.name+b.origin+(b.variety||'')+(b.cup_notes||'')+(b.shop||'')).toLowerCase().includes(q));}
+  // 소진 생두는 맨 아래로 (그 외 순서는 그대로)
+  beans=beans.filter(b=>b.status!=='소진').concat(beans.filter(b=>b.status==='소진'));
   document.getElementById('beanCards').innerHTML=beans.map(beanCard).join('')||
     '<div class="empty"><div class="empty-icon">🫘</div><div class="empty-text">생두가 없습니다</div></div>';
 }
@@ -38,6 +40,9 @@ function beanCard(b){
     <div class="bnm">${b.name}</div>
     <div class="bsub">${[b.variety,b.process].filter(Boolean).join(' · ')||'&nbsp;'}</div>
     ${b.cup_notes?`<div class="bnote">${b.cup_notes}</div>`:''}
+    ${(()=>{if(isSogin)return'';const u=beanUsage(b);if(!u.count&&u.remaining===null)return'';
+      const parts=[];if(u.remaining!==null)parts.push(`잔량 ≈ ${Math.max(0,Math.round(u.remaining))}g`);if(u.count)parts.push(`로스팅 ${u.count}회`);
+      return`<div class="bstock${u.remaining!==null&&u.remaining<SOLDOUT_REMAIN_G?' low':''}">${parts.join(' · ')}</div>`;})()}
     <div class="bfoot">
       <span class="bfmeta">${meta}</span>
       <span style="display:flex;align-items:center;gap:6px">
@@ -73,6 +78,62 @@ function showBeanDetail(id){
       <button class="btnd" onclick="deleteBean('${b.id}')">삭제</button>
     </div>`;
   openMo('moBeanDetail');
+}
+
+/* ── 소진 추정 + 앱 실행 시 확인 (2026-11-04) ──
+   구매량(stock_initial)이 있으면: 잔량 = 구매량 − 로스팅 투입량 합계 → 100g 미만이면 확인
+   구매량이 없으면: 로스팅 8회 이상이면 확인
+   "아직 있음" 답하면 soldout_skip_used(그때까지의 투입량)를 저장 → 이후 로스팅이 더 생기기 전까진 다시 안 물음 */
+const SOLDOUT_REMAIN_G=100, SOLDOUT_MIN_COUNT=8, DEFAULT_INPUT_G=120;
+function beanUsage(b){
+  const rs=(db.roasts||[]).filter(r=>r.bean_name===b.name);
+  const used=rs.reduce((s,r)=>s+(parseFloat(r.input_g)||DEFAULT_INPUT_G),0);
+  const init=parseFloat(b.stock_initial);
+  return {count:rs.length,used,remaining:init>0?init-used:null};
+}
+function soldOutCandidates(){
+  return db.beans.filter(b=>{
+    if(b.status==='소진')return false;
+    const u=beanUsage(b);
+    if(b.soldout_skip_used!=null&&u.used<=+b.soldout_skip_used)return false;
+    return u.remaining!==null?u.remaining<SOLDOUT_REMAIN_G:u.count>=SOLDOUT_MIN_COUNT;
+  });
+}
+let soldOutChecked=false;
+function checkSoldOutCandidates(){
+  if(soldOutChecked)return;soldOutChecked=true;  // 앱 실행당 1번
+  const list=soldOutCandidates();
+  if(!list.length)return;
+  let mo=document.getElementById('moSoldOut');
+  if(!mo){
+    mo=document.createElement('div');mo.className='mo';mo.id='moSoldOut';
+    mo.innerHTML=`<div class="mbox"><div class="mtitle">🫘 소진 확인</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:12px">로스팅 기록상 거의 다 쓴 것 같은 생두예요. 소진됐나요?</div>
+      <div id="soldOutList"></div>
+      <div class="fa"><button class="btn2" onclick="closeMo('moSoldOut')">나중에</button></div></div>`;
+    document.body.appendChild(mo);
+  }
+  document.getElementById('soldOutList').innerHTML=list.map(b=>{
+    const u=beanUsage(b);
+    const why=u.remaining!==null
+      ?`구매 ${Math.round(+b.stock_initial)}g − 사용 ${Math.round(u.used)}g = 잔량 ≈ ${Math.max(0,Math.round(u.remaining))}g`
+      :`로스팅 ${u.count}회 (사용 ≈ ${Math.round(u.used)}g, 구매량 미입력)`;
+    return`<div class="so-row" id="so_${b.id}">
+      <div class="so-name">${b.name}</div><div class="so-why">${why}</div>
+      <div class="so-btns"><button class="btn btn-sm" onclick="answerSoldOut('${b.id}',true)">소진 처리</button>
+      <button class="btn2" onclick="answerSoldOut('${b.id}',false)">아직 있음</button></div></div>`;
+  }).join('');
+  openMo('moSoldOut');
+}
+function answerSoldOut(id,soldOut){
+  const b=db.beans.find(x=>x.id===id);if(!b)return;
+  if(soldOut){b.status='소진';delete b.soldout_skip_used;}
+  else b.soldout_skip_used=beanUsage(b).used;
+  saveDB();
+  const row=document.getElementById('so_'+id);
+  if(row)row.innerHTML=`<div class="so-name">${b.name}</div><div class="so-why">${soldOut?'✓ 소진 처리됨':'✓ 보유 중으로 표시 — 다음 로스팅 후 다시 확인'}</div>`;
+  try{renderBeans();}catch(e){}try{renderDash();}catch(e){}
+  if(!soldOutCandidates().length)setTimeout(()=>closeMo('moSoldOut'),900);
 }
 
 /* ── 생두 등록 폼: 직접 입력 대신 고르는 항목들 (2026-11-04) ── */
@@ -237,7 +298,8 @@ function saveBean(){
     score_momos:document.getElementById('f_bsm').value,
     score_wonderroom:document.getElementById('f_bsw').value,
   };
-  if(id){const i=db.beans.findIndex(b=>b.id===id);if(i>=0)db.beans[i]=data;}
+  // 폼에 없는 필드(cup_notes_source, soldout_skip_used 등)는 보존
+  if(id){const i=db.beans.findIndex(b=>b.id===id);if(i>=0)db.beans[i]={...db.beans[i],...data};}
   else db.beans.push(data);
   saveDB();closeMo('moBeanForm');renderBeans();
 }
