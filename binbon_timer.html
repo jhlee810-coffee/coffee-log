@@ -179,8 +179,16 @@ function beep(freq=880,dur=0.15,vol=0.7){
 
 function isSoldOut(b){return b&&b.status==='소진';}
 function selectedSoldOut(){return !!S.beanName&&isSoldOut(beansList.find(b=>b.name===S.beanName));}
+// 생두 선택 단계에서 소진 여부 확인 (로스팅 시작 버튼은 빈본 구동 직후 누르므로 절대 막지 않음)
+function selectBean(sel){
+  const name=sel.value;
+  if(name&&isSoldOut(beansList.find(b=>b.name===name))
+     &&!confirm(`'${name}'은(는) 재고가 소진된 생두입니다.\n그래도 이 생두로 로스팅할까요?`)){
+    sel.value=S.beanName;return;
+  }
+  S.beanName=name;render();
+}
 function doStart(){
-  if(selectedSoldOut()&&!confirm(`'${S.beanName}'은(는) 재고가 소진된 생두입니다.\n그래도 로스팅을 시작할까요?`))return;
   clearInterval(timerIv);clearInterval(cdIv);
   Object.assign(S,{elapsed:0,popElapsed:null,result:null,countdown:null,countdownDone:false,showTable:false,screen:"running"});
   startTime=Date.now();
@@ -387,7 +395,7 @@ function render(){
       ${beansList.length?`
       <div class="sec">
         <div class="lbl">생두 선택 <span style="color:#bbb;font-weight:400">(선택사항)</span></div>
-        <select style="width:100%;padding:9px 10px;border-radius:8px;border:2px solid #ddd;font-size:13px;font-weight:600;color:#333;background:#fff;font-family:inherit" onchange="S.beanName=this.value;render()">
+        <select style="width:100%;padding:9px 10px;border-radius:8px;border:2px solid #ddd;font-size:13px;font-weight:600;color:#333;background:#fff;font-family:inherit" onchange="selectBean(this)">
           <option value="">선택 안 함</option>
           ${(()=>{
             // 재고 있는 생두: 원산지별 그룹 / 소진 생두: 맨 아래 별도 그룹 (2026-11-04)
@@ -407,7 +415,7 @@ function render(){
             return inStock+(soldOut.length?`<optgroup label="── 재고 없음 (소진) ──">${soldOut.map(b=>opt(b,' (소진)')).join('')}</optgroup>`:'');
           })()}
         </select>
-        ${selectedSoldOut()?`<div style="margin-top:6px;padding:7px 10px;border-radius:8px;background:#fff3e0;color:#c05000;font-size:12px;font-weight:600">⚠ 재고가 소진된 생두예요. 로스팅 시작 시 한 번 더 확인합니다.</div>`:''}
+        ${selectedSoldOut()?`<div style="margin-top:6px;padding:7px 10px;border-radius:8px;background:#fff3e0;color:#c05000;font-size:12px;font-weight:600">⚠ 재고가 소진된 생두예요.</div>`:''}
       </div>`:``}
       <div class="sec">
         <div class="lbl">투입량(g) <span style="color:#bbb;font-weight:400">(선택사항)</span></div>
