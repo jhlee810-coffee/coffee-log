@@ -82,10 +82,10 @@ function showBeanDetail(id){
 }
 
 /* ── 소진 추정 + 앱 실행 시 확인 (2026-11-04) ──
-   구매량(stock_initial)이 있으면: 잔량 = 구매량 − 로스팅 투입량 합계 → 100g 미만이면 확인
+   구매량(stock_initial)이 있으면: 잔량 = 구매량 − 로스팅 투입량 합계 → 120g 미만이면 확인 (120g 미만 남은 건 같은 산지 생두에 섞어 처분하는 습관 반영)
    구매량이 없으면: 로스팅 8회 이상이면 확인
    "아직 있음" 답하면 soldout_skip_used(그때까지의 투입량)를 저장 → 이후 로스팅이 더 생기기 전까진 다시 안 물음 */
-const SOLDOUT_REMAIN_G=100, SOLDOUT_MIN_COUNT=8, DEFAULT_INPUT_G=120;
+const SOLDOUT_REMAIN_G=120, SOLDOUT_MIN_COUNT=8, DEFAULT_INPUT_G=120;
 function beanUsage(b){
   const rs=(db.roasts||[]).filter(r=>r.bean_name===b.name);
   const used=rs.reduce((s,r)=>s+(parseFloat(r.input_g)||DEFAULT_INPUT_G),0);
