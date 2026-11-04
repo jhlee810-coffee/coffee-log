@@ -61,6 +61,16 @@ html.roasting,html.roasting body{overscroll-behavior-y:none;}
 .fg{margin-bottom:12px;}
 .fl{font-size:13px;color:var(--muted);margin-bottom:5px;display:block;letter-spacing:0.07em;text-transform:uppercase;}
 .fr{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+/* 생두 폼 선택형 입력 (2026-11-04) */
+.fl-hint{font-size:12px;color:var(--muted);letter-spacing:0;text-transform:none;opacity:.8;}
+.alt-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+.alt-seg{display:flex;border:1px solid var(--b2);border-radius:8px;overflow:hidden;}
+.alt-seg button{background:transparent;border:none;color:var(--text2);font-size:13px;padding:4px 12px;cursor:pointer;font-family:inherit;}
+.alt-seg button.on{background:var(--amber);color:#222;font-weight:700;}
+.alt-row{display:flex;align-items:center;gap:8px;}
+.alt-row .sel{flex:1;min-width:0;}
+.alt-row span{color:var(--text2);}
+.pick-chips{margin-top:6px;max-height:96px;overflow-y:auto;}
 .fa{display:flex;gap:8px;margin-top:18px;justify-content:flex-end;}
 
 /* FILTERS */

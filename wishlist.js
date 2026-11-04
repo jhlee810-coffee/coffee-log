@@ -49,6 +49,6 @@ function buyWish(id){
   renderBeans();
   openBeanForm();
   document.getElementById('f_bn').value=w.name;
-  document.getElementById('f_bsh').value=w.source;
+  setPickValue('f_bsh',w.source);
   document.getElementById('f_bpr').value=w.price;
 }

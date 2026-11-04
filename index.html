@@ -6,7 +6,7 @@
 <title>Coffee Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=Josefin+Sans:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261104a">
+<link rel="stylesheet" href="style.css?v=20261104b">
 </head>
 <body>
 
@@ -140,16 +140,25 @@
   <div class="mbox">
     <div class="mtitle" id="bfTitle">생두 추가</div>
     <input type="hidden" id="bfId">
-    <div class="fr"><div class="fg"><label class="fl">원두명 *</label><input class="inp" id="f_bn" placeholder="케냐 카리미쿠이 AA"></div><div class="fg"><label class="fl">원산지</label><input class="inp" id="f_bo"></div></div>
-    <div class="fr"><div class="fg"><label class="fl">지역/농장</label><input class="inp" id="f_br"></div><div class="fg"><label class="fl">품종</label><input class="inp" id="f_bv"></div></div>
+    <div class="fg"><label class="fl">원두명 *</label><input class="inp" id="f_bn" placeholder="케냐 카리미쿠이 AA"></div>
     <div class="fr">
-      <div class="fg"><label class="fl">가공방식</label><select class="sel" id="f_bp"><option value="">선택</option><option>Washed</option><option>Natural</option><option>Honey</option><option>Anaerobic Washed</option><option>Double Fermentation Washed</option><option>Natural Cascada</option><option>Classic Honey</option><option>Red Honey</option><option>Fully Washed</option></select></div>
-      <div class="fg"><label class="fl">고도(m)</label><input class="inp" id="f_ba"></div>
+      <div class="fg"><label class="fl">원산지</label><select class="sel" id="f_bo"></select></div>
+      <div class="fg"><label class="fl">가공방식</label><select class="sel" id="f_bp"></select></div>
     </div>
-    <div class="fr"><div class="fg"><label class="fl">구매처</label><input class="inp" id="f_bsh"></div><div class="fg"><label class="fl">가격(만원/kg)</label><input class="inp" type="number" step="0.01" id="f_bpr"></div></div>
+    <div class="fg"><label class="fl">지역/농장</label><input class="inp" id="f_br"></div>
+    <div class="fg">
+      <div class="alt-head"><label class="fl" style="margin:0">고도(m)</label>
+        <div class="alt-seg"><button type="button" id="altSingle" onclick="setAltMode(false)">단일</button><button type="button" id="altRange" onclick="setAltMode(true)">범위</button></div>
+      </div>
+      <div class="alt-row"><select class="sel" id="f_ba1"></select><span id="altTilde">~</span><select class="sel" id="f_ba2"></select></div>
+    </div>
+    <div class="fg"><label class="fl">품종 <span class="fl-hint">(탭해서 추가·제거)</span></label><input class="inp" id="f_bv" oninput="renderPickChips('f_bv')">
+      <div class="ctag-list pick-chips" id="f_bv_chips"></div></div>
+    <div class="fr"><div class="fg"><label class="fl">구매처</label><select class="sel" id="f_bsh"></select></div><div class="fg"><label class="fl">가격(만원/kg)</label><input class="inp" type="number" step="0.01" id="f_bpr"></div></div>
     <div class="fr"><div class="fg"><label class="fl">초기재고(g)</label><input class="inp" type="number" id="f_bst"></div><div class="fg"><label class="fl">구매일</label><input class="inp" type="date" id="f_bdate"></div></div>
     <div class="fg"><label class="fl">상태</label><select class="sel" id="f_bss"><option value="">선택</option><option>재고있음</option><option>잔량부족</option><option>샘플</option><option>소진</option><option>재고량미입력</option></select></div>
-    <div class="fg"><label class="fl">컵노트</label><input class="inp" id="f_bnt" placeholder="자스민, 복숭아, 꿀"></div>
+    <div class="fg"><label class="fl">컵노트 <span class="fl-hint">(탭해서 추가·제거)</span></label><input class="inp" id="f_bnt" placeholder="자스민, 복숭아, 꿀" oninput="renderPickChips('f_bnt')">
+      <div class="ctag-list pick-chips" id="f_bnt_chips"></div></div>
     <div class="fr"><div class="fg"><label class="fl">모모스 스코어</label><input class="inp" type="number" step="0.1" id="f_bsm"></div><div class="fg"><label class="fl">원더룸 스코어</label><input class="inp" type="number" step="0.1" id="f_bsw"></div></div>
     <div class="fa"><button class="btn2" onclick="closeMo('moBeanForm')">취소</button><button class="btn btn-sm" onclick="saveBean()">저장</button></div>
   </div>
@@ -605,10 +614,10 @@
 <script src="data.js?v=20260528f"></script>
 <script src="app.js?v=20261104d"></script>
 <script src="dashboard.js?v=20260528f"></script>
-<script src="beans.js?v=20260528f"></script>
+<script src="beans.js?v=20261104a"></script>
 <script src="roasts.js?v=20260824b"></script>
 <script src="brewing.js?v=20260528f"></script>
-<script src="wishlist.js?v=20260528f"></script>
+<script src="wishlist.js?v=20261104a"></script>
 <script src="cupping.js?v=20260528f"></script>
 <script>
 // 빈본 타이머 ↔ 로스트 로그 연계
