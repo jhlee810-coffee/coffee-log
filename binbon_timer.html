@@ -10,6 +10,14 @@
 <style>
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 html,body { overflow-x:hidden; width:100%; overscroll-behavior-y:none; }
+.pop-hist { margin-top:8px; padding:8px 10px; border-radius:8px; background:#f7f3ec; font-size:12px; color:#555; line-height:1.6; }
+.pop-hist .ph-title { font-size:11px; color:#999; font-weight:700; margin-bottom:2px; }
+.pop-hist .ph-main { font-size:13px; color:#333; }
+.pop-hist .ph-main b { font-size:15px; color:#7A3B10; }
+.pop-hist .ph-item { display:inline-block; margin-right:10px; white-space:nowrap; }
+.pop-hist .ph-item b { color:#333; }
+.pop-hist small { color:#999; font-size:11px; }
+.pop-hist .ph-other .ph-item { cursor:pointer; text-decoration:underline dotted #bbb; }
 body { font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif; background:#f4f6f8; min-height:100vh; display:flex; flex-direction:column; align-items:center; }
 .header { width:100%; color:#fff; text-align:center; padding:48px 16px 16px; transition:background 0.3s; }
 .header h1 { font-size:20px; font-weight:800; letter-spacing:-0.5px; }
@@ -94,7 +102,72 @@ body { font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-seri
 <div id="modal-area"></div>
 
 <script>
-let beansList=[];
+let beansList=[],roastsList=[];
+
+/* ── 지난 1팝 기록 (2026-11-04) ──
+   로스팅 기록의 pop_time은 빈본 화면의 '잔여'(time_basis '진행'이면 경과 → 잔여로 환산).
+   프로세스는 생두 목록의 process로 분류. 평균은 기록 5건 이상이면 IQR 이상치 제외 */
+let _popRows=null;
+function _sec(t){const p=String(t||'').trim().split(':');return p.length===2?(+p[0])*60+(+p[1]):null;}
+function _norm(s){return String(s||'').toLowerCase().replace(/[\s\[\]().,·_#-]/g,'');}
+function procGroup(p,name){
+  const s=(p||'')+' '+(name||'');
+  if(/anaerobic|무산소|carbonic|thermal|infus|double ferm/i.test(s))return '무산소';
+  if(/natural|내추럴|cascada/i.test(s))return '내추럴';
+  if(/honey|허니/i.test(s))return '허니';
+  if(/wash|워시드/i.test(s))return '워시드';
+  return '기타';
+}
+function findBeanFor(name){
+  const k=_norm(name);
+  return beansList.find(b=>b.name===name)||beansList.find(b=>_norm(b.name)===k)
+    ||beansList.find(b=>{const bk=_norm(b.name);return bk.startsWith(k)||k.startsWith(bk);});
+}
+function popRows(){
+  if(_popRows)return _popRows;
+  _popRows=[];
+  roastsList.forEach(r=>{
+    const m=+r.mode;if(!MODES[m]||!r.pop_time)return;
+    const ae=MODES[m].autoEject,t=_sec(r.pop_time);if(t===null)return;
+    const rem=r.time_basis==='진행'?ae-t:t;if(!(rem>0&&rem<ae))return;
+    const b=findBeanFor(r.bean_name);
+    _popRows.push({m,rem,bean:b?b.name:r.bean_name,proc:procGroup(b&&b.process,r.bean_name)});
+  });
+  return _popRows;
+}
+function popAvg(list){
+  let a=list.slice().sort((x,y)=>x-y);
+  if(a.length>=5){const q=p=>{const i=(a.length-1)*p,l=Math.floor(i),h=Math.ceil(i);return a[l]+(a[h]-a[l])*(i-l);};
+    const q1=q(.25),q3=q(.75),k=1.5*(q3-q1);a=a.filter(x=>x>=q1-k&&x<=q3+k);}
+  return a.reduce((s,x)=>s+x,0)/a.length;
+}
+// 모드 아래: 프로세스별 평균 1팝 (신규 생두 참고용)
+function modePopHtml(){
+  const rows=popRows().filter(r=>r.m===S.modeKey);
+  if(!rows.length)return `<div class="pop-hist">이 모드는 아직 1팝 기록이 없어요</div>`;
+  const parts=['워시드','내추럴','허니','무산소','기타'].map(p=>{
+    const a=rows.filter(r=>r.proc===p).map(r=>r.rem);
+    return a.length?`<span class="ph-item"><b>${p}</b> ${fmt(popAvg(a))} <small>${a.length}회</small></span>`:'';
+  }).join('');
+  return `<div class="pop-hist"><div class="ph-title">1팝 평균 (빈본 잔여)</div>${parts}</div>`;
+}
+// 생두 선택 아래: 이 생두의 지난 1팝
+function beanPopHtml(){
+  if(!S.beanName)return '';
+  const all=popRows().filter(r=>r.bean===S.beanName);
+  const b=beansList.find(x=>x.name===S.beanName);
+  const proc=procGroup(b&&b.process,S.beanName);
+  if(!all.length)return `<div class="pop-hist">이 생두는 1팝 기록이 없어요 — 위 <b>${proc}</b> 평균을 참고하세요</div>`;
+  const cur=all.filter(r=>r.m===S.modeKey).map(r=>r.rem);
+  const curHtml=cur.length
+    ?`<div class="ph-main">${MODES[S.modeKey].label} 모드 1팝 평균 <b>${fmt(popAvg(cur))}</b> <small>(${cur.length}회${cur.length>1?`, ${fmt(Math.min(...cur))}~${fmt(Math.max(...cur))}`:''})</small></div>`
+    :`<div class="ph-main">${MODES[S.modeKey].label} 모드로는 아직 안 볶았어요 — ${proc} 평균 참고</div>`;
+  const others=[...new Set(all.map(r=>r.m))].filter(m=>m!==S.modeKey).sort((x,y)=>x-y).map(m=>{
+    const a=all.filter(r=>r.m===m).map(r=>r.rem);
+    return `<span class="ph-item" onclick="S.modeKey=${m};S.dtr=MODE_DTRS[${m}].list[0];render()">${m}번 ${fmt(popAvg(a))} <small>${a.length}회</small></span>`;
+  }).join('');
+  return `<div class="pop-hist"><div class="ph-title">이 생두의 지난 1팝 (빈본 잔여 · ${proc})</div>${curHtml}${others?`<div class="ph-other">다른 모드: ${others}</div>`:''}</div>`;
+}
 window.addEventListener('message',function(e){
   if(!e.data)return;
   // 상단 미니바(부모창)의 1차 팝 버튼
@@ -104,6 +177,8 @@ window.addEventListener('message',function(e){
   }
   if(e.data.type!=='beans_list')return;
   beansList=e.data.beans||[];
+  if(e.data.roasts)roastsList=e.data.roasts;
+  _popRows=null;  // 생두/로스팅 목록이 바뀌면 1팝 통계 다시 계산
   if(S.screen==='setup')render();
 });
 
@@ -401,6 +476,7 @@ function render(){
           }).join("")}
         </div>
         <div style="font-size:11px;color:#888;margin-top:8px">${group} 로스팅 · 자동배출 ${fmt(mode.autoEject)}</div>
+        ${modePopHtml()}
       </div>
       <div class="sec">
         <div class="lbl">DTR 목표</div>
@@ -444,6 +520,7 @@ function render(){
           })()}
         </select>
         ${selectedSoldOut()?`<div style="margin-top:6px;padding:7px 10px;border-radius:8px;background:#fff3e0;color:#c05000;font-size:12px;font-weight:600">⚠ 재고가 소진된 생두예요.</div>`:''}
+        ${beanPopHtml()}
       </div>`:``}
       <div class="sec">
         <div class="lbl">투입량(g) <span style="color:#bbb;font-weight:400">(선택사항)</span></div>
