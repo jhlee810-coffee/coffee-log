@@ -124,6 +124,8 @@ async function syncFromSheets(){
   try{renderDash();}catch(e){}
   // 동기화 끝난 최신 데이터로 소진 후보 확인 (앱 실행당 1번, beans.js)
   setTimeout(()=>{try{checkSoldOutCandidates();}catch(e){}},400);
+  // 옛 로스팅 기록에 같은 날 배치 순서 채우기 (한 번만, roasts.js)
+  try{backfillBatchNo();}catch(e){console.warn('배치 순서 채우기 실패',e);}
 }
 
 function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5);}
@@ -165,7 +167,7 @@ function showTab(name,el){
   if(name==='timer'){
     const fr=document.getElementById('timerFrame');
     if(!fr.getAttribute('src')){
-      fr.src='binbon_timer.html?v=20261104h';
+      fr.src='binbon_timer.html?v=20261104i';
       fr.addEventListener('load',function(){
         fr.contentWindow.postMessage({type:'beans_list',beans:db.beans,roasts:db.roasts},'*');
       },{once:true});
@@ -190,7 +192,9 @@ function fillSel(selId,items){
   s.innerHTML='<option value="">선택...</option>'+items.map(i=>`<option value="${i}" ${i===v?'selected':''}>${i}</option>`).join('');
 }
 
-function today(){return new Date().toISOString().slice(0,10);}
+/* 로컬(한국) 날짜 — toISOString()은 UTC라 오전 9시 전엔 전날 날짜가 됨 (2026-11-04 수정) */
+function localDate(d){d=d||new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function today(){return localDate();}
 function openMo(id){document.getElementById(id).classList.add('open');}
 function closeMo(id){document.getElementById(id).classList.remove('open');}
 

@@ -44,7 +44,7 @@ function ecRoastLoss(r){
 }
 function ecBatchMap(){ // 같은 날 몇 번째 배치였는지 (기록 순서 기준)
   const m={},cnt={};
-  (db.roasts||[]).forEach(r=>{cnt[r.date]=(cnt[r.date]||0)+1;m[r.id]=cnt[r.date];});
+  (db.roasts||[]).forEach(r=>{cnt[r.date]=(cnt[r.date]||0)+1;m[r.id]=+r.batch_no||cnt[r.date];});  // 저장된 배치 순서 우선
   return m;
 }
 function ecShort(name){ // "케냐 카구모 AA 2026" → "카구모"

@@ -580,3 +580,11 @@ html.roasting,html.roasting body{overscroll-behavior-y:none;}
 .ec-pi-top{display:flex;gap:8px;font-size:15px;}
 .ec-pi-top span{color:var(--amber);flex-shrink:0;}
 .ec-pi-meta{font-size:13px;color:var(--text2);margin-top:3px;}
+/* 로스팅 시작/끝 시간 · 배치 순서 (2026-11-04) */
+.rt-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.rt-row.rt-date{grid-template-columns:1fr 84px;}
+.rt-row .fg{margin-bottom:6px;min-width:0;}
+.rt-row .inp{padding:9px 8px;}
+.rt-hint{font-size:13px;color:var(--text2);margin:-2px 0 12px;line-height:1.5;}
+.rt-hint b{color:var(--amber);}
+.rbatch-line{font-size:13px;color:var(--amber);margin:-2px 0 5px;}

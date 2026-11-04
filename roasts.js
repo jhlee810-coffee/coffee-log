@@ -13,6 +13,67 @@ function dtrToLevel(dtr){
   return '다크';
 }
 
+/* ── 배치 순서 · 시작/끝 시간 (2026-11-04) ──
+   batch_no: 같은 날짜 안에서 몇 번째 배치인지 (저장 순서 기준, 폼에서 수정 가능)
+   start_time / end_time: "HH:MM" (빈본 타이머에서 자동, 폼에서 수정 가능) */
+function hmToMin(t){if(!t)return null;const p=String(t).split(':');return p.length>=2?(+p[0])*60+(+p[1]):null;}
+function sameDayRoasts(date,exceptId){return db.roasts.filter(r=>r.date===date&&r.id!==exceptId);}
+function nextBatchNo(date,exceptId){
+  const rs=sameDayRoasts(date,exceptId);
+  return rs.reduce((m,r)=>Math.max(m,+r.batch_no||0),0)+1;
+}
+/* 직전 배치(같은 날, 배치 순서가 바로 앞) 와의 휴식 시간(분). 없으면 null */
+function batchGap(r){
+  const n=+r.batch_no;if(!n||!r.start_time)return null;
+  const prev=sameDayRoasts(r.date,r.id).filter(o=>+o.batch_no<n).sort((a,b)=>b.batch_no-a.batch_no)[0];
+  if(!prev||+prev.batch_no!==n-1)return null;
+  const s=hmToMin(r.start_time),pe=hmToMin(prev.end_time),ps=hmToMin(prev.start_time);
+  if(pe!=null&&s!=null)return {min:s-pe,from:'end',prev};
+  if(ps!=null&&s!=null)return {min:s-ps,from:'start',prev};
+  return null;
+}
+function batchLine(r){
+  const parts=[];
+  if(r.batch_no)parts.push(`그날 ${r.batch_no}번째`);
+  if(r.start_time||r.end_time)parts.push(`${r.start_time||'?'}~${r.end_time||'?'}`);
+  const g=batchGap(r);
+  if(g)parts.push(g.from==='end'?`직전 배치 후 ${g.min}분 휴식`:`직전 시작 후 ${g.min}분`);
+  return parts.join(' · ');
+}
+/* 옛 기록에 배치 순서 채우기: 같은 날짜 안에서 저장된 순서대로 1,2,3… (이미 있는 번호는 그대로) */
+function backfillBatchNo(){
+  if(!db||!Array.isArray(db.roasts))return;
+  const missing=db.roasts.some(r=>!r.batch_no);
+  if(!missing)return;
+  const byDate={};
+  db.roasts.forEach(r=>{(byDate[r.date]=byDate[r.date]||[]).push(r);});
+  let changed=0;
+  Object.values(byDate).forEach(list=>{
+    const used=new Set(list.map(r=>+r.batch_no).filter(Boolean));
+    let n=1;
+    list.forEach(r=>{
+      if(r.batch_no)return;
+      while(used.has(n))n++;
+      r.batch_no=String(n);used.add(n);changed++;
+    });
+  });
+  if(changed){saveDB();if(typeof renderRoasts==='function'&&document.getElementById('tab-roasts').classList.contains('on'))renderRoasts();}
+}
+function updateBatchHint(dateChanged){
+  const id=document.getElementById('rfId').value;
+  const date=document.getElementById('f_rd').value;
+  const bnEl=document.getElementById('f_rbn');
+  if(dateChanged&&!id)bnEl.value=nextBatchNo(date);
+  const tmp={id:id||'__new',date,batch_no:bnEl.value,start_time:document.getElementById('f_rst').value,end_time:document.getElementById('f_ret').value};
+  const g=batchGap(tmp);
+  let txt='';
+  if(g)txt=g.from==='end'?`직전 ${g.prev.batch_no}번째 배치 끝 ${g.prev.end_time} → 이번 시작 ${tmp.start_time} · <b>${g.min}분 휴식</b>`
+                         :`직전 ${g.prev.batch_no}번째 배치 시작 ${g.prev.start_time} → 이번 시작 ${tmp.start_time} · <b>${g.min}분</b>`;
+  const dup=sameDayRoasts(date,id).filter(o=>+o.batch_no===+bnEl.value&&bnEl.value);
+  if(dup.length)txt+=(txt?'<br>':'')+`⚠ 같은 날 ${bnEl.value}번째 배치가 이미 있어요 (${dup[0].bean_name})`;
+  document.getElementById('rf_gap').innerHTML=txt;
+}
+
 function toggleRSort(){
   rSortDir=rSortDir==='desc'?'asc':'desc';
   const btn=document.getElementById('rSortBtn');
@@ -107,6 +168,7 @@ function renderRoasts(){
         <div style="margin-left:auto"><button class="btn2" onclick="event.stopPropagation();editRoast('${r.id}')">수정</button></div>
       </div>
       <div class="rbean-name">${r.bean_name}</div>
+      ${(()=>{const bl=batchLine(r);return bl?`<div class="rbatch-line">${bl}</div>`:'';})()}
       ${metaParts?`<div class="rbean-meta">${metaParts}</div>`:''}
       ${statsLine?`<div class="rstats-line"><span class="${dtr?'rdtr-inline':''}">모드${r.mode||'?'}</span>${dtr?`<span class="rdtr-inline">DTR ${dtr}%</span>`:''}${loss?`<span class="rloss-inline">손실율 ${loss}%</span>`:''}${r.input_g?`<span>투입 ${r.input_g}g</span>`:''}</div>`:''}
       ${bean.cup_notes?`<div class="rcupnotes">${bean.cup_notes}</div>`:''}
@@ -165,6 +227,12 @@ function openRoastDetail(id){
       ${dr('원산지',bean.origin||'')}
       ${dr('구매처',bean.shop||'')}
     </div>
+    ${(r.batch_no||r.start_time||r.end_time)?`<div class="ds">
+      <div class="dstitle">시간 · 배치</div>
+      ${dr('배치 순서',r.batch_no?`그날 ${r.batch_no}번째`:'')}
+      ${dr('시작 ~ 끝',(r.start_time||r.end_time)?`${r.start_time||'?'} ~ ${r.end_time||'?'}`:'')}
+      ${(()=>{const g=batchGap(r);return g?dr(g.from==='end'?'직전 배치 후 휴식':'직전 배치 시작부터',`${g.min}분`):'';})()}
+    </div>`:''}
     <div class="ds">
       <div class="dstitle">로스팅 수치</div>
       ${r.roast_level?dr('레벨',`<span style="color:${levelColor};font-weight:700">${r.roast_level}</span>`):''}
@@ -278,6 +346,10 @@ function openRoastForm(id, prefill){
   document.getElementById('f_ro').value=r.output_g||p.output_g||'100';
   document.getElementById('f_rl').value=r.roast_level||p.roast_level||'';
   document.getElementById('f_rb2').value=r.time_basis||'잔여';
+  document.getElementById('f_rst').value=r.start_time||p.start_time||'';
+  document.getElementById('f_ret').value=r.end_time||p.end_time||'';
+  document.getElementById('f_rbn').value=r.batch_no||(id?'':nextBatchNo(document.getElementById('f_rd').value));
+  updateBatchHint();
 
   document.querySelectorAll('#modeBtns .mbtn').forEach(b=>b.classList.remove('on'));
   const modeVal=r.mode||p.mode||'';
@@ -354,8 +426,12 @@ function saveRoast(){
     dtr_pct:dtr.toString(),
     roast_level:autoLevel||manualLevel,
     notes:document.getElementById('f_rn').value.trim(),
+    start_time:document.getElementById('f_rst').value,
+    end_time:document.getElementById('f_ret').value,
+    batch_no:String(parseInt(document.getElementById('f_rbn').value)||nextBatchNo(document.getElementById('f_rd').value,id)),
   };
-  if(id){const i=db.roasts.findIndex(r=>r.id===id);if(i>=0)db.roasts[i]=data;}
+  // 수정 시 폼에 없는 기존 항목(degas_days 등)은 유지
+  if(id){const i=db.roasts.findIndex(r=>r.id===id);if(i>=0)db.roasts[i]={...db.roasts[i],...data};}
   else db.roasts.push(data);
   saveDB();closeMo('moRoastForm');renderRoasts();
   const tb=document.querySelector('.tb[onclick*="roasts"]');

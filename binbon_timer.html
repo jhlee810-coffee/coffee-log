@@ -355,8 +355,14 @@ function sendRoastLog(){
   const popSec=S.popElapsed;
   const ejSec=S.result?S.result.ejSec:null;
   const fmtRem=s=>s!==null?fmt(ae-s):null;
+  // 시작 = 로스팅 시작 버튼 누른 시각, 끝 = 배출 시각(계산된 배출, 1팝 없음/초과면 자동배출)
+  const st=new Date(startTime||Date.now());
+  const endSec=(S.result&&!S.result.over&&ejSec!==null)?ejSec:ae;
+  const hm=d=>String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
   const data={
-    date:new Date().toISOString().slice(0,10),
+    date:st.getFullYear()+'-'+String(st.getMonth()+1).padStart(2,'0')+'-'+String(st.getDate()).padStart(2,'0'),
+    start_time:startTime?hm(st):'',
+    end_time:startTime?hm(new Date(startTime+endSec*1000)):'',
     bean_name:S.beanName||'',
     mode:String(S.modeKey),
     input_g:S.inputG||'',
