@@ -44,6 +44,7 @@ function beanCard(b){
     ${(()=>{if(isSogin)return'';const u=beanUsage(b);if(!u.count&&u.remaining===null)return'';
       const parts=[];if(u.remaining!==null)parts.push(`잔량 ≈ ${Math.max(0,Math.round(u.remaining))}g`);if(u.count)parts.push(`로스팅 ${u.count}회`);
       return`<div class="bstock${u.remaining!==null&&u.remaining<SOLDOUT_REMAIN_G?' low':''}">${parts.join(' · ')}</div>`;})()}
+    ${db.roasts.some(r=>r.bean_name===b.name)?`<button class="dc-open" onclick="event.stopPropagation();openDailyCupFor('${b.id}')">☕ 한 잔 기록</button>`:''}
     <div class="bfoot">
       <span class="bfmeta">${meta}</span>
       <span style="display:flex;align-items:center;gap:6px">

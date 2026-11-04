@@ -35,11 +35,12 @@ function loadDB(){
       if(!p.brewlogs) p.brewlogs=[];
       if(!p.wishlist) p.wishlist=[];
       if(!p.cuppings) p.cuppings=[];
+      if(!p.dailycups) p.dailycups=[];
       return p;
     }
   }catch(e){}
   const d=JSON.parse(JSON.stringify(INITIAL_DATA));
-  d.recipes=[];d.brewlogs=[];d.wishlist=[];d.cuppings=[];
+  d.recipes=[];d.brewlogs=[];d.wishlist=[];d.cuppings=[];d.dailycups=[];
   return d;
 }
 
@@ -102,6 +103,7 @@ async function syncFromSheets(){
         if(!db.brewlogs)db.brewlogs=[];
         if(!db.wishlist)db.wishlist=[];
         if(!db.cuppings)db.cuppings=[];
+        if(!db.dailycups)db.dailycups=[];  // 오늘의 한 잔 (dailycup.js)
         localStorage.setItem(SK,JSON.stringify(db));
         ind.textContent='☁ 동기화 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
       }else{
@@ -175,7 +177,7 @@ function showTab(name,el){
       fr.contentWindow.postMessage({type:'beans_list',beans:db.beans,roasts:db.roasts},'*');
     }
   }
-  const fn={dash:renderDash,beans:renderBeans,roasts:renderRoasts,brewing:renderBrewing,wishlist:renderWishlist,cupping:renderCupping,easycup:typeof renderEasyCup==='function'?renderEasyCup:null};
+  const fn={dash:renderDash,beans:renderBeans,roasts:renderRoasts,brewing:renderBrewing,wishlist:renderWishlist,cupping:renderCupping,dailycup:typeof renderDailyCup==='function'?renderDailyCup:null,easycup:typeof renderEasyCup==='function'?renderEasyCup:null};
   if(fn[name]) fn[name]();
   if(window.updateRoastBar) updateRoastBar();
 }

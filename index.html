@@ -6,7 +6,7 @@
 <title>Coffee Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=Josefin+Sans:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261104g">
+<link rel="stylesheet" href="style.css?v=20261105a">
 </head>
 <body>
 
@@ -20,6 +20,7 @@
   </div>
   <div class="tabs">
     <div class="tb on" onclick="showTab('dash',this)">대시보드</div>
+    <div class="tb" onclick="showTab('dailycup',this)">☕ 오늘의 한 잔</div>
     <div class="tb" onclick="showTab('beans',this)">생두 목록</div>
     <div class="tb" onclick="showTab('timer',this)">🔥 빈본 타이머</div>
     <div class="tb" onclick="showTab('roasts',this)">로스팅 로그</div>
@@ -51,6 +52,9 @@
   <div class="ract-lbl">최근 활동</div>
   <div id="recentAct"></div>
 </div>
+
+<!-- 오늘의 한 잔 (dailycup.js) -->
+<div id="tab-dailycup" class="sec"><div id="dcRoot"></div></div>
 
 <!-- 생두 목록 -->
 <div id="tab-beans" class="sec">
@@ -626,6 +630,21 @@
   </div>
 </div>
 
+<!-- MODAL: 오늘의 한 잔 — 원두 고르기 -->
+<div class="mo" id="moDcPick">
+  <div class="mbox">
+    <div class="mtitle">원두 고르기</div>
+    <input class="search" id="dcPickSearch" placeholder="생두 이름으로 거르기..." oninput="dcRenderPick()">
+    <div id="dcPickList" class="dc-pick-list"></div>
+    <div class="dc-man">
+      <div class="dc-sub" style="margin-top:0">직접 입력 <span class="dc-opt">로스팅 기록에 없는 원두 (산 원두 등)</span></div>
+      <input class="inp" id="dcManName" placeholder="원두 이름" style="margin-bottom:8px">
+      <div class="dc-man-row"><input class="inp" type="date" id="dcManDate"><button class="btn btn-sm" onclick="dcPickManual()">넣기</button></div>
+    </div>
+    <div class="fa"><button class="btn2" onclick="closeMo('moDcPick')">닫기</button></div>
+  </div>
+</div>
+
 <!-- MODAL: 쉬운 커핑 — 로스팅 기록 고르기 -->
 <div class="mo" id="moEcPick">
   <div class="mbox">
@@ -663,14 +682,15 @@
 </div>
 
 <script src="data.js?v=20260528f"></script>
-<script src="app.js?v=20261104l"></script>
+<script src="app.js?v=20261105a"></script>
 <script src="dashboard.js?v=20260528f"></script>
-<script src="beans.js?v=20261104d"></script>
+<script src="beans.js?v=20261105a"></script>
 <script src="roasts.js?v=20261104a"></script>
 <script src="brewing.js?v=20260528f"></script>
 <script src="wishlist.js?v=20261104a"></script>
 <script src="cupping.js?v=20260528f"></script>
 <script src="easycup.js?v=20261104b"></script>
+<script src="dailycup.js?v=20261105a"></script>
 <script>
 // 빈본 타이머 ↔ 로스트 로그 연계
 window.addEventListener('message', function(e){
