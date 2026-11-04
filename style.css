@@ -100,6 +100,15 @@ html.roasting,html.roasting body{overscroll-behavior-y:none;}
 .so-name{font-size:15px;font-weight:600;color:var(--text);}
 .so-why{font-size:12px;color:var(--text2);margin:3px 0 8px;}
 .so-btns{display:flex;gap:8px;}
+/* 구매량 버튼 + 미입력 일괄입력 (2026-11-04) */
+.kg-row{display:flex;gap:8px;align-items:center;}
+.kg-row .inp{width:84px;flex:none;}
+.kg-row .alt-seg{flex:1;min-width:0;}
+.kg-row .alt-seg button{padding:8px 0;min-width:0;}
+.alt-seg button{flex:1;}
+.sf-kg{margin-top:2px;}
+.sf-kg button{padding:7px 0;}
+.sf-banner{background:var(--amber2);border:1px solid var(--amber3);color:var(--amber);border-radius:10px;padding:10px 14px;font-size:13px;margin:0 0 12px;cursor:pointer;}
 .sample-bdg{font-size:12px;font-weight:700;padding:2px 8px;border-radius:20px;background:var(--amber2);color:var(--amber);border:1px solid var(--amber3);letter-spacing:0.08em;}
 
 /* DASHBOARD */

@@ -18,6 +18,7 @@ function renderBeans(){
   if(cs){const q=cs.toLowerCase();beans=beans.filter(b=>(b.name+b.origin+(b.variety||'')+(b.cup_notes||'')+(b.shop||'')).toLowerCase().includes(q));}
   // 소진 생두는 맨 아래로 (그 외 순서는 그대로)
   beans=beans.filter(b=>b.status!=='소진').concat(beans.filter(b=>b.status==='소진'));
+  renderStockFillBanner();
   document.getElementById('beanCards').innerHTML=beans.map(beanCard).join('')||
     '<div class="empty"><div class="empty-icon">🫘</div><div class="empty-text">생두가 없습니다</div></div>';
 }
@@ -136,6 +137,68 @@ function answerSoldOut(id,soldOut){
   if(!soldOutCandidates().length)setTimeout(()=>closeMo('moSoldOut'),900);
 }
 
+/* ── 구매량: 보통 1kg, 좋은 생두는 2~5kg (2026-11-04) ── */
+const KG_OPTS=[1,2,3,4,5];
+function renderKgBtns(){
+  const v=parseFloat(document.getElementById('f_bst').value);
+  document.getElementById('kgBtns').innerHTML=KG_OPTS.map(k=>
+    `<button type="button" class="${v===k*1000?'on':''}" onclick="document.getElementById('f_bst').value='${k*1000}';renderKgBtns()">${k}kg</button>`).join('');
+}
+
+/* ── 구매량 미입력 생두 한 번에 입력 ── */
+function stockMissingBeans(){
+  const miss=db.beans.filter(b=>!(parseFloat(b.stock_initial)>0));
+  return miss.filter(b=>b.status!=='소진').concat(miss.filter(b=>b.status==='소진'));
+}
+function renderStockFillBanner(){
+  const el=document.getElementById('stockFillBanner');if(!el)return;
+  const n=stockMissingBeans().length;
+  el.innerHTML=n?`<div class="sf-banner" onclick="openStockFill()">📦 구매량 미입력 생두 <b>${n}개</b> — 한 번에 입력하기 ›</div>`:'';
+}
+function openStockFill(){
+  let mo=document.getElementById('moStockFill');
+  if(!mo){
+    mo=document.createElement('div');mo.className='mo';mo.id='moStockFill';
+    mo.innerHTML=`<div class="mbox"><div class="mtitle">📦 구매량 입력</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:8px">구매했던 양을 탭하면 바로 저장돼요.</div>
+      <div id="stockFillList"></div>
+      <div class="fa"><button class="btn btn-sm" onclick="closeStockFill()">완료</button></div></div>`;
+    document.body.appendChild(mo);
+  }
+  const list=stockMissingBeans();
+  document.getElementById('stockFillList').innerHTML=list.map(b=>`<div class="so-row" id="sf_${b.id}">${stockFillRow(b)}</div>`).join('')
+    ||'<div class="so-why">구매량이 비어 있는 생두가 없어요 👍</div>';
+  openMo('moStockFill');
+}
+function stockFillRow(b,justSet){
+  const u=beanUsage(b);
+  const info=[u.count?`로스팅 ${u.count}회 · 사용 ≈ ${Math.round(u.used)}g`:'로스팅 기록 없음',b.status||'상태 없음'].join(' · ');
+  const done=justSet?`<div class="so-why" style="color:var(--amber)">✓ ${justSet/1000}kg 저장 · 잔량 ≈ ${Math.max(0,Math.round(u.remaining))}g${u.remaining<SOLDOUT_REMAIN_G&&b.status!=='소진'?' (거의 다 씀 → 완료 후 소진 확인)':''}</div>`:'';
+  return`<div class="so-name">${b.name}${b.status==='소진'?' <span class="sogin-bdg">소진</span>':''}</div>
+    <div class="so-why">${info}</div>${done}
+    <div class="alt-seg sf-kg">${KG_OPTS.map(k=>`<button type="button" class="${+b.stock_initial===k*1000?'on':''}" onclick="setStockFill('${b.id}',${k*1000})">${k}kg</button>`).join('')}
+      <button type="button" onclick="setStockFill('${b.id}',null)">직접</button></div>`;
+}
+function setStockFill(id,g){
+  const b=db.beans.find(x=>x.id===id);if(!b)return;
+  if(g===null){
+    const s=prompt('구매량을 입력하세요 (예: 1500 또는 1.5kg)','')||'';
+    const m=s.match(/\d+(\.\d+)?/);if(!m)return;
+    let v=parseFloat(m[0]);if(/kg/i.test(s))v=Math.round(v*1000);
+    if(!(v>0))return;g=v;
+  }
+  b.stock_initial=String(g);
+  if(!b.status||b.status==='재고량미입력')b.status='재고있음';
+  saveDB();
+  document.getElementById('sf_'+id).innerHTML=stockFillRow(b,g);
+}
+function closeStockFill(){
+  closeMo('moStockFill');
+  try{renderBeans();}catch(e){}
+  // 입력한 구매량으로 거의 다 쓴 생두가 생겼으면 바로 소진 확인
+  soldOutChecked=false;checkSoldOutCandidates();
+}
+
 /* ── 생두 등록 폼: 직접 입력 대신 고르는 항목들 (2026-11-04) ── */
 const BEAN_ORIGINS={
   '아프리카':['에티오피아','케냐','르완다','부룬디','탄자니아','우간다','말라위','잠비아','콩고민주공화국','짐바브웨','카메룬'],
@@ -237,7 +300,9 @@ function openBeanForm(id){
   ['f_bn','f_br','f_bv','f_bpr','f_bst','f_bnt','f_bsm','f_bsw','f_bdate'].forEach(i=>{
     const el=document.getElementById(i);if(el)el.value='';
   });
-  document.getElementById('f_bss').value='';
+  // 상태 선택지 초기화 (샘플은 더 이상 구매 안 해서 목록에서 뺌 — 기존 샘플 생두를 열 때만 임시로 추가됨)
+  document.getElementById('f_bss').innerHTML=['','재고있음','잔량부족','소진','재고량미입력']
+    .map(v=>`<option value="${v}">${v||'선택'}</option>`).join('');
   // 선택형 항목 (수정 시 기존값 유지, 목록에 없던 값도 보존)
   const shops=[...new Set(BEAN_SHOPS.concat(db.beans.map(x=>x.shop).filter(Boolean)))].sort((a,c)=>a.localeCompare(c,'ko'));
   fillPickSelect('f_bo',BEAN_ORIGINS,b.origin||'','선택','직접 입력 (기타 국가)…');
@@ -249,6 +314,7 @@ function openBeanForm(id){
     const t=new Date();t.setMinutes(t.getMinutes()-t.getTimezoneOffset());
     document.getElementById('f_bdate').value=t.toISOString().slice(0,10);
     document.getElementById('f_bss').value='재고있음';
+    document.getElementById('f_bst').value='1000';  // 기본 1kg 구매
   }
   if(id&&b.id){
     document.getElementById('f_bn').value=b.name||'';
@@ -257,12 +323,12 @@ function openBeanForm(id){
     document.getElementById('f_bpr').value=b.price||'';
     document.getElementById('f_bst').value=b.stock_initial||'';
     document.getElementById('f_bdate').value=b.stock_date||'';
-    document.getElementById('f_bss').value=b.status||'';
+    setPickValue('f_bss',b.status||'');  // 예전 '샘플' 상태도 보존
     document.getElementById('f_bnt').value=b.cup_notes||'';
     document.getElementById('f_bsm').value=b.score_momos||'';
     document.getElementById('f_bsw').value=b.score_wonderroom||'';
   }
-  renderPickChips('f_bv');renderPickChips('f_bnt');
+  renderPickChips('f_bv');renderPickChips('f_bnt');renderKgBtns();
   openMo('moBeanForm');
 }
 

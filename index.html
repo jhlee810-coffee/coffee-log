@@ -6,7 +6,7 @@
 <title>Coffee Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=Josefin+Sans:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261104c">
+<link rel="stylesheet" href="style.css?v=20261104e">
 </head>
 <body>
 
@@ -56,6 +56,7 @@
   <div class="sh"><div class="stl">생두 목록</div><button class="btn btn-sm" onclick="openBeanForm()">+ 추가</button></div>
   <input class="search" placeholder="생두명 · 원산지 · 품종 · 구매처 · 컵노트 검색..." oninput="filterBeans(this.value)">
   <div class="filters" id="originFilters"></div>
+  <div id="stockFillBanner"></div>
   <div class="grid" id="beanCards"></div>
 </div>
 
@@ -155,8 +156,10 @@
     <div class="fg"><label class="fl">품종 <span class="fl-hint">(탭해서 추가·제거)</span></label><input class="inp" id="f_bv" oninput="renderPickChips('f_bv')">
       <div class="ctag-list pick-chips" id="f_bv_chips"></div></div>
     <div class="fr"><div class="fg"><label class="fl">구매처</label><select class="sel" id="f_bsh"></select></div><div class="fg"><label class="fl">가격(만원/kg)</label><input class="inp" type="number" step="0.01" id="f_bpr"></div></div>
-    <div class="fr"><div class="fg"><label class="fl">초기재고(g)</label><input class="inp" type="number" id="f_bst"></div><div class="fg"><label class="fl">구매일</label><input class="inp" type="date" id="f_bdate"></div></div>
-    <div class="fg"><label class="fl">상태</label><select class="sel" id="f_bss"><option value="">선택</option><option>재고있음</option><option>잔량부족</option><option>샘플</option><option>소진</option><option>재고량미입력</option></select></div>
+    <div class="fg"><label class="fl">구매량(g)</label>
+      <div class="kg-row"><input class="inp" type="number" id="f_bst" oninput="renderKgBtns()"><div class="alt-seg" id="kgBtns"></div></div></div>
+    <div class="fr"><div class="fg"><label class="fl">구매일</label><input class="inp" type="date" id="f_bdate"></div>
+      <div class="fg"><label class="fl">상태</label><select class="sel" id="f_bss"><option value="">선택</option><option>재고있음</option><option>잔량부족</option><option>소진</option><option>재고량미입력</option></select></div></div>
     <div class="fg"><label class="fl">컵노트 <span class="fl-hint">(탭해서 추가·제거)</span></label><input class="inp" id="f_bnt" placeholder="자스민, 복숭아, 꿀" oninput="renderPickChips('f_bnt')">
       <div class="ctag-list pick-chips" id="f_bnt_chips"></div></div>
     <div class="fr"><div class="fg"><label class="fl">모모스 스코어</label><input class="inp" type="number" step="0.1" id="f_bsm"></div><div class="fg"><label class="fl">원더룸 스코어</label><input class="inp" type="number" step="0.1" id="f_bsw"></div></div>
@@ -614,7 +617,7 @@
 <script src="data.js?v=20260528f"></script>
 <script src="app.js?v=20261104e"></script>
 <script src="dashboard.js?v=20260528f"></script>
-<script src="beans.js?v=20261104b"></script>
+<script src="beans.js?v=20261104c"></script>
 <script src="roasts.js?v=20260824b"></script>
 <script src="brewing.js?v=20260528f"></script>
 <script src="wishlist.js?v=20261104a"></script>
