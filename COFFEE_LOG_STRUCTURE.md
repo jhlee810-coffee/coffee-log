@@ -267,5 +267,5 @@ Invoke-WebRequest -Uri $url -Method POST -Body $bodyBytes -ContentType "text/pla
 6. **캐시버스팅 연쇄** — `binbon_timer.html` 수정 시 `app.js`의 타이머 `?v=` + `index.html`의 `app.js?v=`까지 올려야 폰에 반영됨.
 7. **로컬 테스트 = 실데이터 위험** — `saveDB()`가 바로 Sheets에 업로드함. 브라우저 테스트 전 `localStorage coffee_v3`의 `_savedAt`을 1로, 로드 후 `saveDB`/`pushToSheets`를 빈 함수로 막고 테스트.
 8. **로스팅 시작 버튼엔 확인창/지연 금지** — 빈본 구동 직후 누르는 버튼(사용자 요구).
-9. **Sheets 셀 50,000자 한도 임박** — 2026-11-04 기준 동기화 JSON 49,994자. 넘으면 GAS `setValue`가 실패하고 `pushToSheets`는 오류를 조용히 삼킴 → 폰에만 저장되고 Sheets는 멈춤. 해결하려면 GAS를 여러 셀(A1, A2…)에 나눠 저장하도록 바꿔야 함.
-10. **쉬운 커핑은 `easyCuppingLog` 별도 키** — `db`에 넣지 않은 이유: 사용자 요청(기존 데이터와 분리) + 위 셀 한도.
+9. **Sheets 전송은 압축본** (2026-11-04) — A1 셀 한도 50,000자 때문에 `pushToSheets`가 `{_z,_enc:'deflate-raw-b64',_savedAt}`로 압축 전송(49,994→12,855자). `syncFromSheets`가 `_z`를 풀어서 사용(옛 평문 형식도 읽음). 비상용 PowerShell 업로드(평문 JSON)도 그대로 동작. 다시 한도에 가까워지면 GAS를 여러 셀 분할 저장으로 바꿔야 함(사용자가 Apps Script 재배포 필요).
+10. **쉬운 커핑은 `easyCuppingLog` 별도 키** — `db`에 넣지 않은 이유: 사용자 요청(기존 데이터와 분리).

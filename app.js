@@ -50,9 +50,38 @@ function saveDB(){
   pushToSheets();
 }
 
+/* ── Sheets 전송용 압축 (2026-11-04) ──
+   Sheets는 A1 셀 한 칸(최대 50,000자)에 전체 JSON을 저장함 → 앱이 압축해서 보냄.
+   형식: {_z:'<deflate-raw 압축 후 base64>', _enc:'deflate-raw-b64', _savedAt}
+   읽을 때 _z가 있으면 풀고, 없으면(옛 형식) 그대로 사용. 압축 불가 기기는 옛 형식으로 전송. */
+const SHEET_CELL_MAX=50000;
+function _b64FromBytes(u8){let s='';for(let i=0;i<u8.length;i+=0x8000)s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));return btoa(s);}
+function _bytesFromB64(b){const s=atob(b),u8=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u8[i]=s.charCodeAt(i);return u8;}
+async function _pipe(u8,stream){return new Uint8Array(await new Response(new Blob([u8]).stream().pipeThrough(stream)).arrayBuffer());}
+async function packForSheets(obj){
+  const json=JSON.stringify(obj);
+  if(typeof CompressionStream==='undefined')return json;
+  try{
+    const z=_b64FromBytes(await _pipe(new TextEncoder().encode(json),new CompressionStream('deflate-raw')));
+    // 다시 풀어서 원본과 같은지 확인 — 다르면 압축 안 하고 보냄
+    if(await unpackZ(z)!==json)return json;
+    return JSON.stringify({_z:z,_enc:'deflate-raw-b64',_savedAt:obj._savedAt||0});
+  }catch(e){console.warn('압축 실패, 원본 전송:',e);return json;}
+}
+async function unpackZ(z){return new TextDecoder().decode(await _pipe(_bytesFromB64(z),new DecompressionStream('deflate-raw')));}
+async function unpackFromSheets(data){
+  if(data&&data._z)return JSON.parse(await unpackZ(data._z));
+  return data;
+}
+
 async function pushToSheets(){
   try{
-    await fetch(GAS_URL,{method:'POST',body:JSON.stringify(db),headers:{'Content-Type':'text/plain'}});
+    const body=await packForSheets(db);
+    if(body.length>SHEET_CELL_MAX){
+      console.warn('Sheets 셀 한도 초과:',body.length);
+      document.getElementById('saveInd').textContent='⚠ 클라우드 용량 초과 — 이 기기에만 저장됨';
+    }
+    await fetch(GAS_URL,{method:'POST',body,headers:{'Content-Type':'text/plain'}});
   }catch(e){console.warn('Sheets 저장 실패:',e);}
 }
 
@@ -62,7 +91,8 @@ async function syncFromSheets(){
     const res=await fetch(GAS_URL+'?t='+Date.now());
     const json=await res.json();
     if(json.ok&&json.data){
-      const remote=json.data;
+      const remote=await unpackFromSheets(json.data);  // 풀기 실패 시 catch로 → 로컬 데이터 유지
+      if(!remote||!Array.isArray(remote.beans))throw new Error('클라우드 데이터 형식 이상');
       const remoteAt=remote._savedAt||0;
       const localAt=db._savedAt||0;
       if(remoteAt>=localAt){
