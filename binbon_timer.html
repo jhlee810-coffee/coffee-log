@@ -9,7 +9,7 @@
 <title>빈본 로스팅 타이머</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-html,body { overflow-x:hidden; width:100%; }
+html,body { overflow-x:hidden; width:100%; overscroll-behavior-y:none; }
 body { font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif; background:#f4f6f8; min-height:100vh; display:flex; flex-direction:column; align-items:center; }
 .header { width:100%; color:#fff; text-align:center; padding:48px 16px 16px; transition:background 0.3s; }
 .header h1 { font-size:20px; font-weight:800; letter-spacing:-0.5px; }
@@ -96,10 +96,38 @@ body { font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-seri
 <script>
 let beansList=[];
 window.addEventListener('message',function(e){
-  if(!e.data||e.data.type!=='beans_list')return;
+  if(!e.data)return;
+  // 상단 미니바(부모창)의 1차 팝 버튼
+  if(e.data.type==='timer_pop'){
+    if(S.screen==='running'&&S.popElapsed===null)handlePop();
+    return;
+  }
+  if(e.data.type!=='beans_list')return;
   beansList=e.data.beans||[];
   if(S.screen==='setup')render();
 });
+
+// 로스팅 중 상태를 부모창(커피 로그)에 전달 → 다른 탭에서 상단 미니바로 표시
+function postTimerState(){
+  if(window.parent===window)return;
+  const ae=MODES[S.modeKey].autoEject;
+  window.parent.postMessage({type:'timer_state',
+    active:S.screen!=='setup',mode:MODES[S.modeKey].label,dtr:S.dtr,
+    remain:Math.max(0,ae-S.elapsed),popped:S.popElapsed!==null,
+    over:!!(S.result&&S.result.over),countdown:S.countdown,countdownDone:S.countdownDone},'*');
+}
+
+// 로스팅 중 아래로 당겨 새로고침 차단 (타이머가 날아가면 안 됨)
+let _tY=0,_tX=0;
+document.addEventListener('touchstart',e=>{_tY=e.touches[0].clientY;_tX=e.touches[0].clientX;},{passive:true});
+document.addEventListener('touchmove',e=>{
+  if(S.screen==='setup')return;
+  const dy=e.touches[0].clientY-_tY,dx=e.touches[0].clientX-_tX;
+  if(dy<=0||Math.abs(dy)<Math.abs(dx))return;
+  if((window.scrollY||document.documentElement.scrollTop)>0)return;
+  for(let el=e.target;el&&el!==document.body;el=el.parentElement){if(el.scrollTop>0)return;}
+  e.preventDefault();
+},{passive:false});
 
 const MODES = {
   1:{label:"1번",autoEject:460},
@@ -519,6 +547,10 @@ function render(){
     `;
   }
 }
+
+// 화면을 다시 그릴 때마다 부모창 미니바에도 상태 전달
+const _renderBase=render;
+render=function(){_renderBase();postTimerState();};
 
 render();
 </script>

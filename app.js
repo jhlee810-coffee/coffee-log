@@ -125,6 +125,7 @@ function importData(input){
 }
 
 function showTab(name,el){
+  window.curTab=name;
   document.querySelectorAll('.sec').forEach(s=>s.classList.remove('on'));
   document.querySelectorAll('.tb').forEach(t=>t.classList.remove('on'));
   document.getElementById('tab-'+name).classList.add('on');
@@ -132,7 +133,7 @@ function showTab(name,el){
   if(name==='timer'){
     const fr=document.getElementById('timerFrame');
     if(!fr.getAttribute('src')){
-      fr.src='binbon_timer.html?v=20261104c';
+      fr.src='binbon_timer.html?v=20261104d';
       fr.addEventListener('load',function(){
         fr.contentWindow.postMessage({type:'beans_list',beans:db.beans},'*');
       },{once:true});
@@ -142,6 +143,7 @@ function showTab(name,el){
   }
   const fn={dash:renderDash,beans:renderBeans,roasts:renderRoasts,brewing:renderBrewing,wishlist:renderWishlist,cupping:renderCupping};
   if(fn[name]) fn[name]();
+  if(window.updateRoastBar) updateRoastBar();
 }
 
 function showBrewSub(i){
