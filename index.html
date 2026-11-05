@@ -6,7 +6,7 @@
 <title>Coffee Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=Josefin+Sans:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261105a">
+<link rel="stylesheet" href="style.css?v=20261105b">
 </head>
 <body>
 
@@ -22,6 +22,7 @@
     <div class="tb on" onclick="showTab('dash',this)">대시보드</div>
     <div class="tb" onclick="showTab('dailycup',this)">☕ 오늘의 한 잔</div>
     <div class="tb" onclick="showTab('beans',this)">생두 목록</div>
+    <div class="tb" onclick="showTab('roasted',this)">원두 목록</div>
     <div class="tb" onclick="showTab('timer',this)">🔥 빈본 타이머</div>
     <div class="tb" onclick="showTab('roasts',this)">로스팅 로그</div>
     <div class="tb" onclick="showTab('brewing',this)">브루잉</div>
@@ -52,6 +53,9 @@
   <div class="ract-lbl">최근 활동</div>
   <div id="recentAct"></div>
 </div>
+
+<!-- 원두 목록 (roasted.js) -->
+<div id="tab-roasted" class="sec"><div id="rbRoot"></div></div>
 
 <!-- 오늘의 한 잔 (dailycup.js) -->
 <div id="tab-dailycup" class="sec"><div id="dcRoot"></div></div>
@@ -630,6 +634,9 @@
   </div>
 </div>
 
+<!-- MODAL: 원두 등록/수정 (roasted.js) -->
+<div class="mo" id="moRbForm"><div class="mbox" id="rbFormBody"></div></div>
+
 <!-- MODAL: 오늘의 한 잔 — 원두 고르기 -->
 <div class="mo" id="moDcPick">
   <div class="mbox">
@@ -682,7 +689,7 @@
 </div>
 
 <script src="data.js?v=20260528f"></script>
-<script src="app.js?v=20261105a"></script>
+<script src="app.js?v=20261105b"></script>
 <script src="dashboard.js?v=20260528f"></script>
 <script src="beans.js?v=20261105a"></script>
 <script src="roasts.js?v=20261104a"></script>
@@ -690,7 +697,8 @@
 <script src="wishlist.js?v=20261104a"></script>
 <script src="cupping.js?v=20260528f"></script>
 <script src="easycup.js?v=20261104b"></script>
-<script src="dailycup.js?v=20261105a"></script>
+<script src="dailycup.js?v=20261105b"></script>
+<script src="roasted.js?v=20261105a"></script>
 <script>
 // 빈본 타이머 ↔ 로스트 로그 연계
 window.addEventListener('message', function(e){

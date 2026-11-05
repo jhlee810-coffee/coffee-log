@@ -66,6 +66,7 @@ function dcShort(name){
   if(w.length>1&&origins.has(w[0]))w.shift();
   return w.slice(0,w[1]&&/^(AA|AB|PB|G1|G2)$/i.test(w[1])?2:1).join(' ')||String(name||'');
 }
+function dcName(s){return (s&&(s.manual||s.rb_id))?s.bean:dcShort(s&&s.bean);}
 function dcRoastDTR(r){
   let dtr=r.dtr_pct;
   if(!dtr&&r.pop_time&&r.eject_time&&r.mode){
@@ -79,11 +80,12 @@ function dcRoastLoss(r){
   if(r.input_g&&r.output_g)return ((+r.input_g - +r.output_g)/+r.input_g*100).toFixed(1);
   return '';
 }
-function dcProfile(s){ // "3-12"
+function dcProfile(s){ // "3-12" (구매 원두는 로스터리)
+  if(s&&s.rb_id)return s.roastery||'구매';
   if(!s||!s.mode)return '';
   return s.dtr?`${s.mode}-${Math.round(+s.dtr)}`:`${s.mode}번`;
 }
-function dcBatchKey(s){return s.roast_id?s.roast_id:`m:${s.bean}|${s.roast_date||''}`;}
+function dcBatchKey(s){return s.roast_id?s.roast_id:s.rb_id?`rb:${s.rb_id}`:`m:${s.bean}|${s.roast_date||''}`;}
 function dcSnapFromRoast(r){
   return {roast_id:r.id,bean:r.bean_name||'',roast_date:r.date||'',mode:r.mode?String(r.mode):'',
     dtr:dcRoastDTR(r),loss:dcRoastLoss(r),batch_no:r.batch_no||''};
@@ -94,7 +96,7 @@ function dcStrLabel(v){const x=DC_STRENGTH.find(b=>b.v===v);return x?x.l:'';}
 function dcSummary(r){
   const s=r.bean_info||{};
   const prof=dcProfile(s);
-  const head=`${dcMD(r.date)} · ${s.manual?s.bean:dcShort(s.bean)}${prof?' '+prof:''}${r.degas_days!=null?` (${r.degas_days}일차)`:''}`;
+  const head=`${dcMD(r.date)} · ${dcName(s)}${prof?' '+prof:''}${r.degas_days!=null?` (${r.degas_days}일차)`:''}`;
   const parts=[head,dcStars(r.stars)];
   if(r.balance)parts.push(dcBalLabel(r.balance));
   if(r.strength&&r.strength!=='ok')parts.push(dcStrLabel(r.strength));
@@ -111,11 +113,13 @@ function dcBatchChoices(){
   dcSortedRecords().forEach(r=>{
     const s=r.bean_info||{};const k=dcBatchKey(s);if(seen.has(k))return;seen.add(k);
     const live=s.roast_id?db.roasts.find(x=>x.id===s.roast_id):null;
-    out.push({snap:live?dcSnapFromRoast(live):{...s},drunk:true,last:r.date});
+    const liveRb=s.rb_id&&typeof rbList==='function'?rbList().find(x=>x.id===s.rb_id):null;
+    out.push({snap:live?dcSnapFromRoast(live):liveRb?rbSnap(liveRb):{...s},drunk:true,last:r.date});
   });
-  db.roasts.map((r,i)=>({r,i})).sort((a,b)=>a.r.date<b.r.date?1:a.r.date>b.r.date?-1:b.i-a.i).forEach(({r})=>{
-    if(seen.has(r.id))return;seen.add(r.id);out.push({snap:dcSnapFromRoast(r),drunk:false});
-  });
+  const rest=[];
+  db.roasts.forEach((r,i)=>{if(!seen.has(r.id))rest.push({snap:dcSnapFromRoast(r),d:r.date||'',i});});
+  (db.roasted_beans||[]).forEach((b,i)=>{if(b.status!=='다 마심'&&!seen.has('rb:'+b.id))rest.push({snap:rbSnap(b),d:b.roast_date||'',i:1e6+i});});
+  rest.sort((a,b)=>a.d<b.d?1:a.d>b.d?-1:b.i-a.i).forEach(x=>out.push({snap:x.snap,drunk:false}));
   return out;
 }
 function dcLastBrew(){
@@ -176,10 +180,10 @@ function dcEntryHtml(){
   const quick=window._dcQuick.map((c,i)=>{
     const on=e.sel&&dcBatchKey(e.sel)===dcBatchKey(c.snap);
     return `<button class="dc-qbatch${on?' on':''}" onclick="dcSelect({...window._dcQuick[${i}].snap})">
-      <b>${dcEsc(c.snap.manual?c.snap.bean:dcShort(c.snap.bean))}</b><span>${dcEsc([dcMD(c.snap.roast_date),dcProfile(c.snap)].filter(Boolean).join(' · '))}</span></button>`;
+      <b>${dcEsc(dcName(c.snap))}</b><span>${dcEsc([dcMD(c.snap.roast_date),dcProfile(c.snap)].filter(Boolean).join(' · '))}</span></button>`;
   }).join('');
   const selBox=e.sel?`<div class="dc-sel"><div class="dc-sel-name">${dcEsc(e.sel.bean)}</div>
-      <div class="dc-sel-meta">${dcEsc([e.sel.roast_date?dcMD(e.sel.roast_date)+' 로스팅':'',dcProfile(e.sel),e.sel.batch_no?`그날 ${e.sel.batch_no}번째`:'',e.sel.manual?'직접 입력':''].filter(Boolean).join(' · '))}</div>
+      <div class="dc-sel-meta">${dcEsc([e.sel.roast_date?dcMD(e.sel.roast_date)+' 로스팅':'',dcProfile(e.sel),e.sel.batch_no?`그날 ${e.sel.batch_no}번째`:'',e.sel.manual?'직접 입력':'',e.sel.rb_id?'산 원두':''].filter(Boolean).join(' · '))}</div>
       <div class="dc-sel-deg">${deg!=null?`디개싱 <b>${deg}일차</b>`:'로스팅 날짜 없음'}</div></div>`:'';
   const stars=[1,2,3,4,5].map(n=>`<button class="dc-star${e.stars>=n?' on':''}" onclick="dcSetStars(${n})" aria-label="별 ${n}개">★</button>`).join('');
   return `<div class="sh"><div class="stl">${e.editId?'기록 수정':'오늘의 한 잔'}</div>${e.editId?'<button class="btn2" onclick="dcCancelEdit()">수정 취소</button>':''}</div>
@@ -277,7 +281,7 @@ function dcRenderPick(){
     const s=c.snap,d=dcDays(t,s.roast_date),n=counts[dcBatchKey(s)]||0;
     return `<div class="dc-pick-item${c.drunk?' drunk':''}" onclick="dcPickIdx(${i})">
       <div class="dc-pi-name">${dcEsc(s.bean)}</div>
-      <div class="dc-pi-meta">${dcEsc([dcMD(s.roast_date),dcProfile(s),s.batch_no?`그날 ${s.batch_no}번째`:'',d!=null?`${d}일차`:'',n?`${n}번 마심`:''].filter(Boolean).join(' · '))}</div></div>`;
+      <div class="dc-pi-meta">${s.rb_id?'<span class="dc-rbtag">산 원두</span> ':''}${dcEsc([dcMD(s.roast_date),dcProfile(s),s.batch_no?`그날 ${s.batch_no}번째`:'',d!=null?`${d}일차`:'',n?`${n}번 마심`:''].filter(Boolean).join(' · '))}</div></div>`;
   }).join('')||'<div class="dc-empty">맞는 로스팅 기록이 없어요. 아래 "직접 입력"을 써 주세요.</div>';
   window._dcPickList=list;
 }
@@ -305,7 +309,7 @@ function dcSave(){
   const rec=dcClean({
     id:e.editId||('dc_'+genId()),
     date:e.date,
-    bean_info:{roast_id:e.sel.roast_id,bean:e.sel.bean,roast_date:e.sel.roast_date,mode:e.sel.mode,dtr:e.sel.dtr,loss:e.sel.loss,batch_no:e.sel.batch_no,manual:e.sel.manual||''},
+    bean_info:{roast_id:e.sel.roast_id,rb_id:e.sel.rb_id,roastery:e.sel.roastery,bean:e.sel.bean,roast_date:e.sel.roast_date,mode:e.sel.mode,dtr:e.sel.dtr,loss:e.sel.loss,batch_no:e.sel.batch_no,manual:e.sel.manual||''},
     degas_days:dcDays(e.date,e.sel.roast_date),
     stars:e.stars,balance:e.balance,strength:e.strength,good:e.good.slice(),bad:e.bad.slice(),
     brew:{...e.brew},memo:(e.memo||'').trim(),
@@ -343,7 +347,8 @@ function dcEdit(id){
   const r=dcList().find(x=>x.id===id);if(!r)return;
   const s=r.bean_info||{};
   const live=s.roast_id?db.roasts.find(x=>x.id===s.roast_id):null;
-  _dc={editId:r.id,date:r.date,sel:live?dcSnapFromRoast(live):{...s},stars:r.stars||0,balance:r.balance||'',strength:r.strength||'',
+  const liveRb=s.rb_id&&typeof rbList==='function'?rbList().find(x=>x.id===s.rb_id):null;
+  _dc={editId:r.id,date:r.date,sel:live?dcSnapFromRoast(live):liveRb?rbSnap(liveRb):{...s},stars:r.stars||0,balance:r.balance||'',strength:r.strength||'',
        good:(r.good||[]).slice(),bad:(r.bad||[]).slice(),
        brew:{recipe:'',dripper:'',grinder:'',clicks:'',coffee_g:'',water_g:'',temp:'',time:'',...(r.brew||{})},memo:r.memo||'',more:true};
   renderDailyCup();window.scrollTo(0,0);
@@ -376,7 +381,7 @@ function dcAnaHtml(){
   const bestAvg=Math.max(...days.map(d=>dcAvg(byDay[d])));
   const curve=days.map(d=>{const a=dcAvg(byDay[d]);return dcBar(`${d}일차`,a,byDay[d].length,{best:days.length>1&&a===bestAvg});}).join('')||'<div class="dc-empty">로스팅 날짜가 없어 일수를 계산할 수 없어요.</div>';
   const bestDays=days.filter(d=>dcAvg(byDay[d])===bestAvg);
-  const bOpts=bKeys.map(k=>{const s=batches[k].s;return `<option value="${dcEsc(k)}"${k===_dcAnaBatch?' selected':''}>${dcEsc([dcShort(s.bean),dcMD(s.roast_date),dcProfile(s)].filter(Boolean).join(' · '))} (${batches[k].recs.length})</option>`;}).join('');
+  const bOpts=bKeys.map(k=>{const s=batches[k].s;return `<option value="${dcEsc(k)}"${k===_dcAnaBatch?' selected':''}>${dcEsc([dcName(s),dcMD(s.roast_date),dcProfile(s)].filter(Boolean).join(' · '))} (${batches[k].recs.length})</option>`;}).join('');
   // 2. 프로파일별 평균 (같은 생두 안)
   const beans={};all.forEach(r=>{const b=(r.bean_info||{}).bean;if(b)(beans[b]=beans[b]||[]).push(r);});
   const beanKeys=Object.keys(beans).sort((a,b)=>beans[b].length-beans[a].length);
