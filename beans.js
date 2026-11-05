@@ -234,7 +234,20 @@ function fillPickSelect(id,groups,current,placeholder,customLabel){
   sel.onchange=()=>pickSelectChanged(sel);
 }
 // '직접 입력…' 선택 시 입력창 → 옵션 추가 후 선택, 취소하면 이전 값으로
+/* 구매처 목록: 최근 구매한 곳 먼저(생두 구매일 순) → 그 밖에 등록된 곳 → 기본 목록.
+   새 구매처는 직접 입력해서 생두를 저장하면 다음부터 목록·칩에 자동으로 나옴 */
+function recentShops(){
+  const used=db.beans.filter(x=>x.shop).slice().sort((a,c)=>(c.stock_date||'').localeCompare(a.stock_date||'')).map(x=>x.shop);
+  return [...new Set([...used,...BEAN_SHOPS])];
+}
+function renderShopChips(){
+  const el=document.getElementById('f_bshChips');if(!el)return;
+  const cur=document.getElementById('f_bsh').value;
+  const esc=s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  el.innerHTML=recentShops().slice(0,8).map(s=>`<span class="pchip${s===cur?' on':''}" data-v="${esc(s)}" onclick="setPickValue('f_bsh',this.dataset.v);renderShopChips()">${esc(s)}</span>`).join('');
+}
 function pickSelectChanged(sel){
+  if(sel.id==='f_bsh')setTimeout(renderShopChips,0);
   if(sel.value!==CUSTOM_OPT){sel.dataset.prev=sel.value;return;}
   const numeric=sel.id.startsWith('f_ba');
   let v=prompt(numeric?'고도를 숫자로 입력하세요 (m)':'직접 입력하세요','');
@@ -305,10 +318,11 @@ function openBeanForm(id){
   document.getElementById('f_bss').innerHTML=['','재고있음','잔량부족','소진','재고량미입력']
     .map(v=>`<option value="${v}">${v||'선택'}</option>`).join('');
   // 선택형 항목 (수정 시 기존값 유지, 목록에 없던 값도 보존)
-  const shops=[...new Set(BEAN_SHOPS.concat(db.beans.map(x=>x.shop).filter(Boolean)))].sort((a,c)=>a.localeCompare(c,'ko'));
+  const shops=recentShops();
   fillPickSelect('f_bo',BEAN_ORIGINS,b.origin||'','선택','직접 입력 (기타 국가)…');
   fillPickSelect('f_bp',BEAN_PROCESSES,b.process||'','선택');
   fillPickSelect('f_bsh',shops,b.shop||'','선택','직접 입력 (새 구매처)…');
+  renderShopChips();
   initAltitude(b.altitude);
   if(!id){
     // 새 생두 기본값: 오늘 구매 + 재고있음

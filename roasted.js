@@ -18,10 +18,11 @@ function rbDays(roastDate){
   const p=s=>{const [y,m,d]=s.split('-').map(Number);return Date.UTC(y,m-1,d);};
   const v=Math.round((p(today())-p(roastDate))/86400000);return isNaN(v)?null:v;
 }
-function rbRoasteries(){ // 예전에 쓴 로스터리 (많이 쓴 순)
-  const c={};rbList().forEach(b=>{if(b.roastery)c[b.roastery]=(c[b.roastery]||0)+1;});
-  (db.brewlogs||[]).forEach(b=>{if(b.ext_roastery)c[b.ext_roastery]=(c[b.ext_roastery]||0)+0.5;});
-  return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
+function rbRoasteries(){ // 예전에 쓴 로스터리 — 최근 산 곳 먼저. 새 로스터리는 저장하면 다음부터 여기 나옴
+  const t={};
+  rbList().forEach(b=>{if(!b.roastery)return;const d=b.buy_date||b.roast_date||'';if(!(b.roastery in t)||d>t[b.roastery])t[b.roastery]=d;});
+  (db.brewlogs||[]).forEach(b=>{if(b.ext_roastery&&!(b.ext_roastery in t))t[b.ext_roastery]=b.date||'';});
+  return Object.entries(t).sort((a,b)=>b[1].localeCompare(a[1])).map(x=>x[0]);
 }
 function rbCups(b){return (db.dailycups||[]).filter(r=>r.bean_info&&r.bean_info.rb_id===b.id);}
 
@@ -70,7 +71,7 @@ function rbRenderForm(){
   const f=_rbForm;
   const chip=(on,l,fn)=>`<button class="dc-chip${on?' on':''}" onclick="${fn}">${rbEsc(l)}</button>`;
   const q=s=>rbEsc(s).replace(/'/g,"\\'");
-  const roasteries=rbRoasteries().slice(0,8).map(r=>chip(f.roastery===r,r,`_rbForm.roastery='${q(r)}';rbRenderForm()`)).join('');
+  const roasteries=rbRoasteries().map(r=>chip(f.roastery===r,r,`_rbForm.roastery='${q(r)}';rbRenderForm()`)).join('');
   const origins=Object.values(BEAN_ORIGINS).flat();
   const t=today(),ago=n=>{const d=new Date();d.setDate(d.getDate()-n);return localDate(d);};
   const rdChips=[['오늘',t],['어제',ago(1)],['3일 전',ago(3)],['1주 전',ago(7)]].map(([l,v])=>chip(f.roast_date===v,l,`_rbForm.roast_date='${v}';rbRenderForm()`)).join('');
