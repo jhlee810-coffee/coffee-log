@@ -25,6 +25,27 @@ function roastToCup(id){
   if(!_dc||_dc.editId)dcNew();
   dcSelect(dcSnapFromRoast(r));window.scrollTo(0,0);
 }
+/* ✏️ 원두별 최적 숙성(디개싱) 기간 (일). 위에서부터 먼저 맞는 규칙. 생두/원두에 직접 넣은 값(rest_min·rest_max)이 있으면 그게 우선 */
+const REST_RULES=[
+  {label:'게이샤',                 min:14, max:28, test:x=>/게이샤|geisha|gesha/i.test((x.name||'')+' '+(x.variety||''))},
+  {label:'케냐·에티오피아 워시드', min:7,  max:21, test:x=>/케냐|에티오피아|kenya|ethiopia/i.test((x.origin||'')+' '+(x.name||''))&&/wash|워시드/i.test((x.process||'')+' '+(x.name||''))},
+];
+const REST_DEFAULT={label:'기본', min:7, max:21};
+function restWindow(x){
+  if(!x)return {...REST_DEFAULT};
+  const mn=parseInt(x.rest_min),mx=parseInt(x.rest_max);
+  const rule=REST_RULES.find(r=>r.test(x))||REST_DEFAULT;
+  if(mn>0||mx>0)return {label:x.roastery!==undefined?'로스터리 권장':'직접 지정',min:mn>0?mn:rule.min,max:mx>0?mx:rule.max,own:true};
+  return {label:rule.label,min:rule.min,max:rule.max};
+}
+/* 디개싱 단계: 최적기 전 = 숙성 중(n일 남음) / 최적기 / 지남 */
+function restStage(days,w){
+  if(days==null)return {l:'',c:'var(--muted)',o:9};
+  if(days<w.min)return {l:`숙성 중 · ${w.min-days}일 남음`,c:'var(--amber)',o:1,wait:w.min-days};
+  if(days<=w.max)return {l:'최적기',c:'#7ed6a5',o:0};
+  if(days<=w.max+14)return {l:'최적기 지남',c:'var(--muted2)',o:2};
+  return {l:'오래됨',c:'var(--coral)',o:3};
+}
 function roastOfBean(r,b){return r.bean_id?r.bean_id===b.id:r.bean_name===b.name;}
 
 /* 1팝 경과·총 로스팅시간 (모드 자동배출 − 잔여) → "m:ss" */

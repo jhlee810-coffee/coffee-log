@@ -6,7 +6,7 @@
 <title>Coffee Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=Josefin+Sans:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261107d">
+<link rel="stylesheet" href="style.css?v=20261107e">
 </head>
 <body>
 
@@ -175,6 +175,9 @@
       <div class="fg"><label class="fl">수분율(%)</label><div class="md-row"><button type="button" class="md-adj" onclick="adjBeanMD('f_bmo',-0.1)">−0.1</button><input class="inp md-inp" type="number" step="0.1" inputmode="decimal" id="f_bmo" oninput="_beanMDTouched.mo=true"><button type="button" class="md-adj" onclick="adjBeanMD('f_bmo',0.1)">+0.1</button></div></div>
       <div class="fg"><label class="fl">밀도(g/L)</label><div class="md-row"><button type="button" class="md-adj" onclick="adjBeanMD('f_bde',-10)">−10</button><input class="inp md-inp" type="number" step="1" inputmode="numeric" id="f_bde" oninput="_beanMDTouched.de=true"><button type="button" class="md-adj" onclick="adjBeanMD('f_bde',10)">+10</button></div></div>
     </div>
+    <div class="fg"><label class="fl">최적 숙성 (로스팅 후 일) <span class="fl-hint" id="f_brestHint">비우면 기본 규칙</span></label>
+      <div class="rest-row"><input class="inp" type="number" inputmode="numeric" id="f_brmin" placeholder="7"><span>~</span><input class="inp" type="number" inputmode="numeric" id="f_brmax" placeholder="21"><span>일</span>
+      <button type="button" class="btn2" onclick="document.getElementById('f_brmin').value='';document.getElementById('f_brmax').value=''">규칙대로</button></div></div>
     <div class="fr"><div class="fg"><label class="fl">구매일</label><input class="inp" type="date" id="f_bdate"></div>
       <div class="fg"><label class="fl">상태</label><select class="sel" id="f_bss"><option value="">선택</option><option>재고있음</option><option>잔량부족</option><option>소진</option><option>재고량미입력</option></select></div></div>
     <div class="fg"><label class="fl">컵노트 <span class="fl-hint">(탭해서 추가·제거)</span></label><input class="inp" id="f_bnt" placeholder="자스민, 복숭아, 꿀" oninput="renderPickChips('f_bnt')">
@@ -718,17 +721,17 @@
 
 <script src="data.js?v=20260528f"></script>
 <script src="app.js?v=20261107f"></script>
-<script src="dashboard.js?v=20261107a"></script>
-<script src="beans.js?v=20261107a"></script>
+<script src="dashboard.js?v=20261107b"></script>
+<script src="beans.js?v=20261107b"></script>
 <script src="roasts.js?v=20261107d"></script>
 <script src="brewing.js?v=20261106a"></script>
 <script src="wishlist.js?v=20261106a"></script>
 <script src="cupping.js?v=20260528f"></script>
 <script src="easycup.js?v=20261106a"></script>
-<script src="dailycup.js?v=20261107a"></script>
-<script src="roasted.js?v=20261106c"></script>
+<script src="dailycup.js?v=20261107b"></script>
+<script src="roasted.js?v=20261107a"></script>
 <script src="shops.js?v=20261106a"></script>
-<script src="datafix.js?v=20261107e"></script>
+<script src="datafix.js?v=20261107f"></script>
 <script src="plan.js?v=20261107a"></script>
 <script>
 // 빈본 타이머 ↔ 로스트 로그 연계

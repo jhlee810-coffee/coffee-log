@@ -217,7 +217,7 @@ function dcEntryHtml(){
   }).join('');
   const selBox=e.sel?`<div class="dc-sel"><div class="dc-sel-name">${dcEsc(e.sel.bean)}</div>
       <div class="dc-sel-meta">${dcEsc([e.sel.roast_date?dcMD(e.sel.roast_date)+' 로스팅':'',dcProfile(e.sel),e.sel.batch_no?`그날 ${e.sel.batch_no}번째`:'',e.sel.manual?'직접 입력':'',e.sel.rb_id?'산 원두':''].filter(Boolean).join(' · '))}</div>
-      <div class="dc-sel-deg" id="dcDegText">${deg!=null?`디개싱 <b>${deg}일차</b>`:'로스팅 날짜 없음'}</div></div>`:'';
+      <div class="dc-sel-deg" id="dcDegText">${dcDegHtml(e.sel,deg)}</div></div>`:'';
   const stars=[1,2,3,4,5].map(n=>`<button class="dc-star${e.stars>=n?' on':''}" onclick="dcSetStars(${n})" aria-label="별 ${n}개">★</button>`).join('');
   return `<div class="sh"><div class="stl">${e.editId?'기록 수정':'오늘의 한 잔'}</div>${e.editId?'<button class="btn2" onclick="dcCancelEdit()">수정 취소</button>':''}</div>
   <div class="dc-card">
@@ -295,10 +295,22 @@ function dcMoreHtml(){
     <input class="inp" placeholder="예: 식으니 단맛이 올라옴" value="${dcEsc(e.memo)}" oninput="_dc.memo=this.value">
   </div>`;
 }
+function dcRestOf(sel){
+  if(!sel||typeof restWindow!=='function')return null;
+  if(sel.rb_id){const b=(db.roasted_beans||[]).find(x=>x.id===sel.rb_id);return b?restWindow(b):null;}
+  if(sel.roast_id){const r=db.roasts.find(x=>x.id===sel.roast_id);const b=r?beanOfRoast(r):null;return restWindow(b||{name:sel.bean});}
+  return restWindow({name:sel.bean});
+}
+function dcDegHtml(sel,deg){
+  if(deg==null)return '로스팅 날짜 없음';
+  const w=dcRestOf(sel);if(!w)return `디개싱 <b>${deg}일차</b>`;
+  const st=restStage(deg,w);
+  return `디개싱 <b>${deg}일차</b> · <span style="color:${st.c}">${st.l}</span> <small style="color:var(--muted)">(최적 ${w.min}~${w.max}일)</small>`;
+}
 function dcDateChanged(v){ // 달력을 닫지 않도록 화면 전체를 다시 그리지 않고 디개싱 글자만 바꿈
   _dc.date=v||today();
   const el=document.getElementById('dcDegText');
-  if(el&&_dc.sel){const d=dcDays(_dc.date,_dc.sel.roast_date);el.innerHTML=d!=null?`디개싱 <b>${d}일차</b>`:'로스팅 날짜 없음';}
+  if(el&&_dc.sel){el.innerHTML=dcDegHtml(_dc.sel,dcDays(_dc.date,_dc.sel.roast_date));}
 }
 function dcSelect(snap){_dc.sel=snap;closeMo('moDcPick');if(!_dc.editId)dcMatchDecafPreset();dcRerender();}
 function dcSetNum(k,n){_dc[k]=_dc[k]===n?0:n;dcRerender();}

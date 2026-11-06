@@ -434,6 +434,12 @@ function openBeanForm(id){
     document.getElementById('f_bpay').value='';document.getElementById('f_bdec').checked=false;
   }
   _beanMDTouched={mo:false,de:false};
+  { // 최적 숙성: 직접 넣은 값만 칸에, 규칙 값은 흐린 안내로
+    const rw=restWindow({...b,rest_min:'',rest_max:''});
+    document.getElementById('f_brmin').value=b.rest_min||'';document.getElementById('f_brmax').value=b.rest_max||'';
+    document.getElementById('f_brmin').placeholder=rw.min;document.getElementById('f_brmax').placeholder=rw.max;
+    document.getElementById('f_brestHint').textContent=`비우면 규칙: ${rw.label} ${rw.min}~${rw.max}일`;
+  }
   document.getElementById('f_bmo').value=(b.moisture!=null&&b.moisture!==''?(+b.moisture):BEAN_MOISTURE_DEFAULT).toFixed(1);
   document.getElementById('f_bde').value=String(b.density!=null&&b.density!==''?Math.round(+b.density):BEAN_DENSITY_DEFAULT);
   if(id&&b.id){
@@ -481,6 +487,8 @@ function saveBean(){
     price:document.getElementById('f_bpr').value,
     pay_amount:String(document.getElementById('f_bpay').value).replace(/[^0-9]/g,''),
     decaf:document.getElementById('f_bdec').checked,
+    rest_min:String(parseInt(document.getElementById('f_brmin').value)||''),
+    rest_max:String(parseInt(document.getElementById('f_brmax').value)||''),
     ...(()=>{ // 수분율·밀도 + 입력 여부(한 번 바꾸면 계속 '입력함')
       const prev=id?(db.beans.find(x=>x.id===id)||{}):{};
       let mo=parseFloat(document.getElementById('f_bmo').value);if(isNaN(mo))mo=BEAN_MOISTURE_DEFAULT;

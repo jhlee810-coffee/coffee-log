@@ -81,6 +81,9 @@ function rbRenderForm(){
       <input class="inp" placeholder="목록에 없으면 새로 입력 (다음부터 목록에 나옴)" value="${rbEsc(f.roastery)}" oninput="_rbForm.roastery=this.value"></div>
     <div class="fg"><label class="fl">로스팅 날짜 * <span class="fl-hint">봉투에 적힌 날짜</span></label>
       <input class="inp" type="date" value="${rbEsc(f.roast_date)}" oninput="_rbForm.roast_date=this.value" onchange="_rbForm.roast_date=this.value"></div>
+    <div class="fg"><label class="fl">로스터리 권장 숙성 <span class="fl-hint">로스팅 후 며칠부터 며칠까지 · 비우면 기본 규칙(${(()=>{const w=restWindow({name:f.name,origin:f.origin,process:f.process});return w.label+' '+w.min+'~'+w.max+'일';})()})</span></label>
+      <div class="rest-row"><input class="inp" type="number" inputmode="numeric" placeholder="${restWindow({name:f.name,origin:f.origin,process:f.process}).min}" value="${rbEsc(f.rest_min||'')}" oninput="_rbForm.rest_min=this.value"><span>~</span>
+        <input class="inp" type="number" inputmode="numeric" placeholder="${restWindow({name:f.name,origin:f.origin,process:f.process}).max}" value="${rbEsc(f.rest_max||'')}" oninput="_rbForm.rest_max=this.value"><span>일</span></div></div>
     <div class="fg"><label class="fl">용량</label><div class="dc-chips">${RB_WEIGHTS.map(w=>chip(+f.weight_g===w,w+'g',`_rbForm.weight_g=${w};rbRenderForm()`)).join('')}</div></div>
     <button class="dc-more-btn" style="margin-top:4px" onclick="_rbForm._more=!_rbForm._more;rbRenderForm()">${f._more?'▴ 접기':'▾ 더 입력하기 (원산지 · 가공 · 로스팅 정도 · 가격 · 컵노트)'}</button>
     ${f._more?`<div style="margin-top:10px">
@@ -116,7 +119,7 @@ function rbSave(){
   if(!f.roast_date){alert('로스팅 날짜를 넣어 주세요. (디개싱 일수 계산에 필요해요)');return;}
   const data={id:f._id||('rb_'+genId()),name:f.name.trim(),roastery:canonShop(f.roastery),roast_date:f.roast_date,buy_date:f.buy_date||'',
     origin:f.origin||'',process:f.process||'',level:f.level||'',weight_g:f.weight_g?String(f.weight_g):'',price:f.price||'',
-    cup_notes:(f.cup_notes||'').trim(),memo:(f.memo||'').trim(),status:f.status||RB_STATUS_ON,decaf:!!f.decaf};
+    cup_notes:(f.cup_notes||'').trim(),memo:(f.memo||'').trim(),status:f.status||RB_STATUS_ON,decaf:!!f.decaf,rest_min:String(parseInt(f.rest_min)||''),rest_max:String(parseInt(f.rest_max)||'')};
   const list=rbList();const i=list.findIndex(x=>x.id===data.id);
   if(i>=0)list[i]={...list[i],...data};else list.push(data);
   saveDB();closeMo('moRbForm');renderRoastedBeans();
