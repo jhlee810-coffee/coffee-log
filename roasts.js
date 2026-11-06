@@ -3,14 +3,35 @@ const BINBON_MODES={1:460,2:445,3:397,4:406,5:470,6:363,7:406,8:459};
 let rFilterKey='all';
 let rSortDir='desc'; // desc=최신순, asc=번호순(오래된것부터)
 
+/* ✏️ 로스팅 단계 기준 (DTR %, min 이상 ~ 다음 min 미만). 8% 미만은 비워 둠.
+   여기를 바꾸면 앱을 열 때 DTR이 있는 기존 기록도 새 기준으로 다시 붙음 (datafix.js reapplyRoastLevels)
+   color: 앱 안 배지·글자 색 (빈본 타이머 화면 색은 따로) */
+const ROAST_LEVELS=[
+  {min:8,  label:'울트라 라이트', color:'#c9e7a0'},  // 연두빛 — 생두 색이 남아 있는 아주 밝은 단계
+  {min:11, label:'라이트',        color:'#ffd966'},  // 밝은 노랑
+  {min:15, label:'라이트-미디엄', color:'#ffb347'},  // 앰버
+  {min:19, label:'미디엄',        color:'#f5893a'},  // 주황
+  {min:23, label:'미디엄-다크',   color:'#e0663a'},  // 적갈
+  {min:27, label:'다크',          color:'#c8553f'},  // 짙은 적갈
+];
 function dtrToLevel(dtr){
   const d=parseFloat(dtr);
-  if(!d||d<8) return '';
-  if(d<13) return '라이트';
-  if(d<16) return '라이트-미디엄';
-  if(d<19) return '미디엄';
-  if(d<22) return '미디엄-다크';
-  return '다크';
+  if(!d||d<ROAST_LEVELS[0].min) return '';
+  let out='';ROAST_LEVELS.forEach(l=>{if(d>=l.min)out=l.label;});
+  return out;
+}
+function levelColor(label){const l=ROAST_LEVELS.find(x=>x.label===label);return l?l.color:'#9aa0a6';}
+function roastLevelRule(){return ROAST_LEVELS.map(l=>l.min+':'+l.label).join('|');}
+/* 로스팅 폼: 단계 고르기 (DTR이 계산되면 자동 선택, 없을 때만 직접 고름) */
+function renderLevelChips(){
+  const el=document.getElementById('rlChips');if(!el)return;
+  const cur=document.getElementById('f_rl').value,auto=el.dataset.auto==='1';
+  el.innerHTML=ROAST_LEVELS.map(l=>`<span class="pchip lvl-chip${cur===l.label?' on':''}${auto?' auto':''}" style="--lc:${l.color}" onclick="pickLevel('${l.label}')">${l.label}</span>`).join('');
+  const h=document.getElementById('rlHint');if(h)h.textContent=auto?'DTR로 자동 지정':'DTR이 없으면 직접 고르기';
+}
+function pickLevel(label){
+  const el=document.getElementById('rlChips');if(el&&el.dataset.auto==='1')return;
+  const f=document.getElementById('f_rl');f.value=f.value===label?'':label;renderLevelChips();
 }
 
 /* ── 배치 순서 · 시작/끝 시간 (2026-11-04) ──
@@ -156,7 +177,7 @@ function renderRoasts(){
       </div>`;
     }
 
-    const levelColor={'라이트':'var(--amber)','라이트-미디엄':'var(--amber)','미디엄':'var(--amber)','미디엄-다크':'var(--amber)','다크':'var(--coral)'}[r.roast_level]||'var(--muted)';
+    const lc=levelColor(r.roast_level);
     const metaParts=[bean.origin,bean.shop,beanPrice?String(beanPrice):'',beanMonth].filter(Boolean).join('  ·  ');
     const statsLine=[r.mode?`모드${r.mode}`:'',dtr?`DTR ${dtr}%`:'',loss?`손실율 ${loss}%`:'',r.input_g?`투입 ${r.input_g}g`:''].filter(Boolean).join('   ');
 
@@ -164,7 +185,7 @@ function renderRoasts(){
       <div class="rhead">
         <span class="rserial">#${String(serial).padStart(2,'0')}</span>
         <div class="rdate">${r.date}</div>
-        ${r.roast_level?`<span class="rlv" style="color:${levelColor};border-color:${levelColor}33;background:${levelColor}18">${r.roast_level}</span>`:''}
+        ${r.roast_level?`<span class="rlv" style="color:${lc};border-color:${lc}66;background:${lc}1f">${r.roast_level}</span>`:''}
         <div style="margin-left:auto"><button class="btn2" onclick="event.stopPropagation();editRoast('${r.id}')">수정</button></div>
       </div>
       <div class="rbean-name">${r.bean_name}</div>
@@ -186,7 +207,7 @@ function openRoastDetail(id){
   const sorted=[...db.roasts].sort((a,b)=>a.date>b.date?1:-1);
   const serial=sorted.findIndex(x=>x.id===id)+1;
   const bean=beanOfRoast(r)||{};
-  const levelColor={'라이트':'var(--amber)','라이트-미디엄':'var(--amber)','미디엄':'var(--amber)','미디엄-다크':'var(--amber)','다크':'var(--coral)'}[r.roast_level]||'var(--muted)';
+  const lc=levelColor(r.roast_level);
   const ae2=BINBON_MODES[+r.mode];
   let popElapsedStr='',ejElapsedStr='',devSec=null;
   if(ae2&&r.pop_time) popElapsedStr=fmtMS(ae2-toSec(r.pop_time));
@@ -235,7 +256,7 @@ function openRoastDetail(id){
     </div>`:''}
     <div class="ds">
       <div class="dstitle">로스팅 수치</div>
-      ${r.roast_level?dr('레벨',`<span style="color:${levelColor};font-weight:700">${r.roast_level}</span>`):''}
+      ${r.roast_level?dr('레벨',`<span style="color:${lc};font-weight:700">${r.roast_level}</span>`):''}
       ${dr('빈본 모드',r.mode?`모드${r.mode}`:'')}
       ${dr('DTR',r.dtr_pct?r.dtr_pct+'%':'')}
       ${dr('손실율',r.loss_pct?r.loss_pct+'%':'')}
@@ -328,7 +349,10 @@ function calcRoastLive(){
   document.getElementById('ac_loss').textContent='손실율 '+lossStr;
   document.getElementById('ac_dtr').textContent='DTR '+dtrStr;
   document.getElementById('ac_level').textContent='레벨 '+levelStr;
-  document.getElementById('f_rl').value=levelStr==='—'?'':levelStr;
+  const chips=document.getElementById('rlChips');
+  if(levelStr!=='—'){document.getElementById('f_rl').value=levelStr;if(chips)chips.dataset.auto='1';}
+  else if(chips&&chips.dataset.auto==='1'){chips.dataset.auto='';document.getElementById('f_rl').value='';}  // DTR이 없어지면 직접 고르게
+  renderLevelChips();
 }
 
 /* ── 폼 열기/저장 ── */
@@ -352,6 +376,7 @@ function openRoastForm(id, prefill){
   document.getElementById('f_ri').value=r.input_g||p.input_g||'120';
   document.getElementById('f_ro').value=r.output_g||p.output_g||'100';
   document.getElementById('f_rl').value=r.roast_level||p.roast_level||'';
+  {const c=document.getElementById('rlChips');if(c)c.dataset.auto='';}
   document.getElementById('f_rb2').value=r.time_basis||'잔여';
   document.getElementById('f_rst').value=r.start_time||p.start_time||'';
   document.getElementById('f_ret').value=r.end_time||p.end_time||'';

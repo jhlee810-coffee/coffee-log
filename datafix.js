@@ -97,6 +97,26 @@ function migrate20261106d(){
   return true;
 }
 
+/* 로스팅 단계 기준(roasts.js ROAST_LEVELS)이 바뀌었으면 DTR 있는 기록을 새 기준으로 다시 지정.
+   DTR 없는 기록은 폼에서 고른 단계 그대로 */
+function roastDTRValue(r){
+  let d=parseFloat(r.dtr_pct);if(d>0)return d;
+  const ae=BINBON_MODES[+r.mode];
+  const sec=t=>{if(!t)return null;const p=String(t).split(':');return p.length===2?(+p[0])*60+(+p[1]):null;};
+  let ps=sec(r.pop_time),es=sec(r.eject_time);
+  if(!ae||ps==null||es==null)return null;
+  if(r.time_basis==='진행'){ps=ae-ps;es=ae-es;}
+  return ps>es&&ae-es>0?(ps-es)/(ae-es)*100:null;
+}
+function reapplyRoastLevels(){
+  if(typeof roastLevelRule!=='function'||!db||!Array.isArray(db.roasts))return false;
+  const rule=roastLevelRule();
+  if(db.level_rule===rule)return false;
+  db.roasts.forEach(r=>{const d=roastDTRValue(r);if(d!=null)r.roast_level=dtrToLevel(d);});  // 8% 미만이면 비움
+  db.level_rule=rule;
+  return true;
+}
+
 /* 앱 열 때(동기화 뒤) 한 번 실행 — 바뀐 게 있으면 한 번만 저장 */
 function runDataFixes(){
   let changed=false;
@@ -105,5 +125,6 @@ function runDataFixes(){
   try{changed=migrate20261106c()||changed;}catch(e){console.warn('데이터 정리 3 실패',e);}
   try{changed=migrate20261106d()||changed;}catch(e){console.warn('데이터 정리 4 실패',e);}
   try{changed=backfillRoastTimes()||changed;}catch(e){console.warn('로스팅 계산값 채우기 실패',e);}
+  try{changed=reapplyRoastLevels()||changed;}catch(e){console.warn('로스팅 단계 다시 지정 실패',e);}
   if(changed){saveDB();try{renderBeans();}catch(e){}try{renderDash();}catch(e){}}
 }

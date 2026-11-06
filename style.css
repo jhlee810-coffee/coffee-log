@@ -727,3 +727,7 @@ html.roasting,html.roasting body{overscroll-behavior-y:none;}
 .md-lbl{font-size:11px;color:var(--muted);margin-bottom:3px;}
 .md-done{font-size:11px;color:#7ed6a5;font-weight:700;}
 .md-half{font-size:11px;color:var(--amber);}
+/* 로스팅 단계 칩 (2026-11-06) */
+.lvl-chip{border-color:var(--lc);color:var(--lc);}
+.lvl-chip.on{background:var(--lc);color:#222;font-weight:700;border-color:var(--lc);}
+.lvl-chip.auto:not(.on){opacity:.35;}
