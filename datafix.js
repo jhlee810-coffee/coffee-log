@@ -117,6 +117,13 @@ function reapplyRoastLevels(){
   return true;
 }
 
+/* 구매량이 들어갔는데 상태가 '재고량미입력'으로 남은 생두 → '재고있음' (2026-11-07, 매번 확인) */
+function fixStockStatus(){
+  let n=0;
+  (db.beans||[]).forEach(b=>{if(b.status==='재고량미입력'&&parseFloat(b.stock_initial)>0){b.status='재고있음';n++;}});
+  return n>0;
+}
+
 /* 앱 열 때(동기화 뒤) 한 번 실행 — 바뀐 게 있으면 한 번만 저장 */
 function runDataFixes(){
   let changed=false;
@@ -126,5 +133,6 @@ function runDataFixes(){
   try{changed=migrate20261106d()||changed;}catch(e){console.warn('데이터 정리 4 실패',e);}
   try{changed=backfillRoastTimes()||changed;}catch(e){console.warn('로스팅 계산값 채우기 실패',e);}
   try{changed=reapplyRoastLevels()||changed;}catch(e){console.warn('로스팅 단계 다시 지정 실패',e);}
+  try{changed=fixStockStatus()||changed;}catch(e){console.warn('재고 상태 정리 실패',e);}
   if(changed){saveDB();try{renderBeans();}catch(e){}try{renderDash();}catch(e){}}
 }

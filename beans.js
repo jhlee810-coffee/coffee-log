@@ -492,7 +492,7 @@ function saveBean(){
     })(),
     stock_initial:document.getElementById('f_bst').value,
     stock_date:document.getElementById('f_bdate').value,
-    status:document.getElementById('f_bss').value,
+    status:(()=>{const st=document.getElementById('f_bss').value;return st==='재고량미입력'&&parseFloat(document.getElementById('f_bst').value)>0?'재고있음':st;})(),
     cup_notes:document.getElementById('f_bnt').value.trim(),
     score_momos:document.getElementById('f_bsm').value,
     score_wonderroom:document.getElementById('f_bsw').value,
