@@ -63,6 +63,10 @@ coffee-log/
 ├── brewing.js          — 브루잉 탭 (renderBrewing, 레시피/로그)
 ├── wishlist.js         — 구매검토 탭 (renderWishlist)
 ├── cupping.js          — 커핑 탭 (위저드, 드래프트/완료 워크플로우)
+├── plan.js             — 오늘 로스팅 계획(빈본 탭 위 줄·편집·붙여넣기·Claude 계획 불러오기). db.roast_plans
+├── datafix.js          — 로스팅↔생두 ID 연결, 배치 보관 상태(나눔/다 마심), 한 번만 하는 데이터 정리
+├── plans/              — Claude가 만든 계획 파일 YYYY-MM-DD.json (공개). tools/make_plan.py로 생성
+├── tools/              — make_data_xlsx.py(원자료 엑셀), make_plan.py(계획 파일) — 배포 안 함
 ├── roasted.js          — 원두 목록 탭 (구매한 로스팅 원두 등록, 오늘의 한 잔과 연결). 저장 db.roasted_beans
 ├── dailycup.js         — 오늘의 한 잔 탭 (매일 한 잔 별점·태그·추출정보, 숙성곡선/프로파일 분석, 힌트). 저장 db.dailycups(동기화됨). 태그·힌트 문구는 파일 맨 위 블록
 ├── easycup.js          — 쉬운 커핑 탭 (원두 2개 비교·토너먼트·CSV/백업). 저장은 localStorage `easyCuppingLog` 별도 키 (Sheets 동기화 안 됨)

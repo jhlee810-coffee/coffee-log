@@ -480,10 +480,12 @@ function saveRoast(){
     stock_state:document.getElementById('f_rss').value,
   };
   Object.assign(data,roastTimes(data));  // 1팝 경과·총 로스팅시간 자동 저장
+  if(typeof planDecorateRoast==='function')planDecorateRoast(data,!id);  // 오늘 계획 배치면 완료 처리·계획값 기록
   // 수정 시 폼에 없는 기존 항목(degas_days 등)은 유지
   if(id){const i=db.roasts.findIndex(r=>r.id===id);if(i>=0)db.roasts[i]={...db.roasts[i],...data};}
   else db.roasts.push(data);
   saveDB();closeMo('moRoastForm');renderRoasts();
+  if(typeof planAfterSave==='function')planAfterSave();
   const tb=document.querySelector('.tb[onclick*="roasts"]');
   if(tb) showTab('roasts',tb);
 }

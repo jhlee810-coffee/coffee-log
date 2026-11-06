@@ -175,6 +175,17 @@ window.addEventListener('message',function(e){
     if(S.screen==='running'&&S.popElapsed===null)handlePop();
     return;
   }
+  // 부모창(빈본 탭 계획)에서 다음 배치 값 넣기 — 시작 화면일 때만
+  if(e.data.type==='plan_apply'){
+    if(S.screen!=='setup')return;
+    const d=e.data;
+    if(d.bean_name&&beansList.some(b=>b.name===d.bean_name))S.beanName=d.bean_name;
+    if(MODES[d.mode]){S.modeKey=d.mode;}
+    if(d.dtr)S.dtr=+d.dtr;
+    if(d.input_g)S.inputG=String(d.input_g);
+    S.planLabel=d.label||'';
+    render();return;
+  }
   if(e.data.type!=='beans_list')return;
   beansList=e.data.beans||[];
   if(e.data.roasts)roastsList=e.data.roasts;

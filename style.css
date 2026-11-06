@@ -753,3 +753,35 @@ html.roasting,html.roasting body{overscroll-behavior-y:none;}
 .dc-pb span{font-size:11px;color:var(--text2);}
 .dc-pb.drunk{border-color:var(--amber3);}
 .dc-pb.off{opacity:.5;}
+/* 오늘 로스팅 계획 (2026-11-07) */
+.plan-bar{margin-bottom:8px;}
+.pb-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--card);border:1px solid var(--amber3);border-radius:10px;padding:8px 10px;}
+.pb-row.off{border-color:var(--b2);}
+.pb-t{flex:1;min-width:0;font-size:14px;line-height:1.4;}
+.pb-t b{color:var(--amber);}
+.pb-t small{color:var(--muted);}
+.pb-btns{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px;}
+.pb-btns .pb-btn.hi{grid-column:1/-1;}
+.pb-btn{min-height:38px;background:var(--bg3);border:1px solid var(--b2);border-radius:8px;color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;padding:0 10px;}
+.pb-btn.hi{background:var(--amber);color:#222;border:none;font-weight:800;}
+.pl-row{background:var(--bg3);border:1px solid var(--b1);border-radius:10px;padding:10px;margin-bottom:8px;}
+.pl-row.done{opacity:.55;}
+.pl-top{display:flex;gap:8px;align-items:center;}
+.pl-no{min-width:26px;height:26px;border-radius:50%;background:var(--amber);color:#222;font-weight:800;display:inline-flex;align-items:center;justify-content:center;font-size:13px;}
+.pl-top .sel{flex:1;min-width:0;}
+.pl-grid{display:grid;grid-template-columns:70px 1fr 1fr;gap:6px;margin-top:8px;}
+.pl-l{font-size:11px;color:var(--muted);margin-bottom:3px;}
+.pl-step{display:grid;grid-template-columns:36px 1fr 36px;align-items:center;text-align:center;border:1px solid var(--b2);border-radius:8px;overflow:hidden;}
+.pl-step button{min-height:38px;background:var(--bg2);border:none;color:var(--text);font-size:16px;cursor:pointer;}
+.pl-act{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+.pl-act button{min-height:34px;background:transparent;border:1px solid var(--b2);border-radius:8px;color:var(--text2);font-size:13px;padding:0 10px;cursor:pointer;font-family:inherit;}
+.pl-act button.on{border-color:var(--amber);color:var(--amber);}
+.pl-act button.del{margin-left:auto;color:var(--coral);border-color:var(--coral3);}
+.pl-warn{font-size:12px;color:var(--coral);margin-top:6px;}
+.pl-note{font-size:12px;color:var(--text2);margin-top:6px;}
+.pl-empty{font-size:13px;color:var(--muted);padding:10px 0;}
+.pl-add{width:100%;min-height:44px;background:transparent;border:1px dashed var(--amber3);border-radius:10px;color:var(--amber);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px;}
+.pl-paste{margin-top:12px;}
+.pl-paste summary{font-size:13px;color:var(--text2);cursor:pointer;padding:6px 0;}
+.pl-paste .ta{min-height:110px;margin-top:6px;}
+.pl-paste-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:6px;}

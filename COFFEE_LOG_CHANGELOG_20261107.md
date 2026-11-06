@@ -13,3 +13,11 @@
 - 커피한잔 원두 고르기: 위에 [전체 / 내 로스팅 / 산 원두] + "다 마심·나눔·60일 지난 것도 보기" 체크, 목록을 원두별로 묶고 배치는 버튼(날짜·모드-DTR / n일차·#배치·n잔). 검색은 원두·로스터리 이름
 - **안전장치(중요)**: 테스트 중 발견 — 기기 저장소가 비었는데 동기화(GET)까지 실패하면, 시작 시 자동 정리가 빈 데이터에 새 저장 시각을 찍어 다음 동기화 때 빈 데이터를 업로드할 수 있었음. ① `pushToSheets`는 생두·로스팅이 하나도 없으면 업로드 안 함 ② 생두가 없으면 시작 시 자동 정리·저장을 건너뜀. (실제 업로드는 없었음 — 테스트 페이지가 차단)
 - 버전: app.js `20261107a`, datafix.js `20261107c`, roasts.js `20261107a`, dashboard.js `20261107a`, dailycup.js `20261107a`, style.css `20261107a`
+
+## 오늘 로스팅 계획 (빈본 탭)
+- 새 파일 `plan.js`. 저장 `db.roast_plans['YYYY-MM-DD']={date,source,file_version,items:[{bean_id,bean_name,mode,dtr,input_g,gift,note,status:''|'done'|'skip',roast_id}],updated_at}` (하루 단위, 30일 지난 건 지움)
+- 빈본 탭 위 계획 줄: "📋 계획 2/6 · 카구모 AA · 3-13 · 120g 🎁" + [건너뛰기] [계획 밖 1회] [목록 ✎]. 타이머가 시작 화면일 때 지금 배치의 생두·모드·DTR·투입량을 타이머에 넣음(`plan_apply` 메시지, binbon_timer.html — **로스팅 시작 버튼은 그대로**). 로스팅이 끝나 시작 화면으로 돌아오면 다음 배치
+- 저장 연결(`planDecorateRoast`, roasts.js saveRoast): 새 기록·오늘 날짜·계획 생두와 같으면 그 배치 완료 + 기록에 `plan_date, plan_no, plan_mode, plan_dtr` 남김, 🎁 배치는 `stock_state='gift'`. 다른 생두면 계획 밖 배치로 보고 계획을 소모하지 않음. "계획 밖 1회"는 다음 저장 1번만 계획 무시
+- 편집 창: 배치 추가(앞 줄 복사)·생두 고르기·모드·DTR ±1·투입 ±10·🎁·순서 ↑↓·삭제·다시, 잔량보다 계획량이 많으면 경고. "글로 붙여넣기": "1. 카구모 AA 3-13 120g 🎁 / 메모" 형식(뒤에 추가/전부 바꾸기). 생두를 못 찾은 줄이 있으면 저장 막음
+- **Claude가 만든 계획**: 사이트 `plans/YYYY-MM-DD.json`이 있으면 빈본 탭에 "Claude 계획 불러오기 (n배치)". 만들기: `tools/make_plan.py <날짜> <계획 글> <GAS GET json> [version]` → `plans/`에 저장 → SCP·커밋·푸시. version을 올리면 다시 불러오기가 뜸. 이미 볶은 배치는 같은 자리·같은 생두면 완료 유지
+- 버전: plan.js `20261107a`, binbon_timer `20261107a`(app.js), app.js `20261107b`, roasts.js `20261107b`, style.css `20261107b`

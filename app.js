@@ -180,13 +180,16 @@ function showTab(name,el){
   if(name==='timer'){
     const fr=document.getElementById('timerFrame');
     if(!fr.getAttribute('src')){
-      fr.src='binbon_timer.html?v=20261104i';
+      fr.src='binbon_timer.html?v=20261107a';
       fr.addEventListener('load',function(){
         fr.contentWindow.postMessage({type:'beans_list',beans:db.beans,roasts:db.roasts},'*');
+        if(window.planApplyToTimer)setTimeout(()=>planApplyToTimer(true),150);
       },{once:true});
     } else {
       fr.contentWindow.postMessage({type:'beans_list',beans:db.beans,roasts:db.roasts},'*');
+      if(window.planApplyToTimer)setTimeout(()=>planApplyToTimer(),150);
     }
+    if(window.renderPlanBar){renderPlanBar();planCheckRemote();}
   }
   const fn={dash:renderDash,beans:renderBeans,roasts:renderRoasts,brewing:renderBrewing,wishlist:renderWishlist,cupping:renderCupping,dailycup:typeof renderDailyCup==='function'?renderDailyCup:null,roasted:typeof renderRoastedBeans==='function'?renderRoastedBeans:null,easycup:typeof renderEasyCup==='function'?renderEasyCup:null};
   if(fn[name]) fn[name]();
