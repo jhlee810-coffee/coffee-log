@@ -152,6 +152,17 @@ function calcBeanPrice(){
     if(hint)hint.textContent=`${Math.round(pay).toLocaleString()}원 ÷ ${g>=1000?(g/1000)+'kg':g+'g'} = ${v}만원/kg`;
   }else if(hint)hint.textContent='결제 금액과 구매량을 넣으면 자동 계산';
 }
+/* 수분율·밀도: 기본값 10.0% / 700g/L. 사용자가 손댔는지(_set 플래그)는 내보내기용으로만 저장 */
+const BEAN_MOISTURE_DEFAULT=10.0, BEAN_DENSITY_DEFAULT=700;
+let _beanMDTouched={mo:false,de:false};
+function adjBeanMD(id,d){
+  const el=document.getElementById(id);
+  const isMo=id==='f_bmo';
+  let v=parseFloat(el.value);if(isNaN(v))v=isMo?BEAN_MOISTURE_DEFAULT:BEAN_DENSITY_DEFAULT;
+  v=isMo?Math.round((v+d)*10)/10:Math.round(v+d);
+  el.value=isMo?v.toFixed(1):String(v);
+  _beanMDTouched[isMo?'mo':'de']=true;
+}
 function renderKgBtns(){
   const v=parseFloat(document.getElementById('f_bst').value);
   document.getElementById('kgBtns').innerHTML=KG_OPTS.map(k=>
@@ -363,6 +374,9 @@ function openBeanForm(id){
     document.getElementById('f_bst').value='1000';  // 기본 1kg 구매
     document.getElementById('f_bpay').value='';document.getElementById('f_bdec').checked=false;
   }
+  _beanMDTouched={mo:false,de:false};
+  document.getElementById('f_bmo').value=(b.moisture!=null&&b.moisture!==''?(+b.moisture):BEAN_MOISTURE_DEFAULT).toFixed(1);
+  document.getElementById('f_bde').value=String(b.density!=null&&b.density!==''?Math.round(+b.density):BEAN_DENSITY_DEFAULT);
   if(id&&b.id){
     document.getElementById('f_bn').value=b.name||'';
     document.getElementById('f_br').value=b.region||'';
@@ -408,6 +422,15 @@ function saveBean(){
     price:document.getElementById('f_bpr').value,
     pay_amount:String(document.getElementById('f_bpay').value).replace(/[^0-9]/g,''),
     decaf:document.getElementById('f_bdec').checked,
+    ...(()=>{ // 수분율·밀도 + 입력 여부(한 번 바꾸면 계속 '입력함')
+      const prev=id?(db.beans.find(x=>x.id===id)||{}):{};
+      let mo=parseFloat(document.getElementById('f_bmo').value);if(isNaN(mo))mo=BEAN_MOISTURE_DEFAULT;
+      let de=parseFloat(document.getElementById('f_bde').value);if(isNaN(de))de=BEAN_DENSITY_DEFAULT;
+      mo=Math.round(mo*10)/10;de=Math.round(de);
+      return {moisture:mo,density:de,
+        moisture_set:!!prev.moisture_set||_beanMDTouched.mo||mo!==BEAN_MOISTURE_DEFAULT,
+        density_set:!!prev.density_set||_beanMDTouched.de||de!==BEAN_DENSITY_DEFAULT};
+    })(),
     stock_initial:document.getElementById('f_bst').value,
     stock_date:document.getElementById('f_bdate').value,
     status:document.getElementById('f_bss').value,
