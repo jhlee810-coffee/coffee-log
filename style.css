@@ -675,3 +675,38 @@ html.roasting,html.roasting body{overscroll-behavior-y:none;}
 /* 구매처 칩 · 컵노트 묶음 (2026-11-06) */
 .shop-chips{max-height:110px;overflow-y:auto;}
 .cupnote-chips{max-height:260px;border:1px solid var(--b1);border-radius:8px;padding:8px;margin-top:6px;}
+/* 메뉴 두 줄 · 대시보드 개편 (2026-11-06) */
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;overflow:visible;padding:6px 0 8px;}
+.tb{font-size:14px;padding:8px 2px;text-align:center;border-radius:10px;}
+.tb.on{background:var(--bg3);}
+@media(min-width:700px){.tabs{grid-template-columns:repeat(9,1fr);}}
+.dash-card{background:var(--card);border:1px solid var(--b1);border-radius:var(--r);padding:14px;margin-bottom:12px;}
+.dash-t{font-size:16px;font-weight:700;margin-bottom:10px;line-height:1.4;}
+.dash-t span{display:block;font-size:12px;font-weight:400;color:var(--muted);margin-top:2px;}
+.dash-line{font-size:14px;line-height:1.5;padding:6px 0;border-bottom:1px solid var(--b1);}
+.dash-empty{font-size:13px;color:var(--muted);padding:6px 0;}
+.dash-sub{font-size:13px;color:var(--amber);font-weight:700;margin:12px 0 6px;}
+.dash-chips{display:flex;flex-wrap:wrap;gap:5px;}
+.dash-chips span{font-size:13px;background:var(--bg3);border:1px solid var(--b1);border-radius:14px;padding:3px 9px;color:var(--text2);}
+.dash-chips span.warn{border-color:var(--coral);color:var(--coral);}
+.dash-btn{display:block;width:100%;min-height:46px;margin-top:12px;background:var(--amber);color:#222;border:none;border-radius:10px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;}
+.dash-btn.ghost{background:transparent;color:var(--amber);border:1px solid var(--amber3);font-weight:700;}
+.dash-btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.dash-bean{padding:10px 4px;border-bottom:1px solid var(--b1);cursor:pointer;}
+.dash-bean:last-child{border-bottom:none;}
+.dash-bean:active{background:var(--bg3);}
+.dash-bean-top{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:15px;}
+.dash-bean-top b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.dash-badge{flex-shrink:0;font-size:12px;border:1px solid;border-radius:12px;padding:1px 8px;}
+.dash-bean-sub{font-size:13px;color:var(--text2);margin-top:3px;}
+.dash-ai{margin-top:6px;}
+.dash-ai summary{font-size:13px;color:var(--muted);cursor:pointer;padding:8px 2px;}
+.stat-row .stat-n{color:var(--amber);}
+.stat-row{grid-template-columns:repeat(4,1fr)!important;gap:6px;margin-bottom:12px;}
+.stat-row .stat-card{padding:8px 2px;}
+.stat-row .stat-n{font-size:22px;line-height:1.1;}
+.stat-row .stat-l{font-size:11px;letter-spacing:0;}
+.save-indicator{font-size:11px;white-space:nowrap;}
+.save-indicator{min-width:0;overflow:hidden;text-overflow:ellipsis;}
+.nav-top{min-width:0;}
+.backup-btn{flex-shrink:0;}

@@ -6,7 +6,7 @@
 <title>Coffee Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=Josefin+Sans:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261106a">
+<link rel="stylesheet" href="style.css?v=20261106b">
 </head>
 <body>
 
@@ -20,15 +20,15 @@
   </div>
   <div class="tabs">
     <div class="tb on" onclick="showTab('dash',this)">대시보드</div>
-    <div class="tb" onclick="showTab('dailycup',this)">☕ 오늘의 한 잔</div>
-    <div class="tb" onclick="showTab('beans',this)">생두 목록</div>
-    <div class="tb" onclick="showTab('roasted',this)">원두 목록</div>
-    <div class="tb" onclick="showTab('timer',this)">🔥 빈본 타이머</div>
-    <div class="tb" onclick="showTab('roasts',this)">로스팅 로그</div>
+    <div class="tb" onclick="showTab('dailycup',this)">커피한잔</div>
+    <div class="tb" onclick="showTab('timer',this)">빈본</div>
+    <div class="tb" onclick="showTab('roasts',this)">로스팅</div>
+    <div class="tb" onclick="showTab('beans',this)">생두</div>
+    <div class="tb" onclick="showTab('roasted',this)">원두</div>
     <div class="tb" onclick="showTab('brewing',this)">브루잉</div>
     <div class="tb" onclick="showTab('cupping',this)">커핑</div>
-    <div class="tb" onclick="showTab('easycup',this)">쉬운 커핑</div>
-    <div class="tb" onclick="showTab('wishlist',this)">구매 검토</div>
+    <div class="tb" onclick="showTab('easycup',this)">쉬운커핑</div>
+    <!-- 구매 검토 탭은 메뉴에서 뺌 (2026-11-06, 데이터·기능은 그대로: showTab('wishlist')) -->
   </div>
   <!-- 로스팅 중 다른 탭에서 보이는 미니바 (빈본 타이머 상태) -->
   <div id="roastBar" class="roast-bar" style="display:none">
@@ -45,13 +45,8 @@
 
 <!-- 대시보드 -->
 <div id="tab-dash" class="sec on">
-  <div class="stat-row" id="dashStats"></div>
-  <div class="dash-grid">
-    <div class="ai-panel" id="aiPanel"></div>
-    <div class="right-col" id="dashRight"></div>
-  </div>
-  <div class="ract-lbl">최근 활동</div>
-  <div id="recentAct"></div>
+  <div id="dashRoot"></div>
+  <details class="dash-ai"><summary>✦ AI 생두 추천</summary><div class="ai-panel" id="aiPanel"></div></details>
 </div>
 
 <!-- 원두 목록 (roasted.js) -->
@@ -692,15 +687,15 @@
 
 <script src="data.js?v=20260528f"></script>
 <script src="app.js?v=20261106a"></script>
-<script src="dashboard.js?v=20260528f"></script>
+<script src="dashboard.js?v=20261106a"></script>
 <script src="beans.js?v=20261106a"></script>
 <script src="roasts.js?v=20261104a"></script>
 <script src="brewing.js?v=20261106a"></script>
 <script src="wishlist.js?v=20261106a"></script>
 <script src="cupping.js?v=20260528f"></script>
-<script src="easycup.js?v=20261104b"></script>
-<script src="dailycup.js?v=20261105b"></script>
-<script src="roasted.js?v=20261106a"></script>
+<script src="easycup.js?v=20261106a"></script>
+<script src="dailycup.js?v=20261106a"></script>
+<script src="roasted.js?v=20261106b"></script>
 <script src="shops.js?v=20261106a"></script>
 <script>
 // 빈본 타이머 ↔ 로스트 로그 연계

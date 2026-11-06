@@ -140,7 +140,7 @@ function ecFormHtml(){
   return `<div class="sh"><div class="stl">${e.editId?'쉬운 커핑 수정':'새 비교'}</div><button class="btn2" onclick="ecCancel()">닫기</button></div>
   ${tour}
   <div class="ec-card"><div class="ec-card-t">1. 커핑 날짜</div>
-    <input class="inp" type="date" value="${e.date}" onchange="ecSetDate(this.value)"></div>
+    <input class="inp" type="date" value="${e.date}" onchange="_ec.date=this.value||today()" onblur="ecSetDate(this.value)"></div>
   <div class="ec-card"><div class="ec-card-t">2. 비교할 원두 2개</div>${ecSideCard('A')}${ecSideCard('B')}</div>
   <div class="ec-card"><div class="ec-card-t">3. 블라인드</div>
     <div class="ec-pick-row two"><button class="ec-pick${!e.blind?' on':''}" onclick="ecSetBlind(false)">끄기 (A / B로 보기)</button>
@@ -154,7 +154,7 @@ function ecFormHtml(){
   <button class="ec-save" onclick="ecSubmit()">${e.editId?'수정 저장':'저장하기'}</button>`;
 }
 function ecToggleStep(i){_ec.steps[i]=!_ec.steps[i];renderEasyCup();}
-function ecSetDate(v){_ec.date=v||today();renderEasyCup();}
+function ecSetDate(v){const n=v||today();if(n===_ec.date&&document.querySelector('.ec-side-deg'))_ec.date=n;_ec.date=n;const y=window.scrollY;renderEasyCup();window.scrollTo(0,y);}
 function ecSetPick(k,v){_ec.picks[k]=_ec.picks[k]===v&&k!=='final'?'':v;renderEasyCup();}
 function ecSetBlind(on){
   if(on===_ec.blind)return;

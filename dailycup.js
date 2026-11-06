@@ -184,7 +184,7 @@ function dcEntryHtml(){
   }).join('');
   const selBox=e.sel?`<div class="dc-sel"><div class="dc-sel-name">${dcEsc(e.sel.bean)}</div>
       <div class="dc-sel-meta">${dcEsc([e.sel.roast_date?dcMD(e.sel.roast_date)+' 로스팅':'',dcProfile(e.sel),e.sel.batch_no?`그날 ${e.sel.batch_no}번째`:'',e.sel.manual?'직접 입력':'',e.sel.rb_id?'산 원두':''].filter(Boolean).join(' · '))}</div>
-      <div class="dc-sel-deg">${deg!=null?`디개싱 <b>${deg}일차</b>`:'로스팅 날짜 없음'}</div></div>`:'';
+      <div class="dc-sel-deg" id="dcDegText">${deg!=null?`디개싱 <b>${deg}일차</b>`:'로스팅 날짜 없음'}</div></div>`:'';
   const stars=[1,2,3,4,5].map(n=>`<button class="dc-star${e.stars>=n?' on':''}" onclick="dcSetStars(${n})" aria-label="별 ${n}개">★</button>`).join('');
   return `<div class="sh"><div class="stl">${e.editId?'기록 수정':'오늘의 한 잔'}</div>${e.editId?'<button class="btn2" onclick="dcCancelEdit()">수정 취소</button>':''}</div>
   <div class="dc-card">
@@ -194,7 +194,7 @@ function dcEntryHtml(){
     ${selBox}
     <div class="dc-lbl" style="margin-top:14px">만족도 <span class="dc-req">필수</span></div>
     <div class="dc-stars">${stars}</div>
-    <div class="dc-date">마신 날짜 <input class="inp" type="date" value="${e.date}" onchange="_dc.date=this.value||today();dcRerender()"></div>
+    <div class="dc-date">마신 날짜 <input class="inp" type="date" value="${e.date}" onchange="dcDateChanged(this.value)"></div>
     <button class="dc-more-btn" onclick="_dc.more=!_dc.more;dcRerender()">${e.more?'▴ 접기':'▾ 더 입력하기'}${dcMoreCount()?` (${dcMoreCount()})`:''}</button>
     ${e.more?dcMoreHtml():''}
     <button class="dc-save" onclick="dcSave()">${e.editId?'수정 저장':'저장'}</button>
@@ -236,6 +236,11 @@ function dcMoreHtml(){
     <div class="dc-sub">⑥ 한 줄 메모</div>
     <input class="inp" placeholder="예: 식으니 단맛이 올라옴" value="${dcEsc(e.memo)}" oninput="_dc.memo=this.value">
   </div>`;
+}
+function dcDateChanged(v){ // 달력을 닫지 않도록 화면 전체를 다시 그리지 않고 디개싱 글자만 바꿈
+  _dc.date=v||today();
+  const el=document.getElementById('dcDegText');
+  if(el&&_dc.sel){const d=dcDays(_dc.date,_dc.sel.roast_date);el.innerHTML=d!=null?`디개싱 <b>${d}일차</b>`:'로스팅 날짜 없음';}
 }
 function dcSelect(snap){_dc.sel=snap;closeMo('moDcPick');dcRerender();}
 function dcSetStars(n){_dc.stars=_dc.stars===n?0:n;dcRerender();}

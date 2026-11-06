@@ -73,8 +73,6 @@ function rbRenderForm(){
   const q=s=>rbEsc(s).replace(/'/g,"\\'");
   const roasteries=allShops().map(r=>chip(f.roastery===r,r,`_rbForm.roastery='${q(r)}';rbRenderForm()`)).join('');
   const origins=Object.values(BEAN_ORIGINS).flat();
-  const t=today(),ago=n=>{const d=new Date();d.setDate(d.getDate()-n);return localDate(d);};
-  const rdChips=[['오늘',t],['어제',ago(1)],['3일 전',ago(3)],['1주 전',ago(7)]].map(([l,v])=>chip(f.roast_date===v,l,`_rbForm.roast_date='${v}';rbRenderForm()`)).join('');
   document.getElementById('rbFormBody').innerHTML=`
     <div class="mtitle">${f._id?'원두 수정':'원두 등록'}</div>
     <div class="fg"><label class="fl">원두 이름 *</label><input class="inp" placeholder="예: 에티오피아 구지 함벨라" value="${rbEsc(f.name)}" oninput="_rbForm.name=this.value"></div>
@@ -82,8 +80,7 @@ function rbRenderForm(){
       ${roasteries?`<div class="dc-chips" style="margin-bottom:6px">${roasteries}</div>`:''}
       <input class="inp" placeholder="목록에 없으면 새로 입력 (다음부터 목록에 나옴)" value="${rbEsc(f.roastery)}" oninput="_rbForm.roastery=this.value"></div>
     <div class="fg"><label class="fl">로스팅 날짜 * <span class="fl-hint">봉투에 적힌 날짜</span></label>
-      <div class="dc-chips" style="margin-bottom:6px">${rdChips}</div>
-      <input class="inp" type="date" value="${rbEsc(f.roast_date)}" onchange="_rbForm.roast_date=this.value;rbRenderForm()"></div>
+      <input class="inp" type="date" value="${rbEsc(f.roast_date)}" oninput="_rbForm.roast_date=this.value" onchange="_rbForm.roast_date=this.value"></div>
     <div class="fg"><label class="fl">용량</label><div class="dc-chips">${RB_WEIGHTS.map(w=>chip(+f.weight_g===w,w+'g',`_rbForm.weight_g=${w};rbRenderForm()`)).join('')}</div></div>
     <button class="dc-more-btn" style="margin-top:4px" onclick="_rbForm._more=!_rbForm._more;rbRenderForm()">${f._more?'▴ 접기':'▾ 더 입력하기 (원산지 · 가공 · 로스팅 정도 · 가격 · 컵노트)'}</button>
     ${f._more?`<div style="margin-top:10px">
