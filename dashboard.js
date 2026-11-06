@@ -28,6 +28,12 @@ function dashGoTab(name){
   if(tb)showTab(name,tb);window.scrollTo(0,0);
 }
 
+function dashMarkDone(ids){
+  const list=ids.split(',');
+  if(!confirm(`이 ${list.length}배치를 '다 마심'으로 표시할까요?\n(로스팅 탭에서 다시 되돌릴 수 있어요)`))return;
+  db.roasts.forEach(r=>{if(list.includes(r.id))r.stock_state='done';});
+  saveDB();renderDash();
+}
 function renderDash(){
   const el=document.getElementById('dashRoot');if(!el)return;
   const t=today();
@@ -58,6 +64,7 @@ function renderDash(){
   // ── 지금 마실 원두 (디개싱) ──
   const groups={};
   roasts.forEach(r=>{
+    if(!roastHeld(r))return;   // 지인 나눔·다 마심 배치는 빼기
     const d=dashDays(r.date,t);if(d==null||d<0||d>45)return;
     const bean=beanOfRoast(r);
     const k=r.date+'|'+r.bean_name;
@@ -71,7 +78,8 @@ function renderDash(){
     const av=cs.length?(cs.reduce((s,c)=>s+(+c.stars||0),0)/cs.length).toFixed(1):'';
     return {d,st,html:`<div class="dash-bean" onclick="${g.beanId?`openDailyCupFor('${g.beanId}')`:`dashGoTab('dailycup')`}">
       <div class="dash-bean-top"><b>${dashEsc(dashShort(g.bean))}</b><span class="dash-badge" style="color:${st.c};border-color:${st.c}">${d}일차 · ${st.l}</span></div>
-      <div class="dash-bean-sub">${dashMD(g.date)} 로스팅 · ${g.items.length}배치${profs.length?' ('+profs.join(', ')+')':''}${cs.length?` · ${cs.length}잔 ★${av}`:''}</div></div>`};
+      <div class="dash-bean-sub">${dashMD(g.date)} 로스팅 · ${g.items.length}배치${profs.length?' ('+profs.join(', ')+')':''}${cs.length?` · ${cs.length}잔 ★${av}`:''}
+        <button class="dash-done" onclick="event.stopPropagation();dashMarkDone('${g.ids.join(',')}')">다 마심</button></div></div>`};
   });
   (db.roasted_beans||[]).filter(b=>b.status!=='다 마심').forEach(b=>{
     const d=dashDays(b.roast_date,t),st=dashStage(d);

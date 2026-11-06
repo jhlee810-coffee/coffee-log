@@ -29,6 +29,10 @@ function renderLevelChips(){
   el.innerHTML=ROAST_LEVELS.map(l=>`<span class="pchip lvl-chip${cur===l.label?' on':''}${auto?' auto':''}" style="--lc:${l.color}" onclick="pickLevel('${l.label}')">${l.label}</span>`).join('');
   const h=document.getElementById('rlHint');if(h)h.textContent=auto?'DTR로 자동 지정':'DTR이 없으면 직접 고르기';
 }
+function renderRssChips(){
+  const el=document.getElementById('rssChips');if(!el)return;const cur=document.getElementById('f_rss').value;
+  el.innerHTML=ROAST_STOCK_STATES.map(x=>`<span class="pchip${cur===x.v?' on':''}" onclick="document.getElementById('f_rss').value='${x.v}';renderRssChips()">${x.l}</span>`).join('');
+}
 function pickLevel(label){
   const el=document.getElementById('rlChips');if(el&&el.dataset.auto==='1')return;
   const f=document.getElementById('f_rl');f.value=f.value===label?'':label;renderLevelChips();
@@ -181,11 +185,13 @@ function renderRoasts(){
     const metaParts=[bean.origin,bean.shop,beanPrice?String(beanPrice):'',beanMonth].filter(Boolean).join('  ·  ');
     const statsLine=[r.mode?`모드${r.mode}`:'',dtr?`DTR ${dtr}%`:'',loss?`손실율 ${loss}%`:'',r.input_g?`투입 ${r.input_g}g`:''].filter(Boolean).join('   ');
 
-    return`<div class="rcard" onclick="openRoastDetail('${r.id}')" style="cursor:pointer;">
+    const st=r.stock_state||'';
+    return`<div class="rcard${st?' rcard-off':''}" onclick="openRoastDetail('${r.id}')" style="cursor:pointer;">
       <div class="rhead">
         <span class="rserial">#${String(serial).padStart(2,'0')}</span>
         <div class="rdate">${r.date}</div>
         ${r.roast_level?`<span class="rlv" style="color:${lc};border-color:${lc}66;background:${lc}1f">${r.roast_level}</span>`:''}
+        ${st?`<span class="rst-bdg">${roastStateLabel(st)}</span>`:''}
         <div style="margin-left:auto"><button class="btn2" onclick="event.stopPropagation();editRoast('${r.id}')">수정</button></div>
       </div>
       <div class="rbean-name">${r.bean_name}</div>
@@ -195,6 +201,11 @@ function renderRoasts(){
       ${bean.cup_notes?`<div class="rcupnotes">${bean.cup_notes}</div>`:''}
       ${r.notes?`<div class="rmemo">${r.notes}</div>`:''}
       ${brewHTML}
+      <div class="ract-row" onclick="event.stopPropagation()">
+        <button class="ract-cup" onclick="roastToCup('${r.id}')">☕ 한 잔 기록</button>
+        <button class="ract-st${st==='gift'?' on':''}" onclick="setRoastState('${r.id}','gift')">🎁 나눔</button>
+        <button class="ract-st${st==='done'?' on':''}" onclick="setRoastState('${r.id}','done')">다 마심</button>
+      </div>
     </div>`;
   }).join('')||'<div class="empty"><div class="empty-icon">🔥</div><div class="empty-text">로스팅 기록이 없습니다</div></div>';
 }
@@ -370,6 +381,7 @@ function openRoastForm(id, prefill){
   document.getElementById('f_rd').value=r.date||p.date||today();
   document.getElementById('f_rb').value=curB?curB.id:'';
   document.getElementById('f_rfp').checked=!!r.false_pop;
+  document.getElementById('f_rss').value=r.stock_state||'';renderRssChips();
   document.getElementById('f_rp').value=r.pop_time||p.pop_time||'';
   document.getElementById('f_re').value=r.eject_time||p.eject_time||'';
   document.getElementById('f_rn').value=r.notes||p.notes||'';
@@ -465,6 +477,7 @@ function saveRoast(){
     end_time:document.getElementById('f_ret').value,
     batch_no:String(parseInt(document.getElementById('f_rbn').value)||nextBatchNo(document.getElementById('f_rd').value,id)),
     false_pop:document.getElementById('f_rfp').checked,
+    stock_state:document.getElementById('f_rss').value,
   };
   Object.assign(data,roastTimes(data));  // 1팝 경과·총 로스팅시간 자동 저장
   // 수정 시 폼에 없는 기존 항목(degas_days 등)은 유지

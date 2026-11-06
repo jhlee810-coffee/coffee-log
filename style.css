@@ -731,3 +731,25 @@ html.roasting,html.roasting body{overscroll-behavior-y:none;}
 .lvl-chip{border-color:var(--lc);color:var(--lc);}
 .lvl-chip.on{background:var(--lc);color:#222;font-weight:700;border-color:var(--lc);}
 .lvl-chip.auto:not(.on){opacity:.35;}
+/* 배치 보관 상태 · 고르기 개편 (2026-11-07) */
+.rcard-off{opacity:.55;}
+.rst-bdg{font-size:12px;border:1px solid var(--b2);border-radius:10px;padding:1px 8px;color:var(--text2);}
+.ract-row{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:6px;margin-top:10px;}
+.ract-row button{min-height:38px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
+.ract-cup{background:var(--amber);color:#222;border:none;}
+.ract-st{background:transparent;color:var(--text2);border:1px solid var(--b2);}
+.ract-st.on{background:var(--bg3);color:var(--amber);border-color:var(--amber);}
+.dash-done{float:right;font-size:11px;background:transparent;border:1px solid var(--b2);color:var(--muted);border-radius:8px;padding:2px 8px;cursor:pointer;font-family:inherit;}
+.dc-pfs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px;}
+.dc-pf{min-height:40px;background:var(--bg3);border:1px solid var(--b2);border-radius:9px;color:var(--text2);font-size:14px;cursor:pointer;font-family:inherit;}
+.dc-pf.on{border-color:var(--amber);color:var(--amber);font-weight:700;}
+.dc-pall{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin-bottom:8px;}
+.dc-pg{padding:10px 2px;border-bottom:1px solid var(--b1);}
+.dc-pg-t{font-size:15px;font-weight:700;line-height:1.35;margin-bottom:6px;}
+.dc-pg-t span{display:block;font-size:12px;color:var(--muted);font-weight:400;}
+.dc-pg-items{display:flex;flex-wrap:wrap;gap:6px;}
+.dc-pb{display:flex;flex-direction:column;align-items:flex-start;gap:1px;min-height:46px;padding:5px 10px;background:var(--bg3);border:1px solid var(--b2);border-radius:9px;color:var(--text);cursor:pointer;font-family:inherit;text-align:left;}
+.dc-pb b{font-size:13px;}
+.dc-pb span{font-size:11px;color:var(--text2);}
+.dc-pb.drunk{border-color:var(--amber3);}
+.dc-pb.off{opacity:.5;}

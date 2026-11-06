@@ -6,7 +6,7 @@
 <title>Coffee Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=Josefin+Sans:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261106f">
+<link rel="stylesheet" href="style.css?v=20261107a">
 </head>
 <body>
 
@@ -306,6 +306,7 @@
     <input type="hidden" id="f_rl">
     <div class="fg" style="margin-bottom:8px"><label class="fl">로스팅 단계 <span class="fl-hint" id="rlHint"></span></label><div class="preset-chips" id="rlChips"></div></div>
     <label class="dec-row" style="margin:-4px 0 12px"><input type="checkbox" id="f_rfp"> 가짜 1팝 있었음</label>
+    <div class="fg"><label class="fl">이 배치 <span class="fl-hint">지인에게 보낸 배치는 🎁 나눔 — 홈·고르기 목록에서 빠짐</span></label><input type="hidden" id="f_rss"><div class="preset-chips" id="rssChips"></div></div>
 
     <div class="fg"><label class="fl">메모/이슈</label><textarea class="ta" id="f_rn" placeholder="로스팅 중 느낌, 특이사항"></textarea></div>
     <div class="fa"><button class="btn2" onclick="closeMo('moRoastForm')">취소</button><button class="btn btn-sm" onclick="saveRoast()">저장</button></div>
@@ -647,7 +648,8 @@
 <div class="mo" id="moDcPick">
   <div class="mbox">
     <div class="mtitle">원두 고르기</div>
-    <input class="search" id="dcPickSearch" placeholder="생두 이름으로 거르기..." oninput="dcRenderPick()">
+    <input class="search" id="dcPickSearch" placeholder="원두·로스터리 이름으로 찾기..." oninput="dcRenderPick()">
+    <div id="dcPickFilters"></div>
     <div id="dcPickList" class="dc-pick-list"></div>
     <div class="dc-man">
       <div class="dc-sub" style="margin-top:0">직접 입력 <span class="dc-opt">로스팅 기록에 없는 원두 (산 원두 등)</span></div>
@@ -695,18 +697,18 @@
 </div>
 
 <script src="data.js?v=20260528f"></script>
-<script src="app.js?v=20261106b"></script>
-<script src="dashboard.js?v=20261106b"></script>
+<script src="app.js?v=20261107a"></script>
+<script src="dashboard.js?v=20261107a"></script>
 <script src="beans.js?v=20261107a"></script>
-<script src="roasts.js?v=20261106b"></script>
+<script src="roasts.js?v=20261107a"></script>
 <script src="brewing.js?v=20261106a"></script>
 <script src="wishlist.js?v=20261106a"></script>
 <script src="cupping.js?v=20260528f"></script>
 <script src="easycup.js?v=20261106a"></script>
-<script src="dailycup.js?v=20261106b"></script>
+<script src="dailycup.js?v=20261107a"></script>
 <script src="roasted.js?v=20261106c"></script>
 <script src="shops.js?v=20261106a"></script>
-<script src="datafix.js?v=20261107b"></script>
+<script src="datafix.js?v=20261107c"></script>
 <script>
 // 빈본 타이머 ↔ 로스트 로그 연계
 window.addEventListener('message', function(e){

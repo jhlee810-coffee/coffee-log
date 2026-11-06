@@ -6,6 +6,25 @@ function beanOfRoast(r){
   if(r.bean_id){const b=db.beans.find(x=>x.id===r.bean_id);if(b)return b;}
   return db.beans.find(x=>x.name===r.bean_name)||null;
 }
+/* 배치 보관 상태 (2026-11-07): '' = 내가 보유, 'gift' = 지인 나눔, 'done' = 다 마심 */
+const ROAST_STOCK_STATES=[{v:'',l:'보유'},{v:'gift',l:'🎁 나눔'},{v:'done',l:'다 마심'}];
+function roastHeld(r){return !r||!r.stock_state;}
+function roastStateLabel(v){const x=ROAST_STOCK_STATES.find(s=>s.v===(v||''));return x?x.l:'';}
+function setRoastState(id,v){
+  const r=(db.roasts||[]).find(x=>x.id===id);if(!r)return;
+  r.stock_state=r.stock_state===v?'':v;
+  saveDB();
+  try{if(document.getElementById('tab-roasts').classList.contains('on'))renderRoasts();}catch(e){}
+  try{renderDash();}catch(e){}
+}
+/* 로스팅 기록 → 커피 한 잔 (이 배치가 골라진 상태로) */
+function roastToCup(id){
+  const r=(db.roasts||[]).find(x=>x.id===id);if(!r)return;
+  const tb=[...document.querySelectorAll('.tb')].find(t=>(t.getAttribute('onclick')||'').includes("'dailycup'"));
+  if(tb)showTab('dailycup',tb);
+  if(!_dc||_dc.editId)dcNew();
+  dcSelect(dcSnapFromRoast(r));window.scrollTo(0,0);
+}
 function roastOfBean(r,b){return r.bean_id?r.bean_id===b.id:r.bean_name===b.name;}
 
 /* 1팝 경과·총 로스팅시간 (모드 자동배출 − 잔여) → "m:ss" */

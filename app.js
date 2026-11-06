@@ -77,6 +77,9 @@ async function unpackFromSheets(data){
 }
 
 async function pushToSheets(){
+  // 안전장치 (2026-11-07): 생두·로스팅이 하나도 없는 데이터는 절대 클라우드에 올리지 않음
+  // (기기 저장소가 비었는데 동기화가 실패한 상태에서 빈 데이터로 덮어쓰는 사고 방지)
+  if(!(db&&((db.beans||[]).length||(db.roasts||[]).length))){console.warn('빈 데이터라 업로드 안 함');return;}
   try{
     const body=await packForSheets(db);
     if(body.length>SHEET_CELL_MAX){
@@ -126,6 +129,8 @@ async function syncFromSheets(){
     ind.textContent='로드됨 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
   }
   try{renderDash();}catch(e){}
+  // 실제 데이터가 없으면(기기 저장소 비었고 동기화도 실패) 아래 자동 정리·저장을 하지 않음
+  if(!(db.beans||[]).length)return;
   // 동기화 끝난 최신 데이터로 소진 후보 확인 (앱 실행당 1번, beans.js)
   setTimeout(()=>{try{checkSoldOutCandidates();}catch(e){}},400);
   // 옛 로스팅 기록에 같은 날 배치 순서 채우기 (한 번만, roasts.js)
