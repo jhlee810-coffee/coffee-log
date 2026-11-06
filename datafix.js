@@ -54,10 +54,27 @@ function migrate20261106(){
   return true;
 }
 
+/* ── 2026-11-06 두 번째 (사용자 확인: 추정대로 연결) ──
+   KWAMI 2025 허니(5/21) → 생두 9, 나리뇨 버번치로소(5/20) → 생두 11.
+   "파나마 핀카레리다 게이샤 내추럴"(5/21)은 후보가 둘(14 / 112)이라 연결 안 함 */
+const MIGRATION_20261106B='fix-20261106b';
+function migrate20261106b(){
+  if(!db||!Array.isArray(db.beans))return false;
+  db.migrations=db.migrations||[];
+  if(db.migrations.includes(MIGRATION_20261106B))return false;
+  const link=(name,beanId)=>{const b=db.beans.find(x=>x.id===beanId);if(!b)return;
+    db.roasts.filter(r=>r.bean_name===name&&!r.bean_id).forEach(r=>{r.bean_id=b.id;r.bean_name=b.name;if(!r.shop)r.shop=b.shop||'';});};
+  link('에티오피아 KWAMI 2025 허니','9');
+  link('콜롬비아 나리뇨 버번치로소 워시드','11');
+  db.migrations.push(MIGRATION_20261106B);
+  return true;
+}
+
 /* 앱 열 때(동기화 뒤) 한 번 실행 — 바뀐 게 있으면 한 번만 저장 */
 function runDataFixes(){
   let changed=false;
   try{changed=migrate20261106()||changed;}catch(e){console.warn('데이터 정리 실패',e);}
+  try{changed=migrate20261106b()||changed;}catch(e){console.warn('데이터 정리 2 실패',e);}
   try{changed=backfillRoastTimes()||changed;}catch(e){console.warn('로스팅 계산값 채우기 실패',e);}
   if(changed){saveDB();try{renderBeans();}catch(e){}try{renderDash();}catch(e){}}
 }
