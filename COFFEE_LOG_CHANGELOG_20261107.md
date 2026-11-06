@@ -25,3 +25,12 @@
 ## 빈본 타이머 DTR 목록 변경
 - 2·3번: 9~16, 4번: 12~19, 5번: 13~20, 6번: 15~20·22·24 (6번 묶음 다크 → 미디움, 색도 미디움). 1·7·8번 그대로
 - 버전: binbon_timer `20261107b`(app.js), app.js `20261107c`
+
+## DTR 기록 규칙 · 배출 조정 · 기존 기록 목표 DTR
+- 원인: 타이머가 목표 DTR로 배출 시각을 초 단위로 반올림 → 폼이 그 초로 DTR을 거꾸로 계산해 13.93% 같은 값이 남음(실제 차이 아님)
+- 규칙(`roasts.js` roastFormDTR): ① 타이머 목표대로(기준 배출시간 안 고침·조정 0·자동배출 아님) → `dtr_pct` = 목표 정수, `dtr_source='target'` ② 그 밖(조정·기준 수정·자동배출) → 시간으로 계산(소수 1자리), `dtr_source='time'`
+- 기록 폼 "실제로 뺀 때": [5초 일찍][1초 일찍][그대로/n초 늦게][1초 늦게][5초 늦게] (가운데 누르면 0). 쿨링 늦게 시작도 "늦게". 실제 배출 = 기준 − 조정(+ = 늦게). 자동배출 뒤로 가면 "자동배출 후 n초" — 저장 `eject_time='0:00'`, `eject_over_s=n`, `eject_adjust_s=조정`, `dtr_target=타이머 목표`. DTR = (1팝 잔여+n) ÷ (자동배출+n), 총 로스팅시간 = 자동배출+n. 배출 잔여 칩에 "자동배출(0:00)" 추가
+- 타이머 버그 수정: 목표가 자동배출을 넘을 때(over) 배출 시각이 음수→양수로 뒤집혀 넘어가던 것 → `eject_time='0:00'`, `eject_auto:true`, `dtr_target`(over 아닐 때만)
+- 기존 기록(`fix-20261107d`, 한 번만): 배출 시각이 '정수 DTR로 계산한 타이머 배출 시각'과 초까지 같으면 목표대로 뺀 것 → `dtr_pct`=정수·`dtr_target`·`dtr_source='target'`·단계 다시. 결과(테스트 복사본): target 77 / time 30 / DTR 없음 9
+- `roastTimes`·`roastDTRValue`(datafix.js)·엑셀 스크립트가 `eject_over_s` 반영
+- 버전: binbon_timer `20261107c`(app.js), app.js `20261107d`, roasts.js `20261107c`, datafix.js `20261107d`, style.css `20261107c`

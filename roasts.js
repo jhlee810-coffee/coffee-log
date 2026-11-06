@@ -328,35 +328,51 @@ function adjTm(fieldId,deltaSec){
   calcRoastLive();
 }
 
-/* DTR 자동 계산 (빈본 모드 기준 잔여시간) */
+/* ── 배출 조정 · DTR 규칙 (2026-11-07) ──
+   기준 배출 = '배출 잔여시간' 칸(타이머가 넘겨준 값, 자동배출이면 0:00)
+   실제로 뺀 때 = 기준 ± 초 (+ = 늦게). 자동배출 뒤로 늦으면 잔여가 음수 = 자동배출 후 n초
+   DTR: 타이머 목표대로(기준 안 바꿈·조정 0·자동배출 아님) → 목표 DTR 그대로 / 그 밖은 시간으로 계산 */
+function fmtSigned(s){const a=Math.abs(s);return (s<0?'-':'')+Math.floor(a/60)+':'+String(a%60).padStart(2,'0');}
+function adjEject(d,reset){
+  const el=document.getElementById('f_rad');
+  el.value=reset?'0':String((parseInt(el.value)||0)+d);
+  calcRoastLive();
+}
+function roastFormEject(){ // {base, adj, actual, auto}
+  const ej=document.getElementById('f_re').value;
+  if(!ej)return null;
+  const base=toSec(ej),adj=parseInt(document.getElementById('f_rad').value)||0;
+  return {base,adj,actual:base-adj};
+}
+function roastFormDTR(){ // {dtr, source} 또는 null
+  const pop=document.getElementById('f_rp').value,mode=+document.getElementById('f_rm').value,ae=BINBON_MODES[mode];
+  const e=roastFormEject();if(!pop||!e||!ae)return null;
+  const ps=toSec(pop),tgt=parseFloat(document.getElementById('f_rdt').value);
+  const baseSame=document.getElementById('f_rbase').value&&document.getElementById('f_rbase').value===document.getElementById('f_re').value;
+  if(tgt>0&&baseSame&&e.adj===0&&e.base>0)return {dtr:tgt,source:'target'};
+  if(!(ps>e.actual)||ae-e.actual<=0)return null;
+  return {dtr:(ps-e.actual)/(ae-e.actual)*100,source:'time'};
+}
 function calcRoastLive(){
   const ig=parseFloat(document.getElementById('f_ri').value)||0;
   const og=parseFloat(document.getElementById('f_ro').value)||0;
-  const pop=document.getElementById('f_rp').value;
-  const ej=document.getElementById('f_re').value;
   const mode=+document.getElementById('f_rm').value;
-  const autoEject=BINBON_MODES[mode];
-
   let lossStr='—',dtrStr='—',levelStr='—';
-
-  if(ig&&og){
-    lossStr=((ig-og)/ig*100).toFixed(1)+'%';
+  if(ig&&og)lossStr=((ig-og)/ig*100).toFixed(1)+'%';
+  const e=roastFormEject();
+  // 배출 조정 표시
+  const adjT=document.getElementById('ejAdjText'),outT=document.getElementById('ejOutText');
+  if(adjT){
+    const a=e?e.adj:(parseInt(document.getElementById('f_rad').value)||0);
+    adjT.textContent=a===0?'그대로':a>0?`${a}초 늦게`:`${-a}초 일찍`;
+    adjT.className='ej-val'+(a>0?' late':a<0?' early':'');
+    outT.textContent=!e?'':e.actual<0?`→ 자동배출 후 ${-e.actual}초에 뺌`:e.actual===0?'→ 자동배출 시점에 뺌':`→ 실제 배출: 잔여 ${fmtSigned(e.actual)}`;
   }
-
-  if(pop&&ej){
-    const ps=toSec(pop),es=toSec(ej);
-    if(!autoEject){
-      dtrStr='모드 선택 필요';
-    } else if(ps>es&&(autoEject-es)>0){
-      // DTR = 개발시간 / 배출시점까지 총경과시간
-      // 개발시간 = pop잔여 - 배출잔여
-      // 배출시점경과 = autoEject - 배출잔여
-      const dtr=(ps-es)/(autoEject-es)*100;
-      dtrStr=dtr.toFixed(1)+'%';
-      levelStr=dtrToLevel(dtr)||'—';
-    }
-  }
-
+  if(document.getElementById('f_rp').value&&e&&!BINBON_MODES[mode])dtrStr='모드 선택 필요';
+  const r=roastFormDTR();
+  if(r){dtrStr=(r.source==='target'?String(r.dtr):r.dtr.toFixed(1))+'%'+(r.source==='target'?' (목표)':'');levelStr=dtrToLevel(r.dtr)||'—';}
+  const h=document.getElementById('ejBaseHint');
+  if(h){const t=document.getElementById('f_rdt').value;h.textContent=t?`타이머 목표 DTR ${t}% 배출 시점`:'빈본 화면의 남은 시간 (자동배출은 0:00)';}
   document.getElementById('ac_loss').textContent='손실율 '+lossStr;
   document.getElementById('ac_dtr').textContent='DTR '+dtrStr;
   document.getElementById('ac_level').textContent='레벨 '+levelStr;
@@ -383,7 +399,14 @@ function openRoastForm(id, prefill){
   document.getElementById('f_rfp').checked=!!r.false_pop;
   document.getElementById('f_rss').value=r.stock_state||'';renderRssChips();
   document.getElementById('f_rp').value=r.pop_time||p.pop_time||'';
-  document.getElementById('f_re').value=r.eject_time||p.eject_time||'';
+  { // 배출: 기준(타이머 값) + 조정 복원
+    let adj=0,base=r.eject_time||p.eject_time||'';
+    if(id){adj=+r.eject_adjust_s||0;const actual=(r.eject_time?toSec(r.eject_time):0)-(+r.eject_over_s||0);if(r.eject_time||r.eject_over_s)base=fmtSigned(Math.max(0,actual+adj));}
+    document.getElementById('f_re').value=base;
+    document.getElementById('f_rad').value=String(adj);
+    document.getElementById('f_rdt').value=id?(r.dtr_target||''):(p.dtr_target||'');
+    document.getElementById('f_rbase').value=(id?(r.dtr_target?base:''):(p.dtr_target?base:''));
+  }
   document.getElementById('f_rn').value=r.notes||p.notes||'';
   document.getElementById('f_ri').value=r.input_g||p.input_g||'120';
   document.getElementById('f_ro').value=r.output_g||p.output_g||'100';
@@ -445,16 +468,10 @@ function saveRoast(){
   const og=parseFloat(document.getElementById('f_ro').value)||'';
   const lp=(ig&&og)?((ig-og)/ig*100).toFixed(1):'';
   const pop=document.getElementById('f_rp').value;
-  const ej=document.getElementById('f_re').value;
-  const mode=+document.getElementById('f_rm').value;
-  const autoEject=BINBON_MODES[mode];
-  let dtr='';
-  if(pop&&ej&&autoEject){
-    const ps=toSec(pop),es=toSec(ej);
-    if(ps>es&&(autoEject-es)>0){
-      dtr=((ps-es)/(autoEject-es)*100).toFixed(1);
-    }
-  }
+  const ejx=roastFormEject();
+  const ej=ejx?fmtSigned(Math.max(0,ejx.actual)):'';
+  const dr=roastFormDTR();
+  const dtr=dr?(dr.source==='target'?String(dr.dtr):dr.dtr.toFixed(1)):'';
   const autoLevel=dtr?dtrToLevel(dtr):'';
   const manualLevel=document.getElementById('f_rl').value;
   const data={
@@ -477,6 +494,10 @@ function saveRoast(){
     end_time:document.getElementById('f_ret').value,
     batch_no:String(parseInt(document.getElementById('f_rbn').value)||nextBatchNo(document.getElementById('f_rd').value,id)),
     false_pop:document.getElementById('f_rfp').checked,
+    dtr_target:document.getElementById('f_rdt').value,
+    dtr_source:dr?dr.source:'',
+    eject_adjust_s:ejx&&ejx.adj?ejx.adj:'',
+    eject_over_s:ejx&&ejx.actual<0?-ejx.actual:'',
     stock_state:document.getElementById('f_rss').value,
   };
   Object.assign(data,roastTimes(data));  // 1팝 경과·총 로스팅시간 자동 저장

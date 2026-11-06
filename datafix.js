@@ -35,6 +35,7 @@ function roastTimes(r){
   if(!ae)return {pop_elapsed:'',total_time:''};
   let pr=sec(r.pop_time),er=sec(r.eject_time);
   if(r.time_basis==='진행'){pr=pr!=null?ae-pr:null;er=er!=null?ae-er:null;}
+  if(er!=null&&+r.eject_over_s)er-=+r.eject_over_s;   // 자동배출 뒤 n초에 뺀 경우
   return {pop_elapsed:pr!=null?f(ae-pr):'',total_time:er!=null?f(ae-er):''};
 }
 /* 계산값이 없는 로스팅 기록에 채우기 (바뀐 게 있으면 true) */
@@ -125,6 +126,7 @@ function roastDTRValue(r){
   let ps=sec(r.pop_time),es=sec(r.eject_time);
   if(!ae||ps==null||es==null)return null;
   if(r.time_basis==='진행'){ps=ae-ps;es=ae-es;}
+  if(+r.eject_over_s)es-=+r.eject_over_s;
   return ps>es&&ae-es>0?(ps-es)/(ae-es)*100:null;
 }
 function reapplyRoastLevels(){
@@ -155,6 +157,29 @@ function migrate20261107b(){
   return true;
 }
 
+/* ── 2026-11-07 한 번만: 타이머 목표대로 뺀 기존 기록 → 목표 DTR 정수로 (사용자 요청) ──
+   배출 시각이 '정수 DTR로 계산한 타이머 배출 시각'과 초 단위까지 같으면 목표대로 뺀 것으로 봄 */
+const MIGRATION_20261107D='fix-20261107d';
+function migrate20261107d(){
+  if(!db||!Array.isArray(db.roasts))return false;
+  db.migrations=db.migrations||[];
+  if(db.migrations.includes(MIGRATION_20261107D))return false;
+  const sec=t=>{if(!t)return null;const p=String(t).split(':');return p.length===2?(+p[0])*60+(+p[1]):null;};
+  db.roasts.forEach(r=>{
+    if(r.dtr_source)return;
+    const ae=BINBON_MODES[+r.mode];let pr=sec(r.pop_time),er=sec(r.eject_time);
+    if(!ae||pr==null||er==null)return;
+    if(r.time_basis==='진행'){pr=ae-pr;er=ae-er;}
+    const pe=ae-pr,calc=(pr-er)/(ae-er)*100;
+    let best=null;
+    for(let t=5;t<=40;t++){const ej=Math.round(pe/(1-t/100));if(ae-ej===er&&(best==null||Math.abs(t-calc)<Math.abs(best-calc)))best=t;}
+    if(best!=null){r.dtr_pct=String(best);r.dtr_target=String(best);r.dtr_source='target';const l=dtrToLevel(best);r.roast_level=l;}
+    else r.dtr_source='time';
+  });
+  db.migrations.push(MIGRATION_20261107D);
+  return true;
+}
+
 /* 앱 열 때(동기화 뒤) 한 번 실행 — 바뀐 게 있으면 한 번만 저장 */
 function runDataFixes(){
   let changed=false;
@@ -163,6 +188,7 @@ function runDataFixes(){
   try{changed=migrate20261106c()||changed;}catch(e){console.warn('데이터 정리 3 실패',e);}
   try{changed=migrate20261106d()||changed;}catch(e){console.warn('데이터 정리 4 실패',e);}
   try{changed=migrate20261107b()||changed;}catch(e){console.warn('알로 가격 되돌리기 실패',e);}
+  try{changed=migrate20261107d()||changed;}catch(e){console.warn('목표 DTR 정리 실패',e);}
   try{changed=backfillRoastTimes()||changed;}catch(e){console.warn('로스팅 계산값 채우기 실패',e);}
   try{changed=reapplyRoastLevels()||changed;}catch(e){console.warn('로스팅 단계 다시 지정 실패',e);}
   try{changed=fixStockStatus()||changed;}catch(e){console.warn('재고 상태 정리 실패',e);}

@@ -379,7 +379,10 @@ function sendRoastLog(){
     input_g:S.inputG||'',
     output_g:S.outputG||'',
     pop_time:popSec!==null?fmtRem(popSec):'',
-    eject_time:ejSec!==null?fmtRem(ejSec):'',
+    // 목표가 자동배출을 넘으면(over) 자동배출 시점(잔여 0:00)에 나온 것 — 예전엔 음수가 양수로 뒤집혀 기록됐음
+    eject_time:ejSec!==null?(S.result&&S.result.over?'0:00':fmtRem(ejSec)):'',
+    dtr_target:(S.result&&!S.result.over)?String(S.dtr):'',
+    eject_auto:!!(S.result&&S.result.over),
     dtr_pct:dtr||'',
     loss_pct:loss||'',
   };

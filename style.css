@@ -785,3 +785,13 @@ html.roasting,html.roasting body{overscroll-behavior-y:none;}
 .pl-paste summary{font-size:13px;color:var(--text2);cursor:pointer;padding:6px 0;}
 .pl-paste .ta{min-height:110px;margin-top:6px;}
 .pl-paste-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:6px;}
+/* 실제로 뺀 때 (2026-11-07) */
+.ej-adj{background:var(--bg3);border-radius:10px;padding:10px;}
+.ej-row{display:grid;grid-template-columns:1fr 1fr 1.4fr 1fr 1fr;gap:6px;align-items:stretch;}
+.ej-b{min-height:52px;border-radius:9px;font-size:13px;font-weight:700;line-height:1.2;cursor:pointer;font-family:inherit;border:1px solid var(--b2);background:var(--bg2);}
+.ej-b.early{color:#9fd3ff;}
+.ej-b.late{color:var(--coral);}
+.ej-val{display:flex;align-items:center;justify-content:center;text-align:center;border-radius:9px;border:2px solid var(--b2);font-size:15px;font-weight:800;cursor:pointer;}
+.ej-val.late{border-color:var(--coral);color:var(--coral);}
+.ej-val.early{border-color:#9fd3ff;color:#9fd3ff;}
+.ej-out{font-size:13px;color:var(--text2);margin-top:6px;text-align:center;}
