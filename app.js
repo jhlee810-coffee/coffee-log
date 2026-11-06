@@ -132,6 +132,8 @@ async function syncFromSheets(){
   try{backfillBatchNo();}catch(e){console.warn('배치 순서 채우기 실패',e);}
   // 같은 구매처 다른 이름 합치기 (shops.js SHOP_ALIASES)
   try{normalizeShopNames();}catch(e){console.warn('구매처 이름 정리 실패',e);}
+  // 로스팅↔생두 ID 연결·계산값·한 번만 하는 정리 (datafix.js)
+  try{runDataFixes();}catch(e){console.warn('데이터 정리 실패',e);}
 }
 
 function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5);}

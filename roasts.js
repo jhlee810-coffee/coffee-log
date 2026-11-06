@@ -102,7 +102,7 @@ function renderRoasts(){
   let list=[...sorted];
   if(rFilterKey!=='all'){
     list=list.filter(r=>{
-      const bean=db.beans.find(b=>b.name===r.bean_name);
+      const bean=beanOfRoast(r);
       if(!bean) return false;
       if(rFilterKey.startsWith('origin:')) return bean.origin===rFilterKey.slice(7);
       if(rFilterKey.startsWith('shop:')) return bean.shop===rFilterKey.slice(5);
@@ -116,7 +116,7 @@ function renderRoasts(){
 
   document.getElementById('roastList').innerHTML=list.map(r=>{
     const serial=serialMap[r.id];
-    const bean=db.beans.find(b=>b.name===r.bean_name)||{};
+    const bean=beanOfRoast(r)||{};
     const beanMonth=bean.stock_date?bean.stock_date.slice(2,4)+'.'+bean.stock_date.slice(5,7):'';
     const beanPrice=bean.price?Math.round(parseFloat(bean.price)):'';
 
@@ -185,7 +185,7 @@ function openRoastDetail(id){
   if(!r)return;
   const sorted=[...db.roasts].sort((a,b)=>a.date>b.date?1:-1);
   const serial=sorted.findIndex(x=>x.id===id)+1;
-  const bean=db.beans.find(b=>b.name===r.bean_name)||{};
+  const bean=beanOfRoast(r)||{};
   const levelColor={'라이트':'var(--amber)','라이트-미디엄':'var(--amber)','미디엄':'var(--amber)','미디엄-다크':'var(--amber)','다크':'var(--coral)'}[r.roast_level]||'var(--muted)';
   const ae2=BINBON_MODES[+r.mode];
   let popElapsedStr='',ejElapsedStr='',devSec=null;
@@ -333,12 +333,19 @@ function calcRoastLive(){
 
 /* ── 폼 열기/저장 ── */
 function openRoastForm(id, prefill){
-  fillSel('f_rb',db.beans.map(b=>b.name));
-  document.getElementById('rfId').value=id||'';
   const r=id?db.roasts.find(x=>x.id===id):{};
   const p=prefill||{};
+  // 생두는 목록에서 고르기만 (값 = 생두 ID). 재고 있는 것 먼저, 소진은 아래
+  const curB=id?beanOfRoast(r):(p.bean_name?db.beans.find(b=>b.name===p.bean_name):null);
+  const esc=s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  const on=db.beans.filter(b=>b.status!=='소진'),off=db.beans.filter(b=>b.status==='소진');
+  document.getElementById('f_rb').innerHTML='<option value="">선택...</option>'+
+    on.map(b=>`<option value="${b.id}">${esc(b.name)}${b.lot_label?' ('+esc(b.lot_label)+')':''}</option>`).join('')+
+    (off.length?`<optgroup label="소진">${off.map(b=>`<option value="${b.id}">${esc(b.name)}${b.lot_label?' ('+esc(b.lot_label)+')':''}</option>`).join('')}</optgroup>`:'');
+  document.getElementById('rfId').value=id||'';
   document.getElementById('f_rd').value=r.date||p.date||today();
-  document.getElementById('f_rb').value=r.bean_name||p.bean_name||'';
+  document.getElementById('f_rb').value=curB?curB.id:'';
+  document.getElementById('f_rfp').checked=!!r.false_pop;
   document.getElementById('f_rp').value=r.pop_time||p.pop_time||'';
   document.getElementById('f_re').value=r.eject_time||p.eject_time||'';
   document.getElementById('f_rn').value=r.notes||p.notes||'';
@@ -393,8 +400,10 @@ function editRoast(id){openRoastForm(id);}
 
 function saveRoast(){
   const id=document.getElementById('rfId').value;
-  const bn=document.getElementById('f_rb').value;
-  if(!bn){alert('생두를 선택하세요');return;}
+  const bid=document.getElementById('f_rb').value;
+  const bean=db.beans.find(b=>b.id===bid);
+  if(!bean){alert('생두를 목록에서 선택하세요');return;}
+  const bn=bean.name;
   const ig=parseFloat(document.getElementById('f_ri').value)||'';
   const og=parseFloat(document.getElementById('f_ro').value)||'';
   const lp=(ig&&og)?((ig-og)/ig*100).toFixed(1):'';
@@ -414,8 +423,9 @@ function saveRoast(){
   const data={
     id:id||genId(),
     date:document.getElementById('f_rd').value,
+    bean_id:bean.id,
     bean_name:bn,
-    shop:db.beans.find(b=>b.name===bn)?.shop||'',
+    shop:bean.shop||'',
     mode:document.getElementById('f_rm').value,
     input_g:ig.toString(),
     output_g:og.toString(),
@@ -429,7 +439,9 @@ function saveRoast(){
     start_time:document.getElementById('f_rst').value,
     end_time:document.getElementById('f_ret').value,
     batch_no:String(parseInt(document.getElementById('f_rbn').value)||nextBatchNo(document.getElementById('f_rd').value,id)),
+    false_pop:document.getElementById('f_rfp').checked,
   };
+  Object.assign(data,roastTimes(data));  // 1팝 경과·총 로스팅시간 자동 저장
   // 수정 시 폼에 없는 기존 항목(degas_days 등)은 유지
   if(id){const i=db.roasts.findIndex(r=>r.id===id);if(i>=0)db.roasts[i]={...db.roasts[i],...data};}
   else db.roasts.push(data);

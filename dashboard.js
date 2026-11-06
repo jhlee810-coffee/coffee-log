@@ -36,7 +36,7 @@ function renderDash(){
 
   // ── 숫자 4개 ──
   const inStock=db.beans.filter(b=>b.status!=='소진'&&b.status!=='샘플');
-  const unroasted=inStock.filter(b=>!roasts.some(r=>r.bean_name===b.name));
+  const unroasted=inStock.filter(b=>!roasts.some(r=>roastOfBean(r,b)));
   const wk=r=>{const d=dashDays(r,t);return d!=null&&d>=0&&d<7;};
   const stats=[
     [inStock.length,'재고 생두'],[unroasted.length,'로스팅 전'],
@@ -59,7 +59,7 @@ function renderDash(){
   const groups={};
   roasts.forEach(r=>{
     const d=dashDays(r.date,t);if(d==null||d<0||d>45)return;
-    const bean=db.beans.find(b=>b.name===r.bean_name);
+    const bean=beanOfRoast(r);
     const k=r.date+'|'+r.bean_name;
     (groups[k]=groups[k]||{date:r.date,bean:r.bean_name,beanId:bean?bean.id:'',items:[],ids:[]}).items.push(r);
     groups[k].ids.push(r.id);

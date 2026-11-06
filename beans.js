@@ -44,7 +44,7 @@ function beanCard(b){
     ${(()=>{if(isSogin)return'';const u=beanUsage(b);if(!u.count&&u.remaining===null)return'';
       const parts=[];if(u.remaining!==null)parts.push(`잔량 ≈ ${Math.max(0,Math.round(u.remaining))}g`);if(u.count)parts.push(`로스팅 ${u.count}회`);
       return`<div class="bstock${u.remaining!==null&&u.remaining<SOLDOUT_REMAIN_G?' low':''}">${parts.join(' · ')}</div>`;})()}
-    ${db.roasts.some(r=>r.bean_name===b.name)?`<button class="dc-open" onclick="event.stopPropagation();openDailyCupFor('${b.id}')">☕ 한 잔 기록</button>`:''}
+    ${db.roasts.some(r=>roastOfBean(r,b))?`<button class="dc-open" onclick="event.stopPropagation();openDailyCupFor('${b.id}')">☕ 한 잔 기록</button>`:''}
     <div class="bfoot">
       <span class="bfmeta">${meta}</span>
       <span style="display:flex;align-items:center;gap:6px">
@@ -61,7 +61,7 @@ function filterBeans(q){cs=q;renderBeans();}
 
 function showBeanDetail(id){
   const b=db.beans.find(x=>x.id===id);if(!b)return;
-  const rc=db.roasts.filter(r=>r.bean_name===b.name).length;
+  const rc=db.roasts.filter(r=>roastOfBean(r,b)).length;
   const bl=db.brewlogs.filter(r=>r.bean_name===b.name).length;
   document.getElementById('bdName').textContent=b.name;
   document.getElementById('bdContent').innerHTML=`
@@ -88,7 +88,7 @@ function showBeanDetail(id){
    "아직 있음" 답하면 soldout_skip_used(그때까지의 투입량)를 저장 → 이후 로스팅이 더 생기기 전까진 다시 안 물음 */
 const SOLDOUT_REMAIN_G=120, SOLDOUT_MIN_COUNT=8, DEFAULT_INPUT_G=120;
 function beanUsage(b){
-  const rs=(db.roasts||[]).filter(r=>r.bean_name===b.name);
+  const rs=(db.roasts||[]).filter(r=>roastOfBean(r,b));
   const used=rs.reduce((s,r)=>s+(parseFloat(r.input_g)||DEFAULT_INPUT_G),0);
   const init=parseFloat(b.stock_initial);
   return {count:rs.length,used,remaining:init>0?init-used:null};
@@ -139,11 +139,23 @@ function answerSoldOut(id,soldOut){
 }
 
 /* ── 구매량: 보통 1kg, 좋은 생두는 2~5kg (2026-11-04) ── */
-const KG_OPTS=[1,2,3,4,5];
+const KG_OPTS=[0.1,0.5,1,2,3];  // 구매량 칩 (kg) — 100g/500g/1kg/2kg/3kg, 그 밖은 칸에 직접 입력
+function kgLabel(k){return k<1?Math.round(k*1000)+'g':k+'kg';}
+/* 결제 금액(원) + 구매량(g) → 만원/kg 자동 계산 */
+function calcBeanPrice(){
+  const pay=parseFloat(String(document.getElementById('f_bpay').value).replace(/[^0-9.]/g,''));
+  const g=parseFloat(document.getElementById('f_bst').value);
+  const hint=document.getElementById('f_bprHint');
+  if(pay>0&&g>0){
+    const v=+(pay/10000/(g/1000)).toFixed(2);
+    document.getElementById('f_bpr').value=v;
+    if(hint)hint.textContent=`${Math.round(pay).toLocaleString()}원 ÷ ${g>=1000?(g/1000)+'kg':g+'g'} = ${v}만원/kg`;
+  }else if(hint)hint.textContent='결제 금액과 구매량을 넣으면 자동 계산';
+}
 function renderKgBtns(){
   const v=parseFloat(document.getElementById('f_bst').value);
   document.getElementById('kgBtns').innerHTML=KG_OPTS.map(k=>
-    `<button type="button" class="${v===k*1000?'on':''}" onclick="document.getElementById('f_bst').value='${k*1000}';renderKgBtns()">${k}kg</button>`).join('');
+    `<button type="button" class="${v===k*1000?'on':''}" onclick="document.getElementById('f_bst').value='${k*1000}';renderKgBtns();calcBeanPrice()">${kgLabel(k)}</button>`).join('');
 }
 
 /* ── 구매량 미입력 생두 한 번에 입력 ── */
@@ -177,7 +189,7 @@ function stockFillRow(b,justSet){
   const done=justSet?`<div class="so-why" style="color:var(--amber)">✓ ${justSet/1000}kg 저장 · 잔량 ≈ ${Math.max(0,Math.round(u.remaining))}g${u.remaining<SOLDOUT_REMAIN_G&&b.status!=='소진'?' (거의 다 씀 → 완료 후 소진 확인)':''}</div>`:'';
   return`<div class="so-name">${b.name}${b.status==='소진'?' <span class="sogin-bdg">소진</span>':''}</div>
     <div class="so-why">${info}</div>${done}
-    <div class="alt-seg sf-kg">${KG_OPTS.map(k=>`<button type="button" class="${+b.stock_initial===k*1000?'on':''}" onclick="setStockFill('${b.id}',${k*1000})">${k}kg</button>`).join('')}
+    <div class="alt-seg sf-kg">${KG_OPTS.map(k=>`<button type="button" class="${+b.stock_initial===k*1000?'on':''}" onclick="setStockFill('${b.id}',${k*1000})">${kgLabel(k)}</button>`).join('')}
       <button type="button" onclick="setStockFill('${b.id}',null)">직접</button></div>`;
 }
 function setStockFill(id,g){
@@ -326,6 +338,7 @@ function renderPickChips(inputId){
 }
 
 function openBeanForm(id){
+  setTimeout(()=>{try{calcBeanPrice();}catch(e){}},0);
   document.getElementById('bfTitle').textContent=id?'생두 수정':'생두 추가';
   document.getElementById('bfId').value=id||'';
   const b=(id?db.beans.find(x=>x.id===id):null)||{};
@@ -348,12 +361,15 @@ function openBeanForm(id){
     document.getElementById('f_bdate').value=t.toISOString().slice(0,10);
     document.getElementById('f_bss').value='재고있음';
     document.getElementById('f_bst').value='1000';  // 기본 1kg 구매
+    document.getElementById('f_bpay').value='';document.getElementById('f_bdec').checked=false;
   }
   if(id&&b.id){
     document.getElementById('f_bn').value=b.name||'';
     document.getElementById('f_br').value=b.region||'';
     document.getElementById('f_bv').value=b.variety||'';
     document.getElementById('f_bpr').value=b.price||'';
+    document.getElementById('f_bpay').value=b.pay_amount||'';
+    document.getElementById('f_bdec').checked=!!b.decaf;
     document.getElementById('f_bst').value=b.stock_initial||'';
     document.getElementById('f_bdate').value=b.stock_date||'';
     setPickValue('f_bss',b.status||'');  // 예전 '샘플' 상태도 보존
@@ -390,6 +406,8 @@ function saveBean(){
     altitude:readAltitude(),
     shop:canonShop(pickVal('f_bsh')),
     price:document.getElementById('f_bpr').value,
+    pay_amount:String(document.getElementById('f_bpay').value).replace(/[^0-9]/g,''),
+    decaf:document.getElementById('f_bdec').checked,
     stock_initial:document.getElementById('f_bst').value,
     stock_date:document.getElementById('f_bdate').value,
     status:document.getElementById('f_bss').value,
@@ -397,8 +415,12 @@ function saveBean(){
     score_momos:document.getElementById('f_bsm').value,
     score_wonderroom:document.getElementById('f_bsw').value,
   };
-  // 폼에 없는 필드(cup_notes_source, soldout_skip_used 등)는 보존
-  if(id){const i=db.beans.findIndex(b=>b.id===id);if(i>=0)db.beans[i]={...db.beans[i],...data};}
+  // 폼에 없는 필드(cup_notes_source, soldout_skip_used, group_name, lot_label 등)는 보존
+  if(id){const i=db.beans.findIndex(b=>b.id===id);if(i>=0){
+    const oldName=db.beans[i].name;db.beans[i]={...db.beans[i],...data};
+    // 이름을 바꾸면 이 생두로 연결된 로스팅 기록의 이름도 같이
+    db.roasts.forEach(r=>{if(r.bean_id===id||(!r.bean_id&&r.bean_name===oldName)){r.bean_id=id;r.bean_name=name;}});
+  }}
   else db.beans.push(data);
   saveDB();closeMo('moBeanForm');renderBeans();
 }

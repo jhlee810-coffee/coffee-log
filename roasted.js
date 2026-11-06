@@ -96,6 +96,7 @@ function rbRenderForm(){
           l.map(n=>`<span class="ctag cpos${hasPick(f.cup_notes||'',n)?' on':''}" onclick="rbToggleNote('${n}')">${n}</span>`).join('')}</div></div>`).join('')}</div></div>
       <div class="fg"><label class="fl">메모</label><input class="inp" value="${rbEsc(f.memo)}" oninput="_rbForm.memo=this.value"></div>
     </div>`:''}
+    <label class="dec-row" style="margin-top:12px"><input type="checkbox" ${f.decaf?'checked':''} onchange="_rbForm.decaf=this.checked"> 디카페인 원두</label>
     ${f._id?`<div class="fg" style="margin-top:12px"><label class="fl">상태</label><div class="dc-segs" style="grid-template-columns:1fr 1fr">${
       [RB_STATUS_ON,RB_STATUS_DONE].map(s=>`<button class="dc-seg${f.status===s?' on':''}" onclick="_rbForm.status='${s}';rbRenderForm()">${s}</button>`).join('')}</div></div>`:''}
     <div class="fa">${f._id?`<button class="btnd" onclick="rbDelete()">삭제</button>`:''}<button class="btn2" onclick="closeMo('moRbForm')">취소</button><button class="btn btn-sm" onclick="rbSave()">저장</button></div>`;
@@ -115,7 +116,7 @@ function rbSave(){
   if(!f.roast_date){alert('로스팅 날짜를 넣어 주세요. (디개싱 일수 계산에 필요해요)');return;}
   const data={id:f._id||('rb_'+genId()),name:f.name.trim(),roastery:canonShop(f.roastery),roast_date:f.roast_date,buy_date:f.buy_date||'',
     origin:f.origin||'',process:f.process||'',level:f.level||'',weight_g:f.weight_g?String(f.weight_g):'',price:f.price||'',
-    cup_notes:(f.cup_notes||'').trim(),memo:(f.memo||'').trim(),status:f.status||RB_STATUS_ON};
+    cup_notes:(f.cup_notes||'').trim(),memo:(f.memo||'').trim(),status:f.status||RB_STATUS_ON,decaf:!!f.decaf};
   const list=rbList();const i=list.findIndex(x=>x.id===data.id);
   if(i>=0)list[i]={...list[i],...data};else list.push(data);
   saveDB();closeMo('moRbForm');renderRoastedBeans();
@@ -129,7 +130,7 @@ function rbDelete(){
 }
 
 /* 원두 카드 → 오늘의 한 잔 (이 원두가 골라진 상태로) */
-function rbSnap(b){return {roast_id:'',rb_id:b.id,bean:b.name,roastery:b.roastery||'',roast_date:b.roast_date||'',mode:'',dtr:'',loss:'',batch_no:''};}
+function rbSnap(b){return {roast_id:'',rb_id:b.id,bean:b.name,roastery:b.roastery||'',roast_date:b.roast_date||'',mode:'',dtr:'',loss:'',batch_no:'',decaf:!!b.decaf};}
 function openDailyCupRb(id){
   const b=rbList().find(x=>x.id===id);if(!b)return;
   const tb=[...document.querySelectorAll('.tb')].find(t=>(t.getAttribute('onclick')||'').includes("'dailycup'"));

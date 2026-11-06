@@ -710,3 +710,10 @@ html.roasting,html.roasting body{overscroll-behavior-y:none;}
 .save-indicator{min-width:0;overflow:hidden;text-overflow:ellipsis;}
 .nav-top{min-width:0;}
 .backup-btn{flex-shrink:0;}
+/* 체크 한 줄 (디카페인 · 가짜 1팝) — 2026-11-06 */
+.dec-row{display:flex;align-items:center;gap:8px;font-size:15px;color:var(--text);min-height:42px;cursor:pointer;}
+.dec-row input{width:22px;height:22px;accent-color:var(--amber);}
+.dc-segs5{grid-template-columns:repeat(5,1fr);}
+.dc-steps-note{font-size:12px;color:var(--text2);background:var(--bg3);border-radius:8px;padding:6px 9px;margin-top:6px;line-height:1.5;}
+.dc-tval{color:var(--amber);margin-left:4px;}
+.dc-dec{font-size:13px;color:var(--text2);padding:9px 0;}
