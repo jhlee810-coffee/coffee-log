@@ -1,0 +1,114 @@
+{
+ "date": "2026-11-07",
+ "version": 1,
+ "items": [
+  {
+   "bean_id": "1",
+   "bean": "에티오피아 나르도스 구지 와테 G1 AFCA TOH 레지오날 워시드 1위 랏",
+   "mode": 2,
+   "dtr": 12,
+   "input_g": 120,
+   "gift": false,
+   "note": "집 · 마시기 3~4일 후"
+  },
+  {
+   "bean_id": "1",
+   "bean": "에티오피아 나르도스 구지 와테 G1 AFCA TOH 레지오날 워시드 1위 랏",
+   "mode": 2,
+   "dtr": 12,
+   "input_g": 120,
+   "gift": true,
+   "note": "지인 · 3~4일 후"
+  },
+  {
+   "bean_id": "3",
+   "bean": "케냐 무가야 AB",
+   "mode": 2,
+   "dtr": 13,
+   "input_g": 120,
+   "gift": true,
+   "note": "지인 · 3~5일 후"
+  },
+  {
+   "bean_id": "mw4jex7lnmo",
+   "bean": "에티오피아 예가체프 게뎁 초르소 워시드",
+   "mode": 2,
+   "dtr": 12,
+   "input_g": 120,
+   "gift": false,
+   "note": "집 · 마시기 2~4일 후"
+  },
+  {
+   "bean_id": "mw4jkkpng27",
+   "bean": "에티오피아 시다모 벤사 보게 바샤 베켈레 내추럴",
+   "mode": 2,
+   "dtr": 12,
+   "input_g": 120,
+   "gift": false,
+   "note": "집 · 마시기 4~7일 후"
+  },
+  {
+   "bean_id": "mpntlshhr81",
+   "bean": "콜롬비아 엘 오브라헤 게이샤 워시드 Lote 156",
+   "mode": 2,
+   "dtr": 13,
+   "input_g": 120,
+   "gift": false,
+   "note": "집 · 마시기 2~3주 후 · 가짜 팝 주의"
+  },
+  {
+   "bean_id": "mpntlshhr81",
+   "bean": "콜롬비아 엘 오브라헤 게이샤 워시드 Lote 156",
+   "mode": 2,
+   "dtr": 13,
+   "input_g": 120,
+   "gift": true,
+   "note": "지인 · 2~3주 후 · 가짜 팝 주의"
+  },
+  {
+   "bean_id": "13",
+   "bean": "콜롬비아 로스세드로스 게이샤 워시드",
+   "mode": 2,
+   "dtr": 13,
+   "input_g": 120,
+   "gift": false,
+   "note": "집 · 마시기 2~3주 후"
+  },
+  {
+   "bean_id": "13",
+   "bean": "콜롬비아 로스세드로스 게이샤 워시드",
+   "mode": 2,
+   "dtr": 13,
+   "input_g": 120,
+   "gift": true,
+   "note": "지인 · 2~3주 후"
+  },
+  {
+   "bean_id": "6",
+   "bean": "페루 라 루쿠마 게이샤 워시드",
+   "mode": 2,
+   "dtr": 13,
+   "input_g": 120,
+   "gift": true,
+   "note": "지인 · 2~3주 후"
+  },
+  {
+   "bean_id": "mppb2wiqjww",
+   "bean": "케냐 카루만디 AA",
+   "mode": 5,
+   "dtr": 17,
+   "input_g": 120,
+   "gift": false,
+   "note": "중배전 테스트 · 마시기 3~5일 후"
+  },
+  {
+   "bean_id": "7",
+   "bean": "케냐 카리미쿠이 AA 2026",
+   "mode": 8,
+   "dtr": 26,
+   "input_g": 120,
+   "gift": false,
+   "note": "에스프레소 · 마시기 3~5일 후"
+  }
+ ]
+}
