@@ -71,7 +71,7 @@ function rbRenderForm(){
   const f=_rbForm;
   const chip=(on,l,fn)=>`<button class="dc-chip${on?' on':''}" onclick="${fn}">${rbEsc(l)}</button>`;
   const q=s=>rbEsc(s).replace(/'/g,"\\'");
-  const roasteries=rbRoasteries().map(r=>chip(f.roastery===r,r,`_rbForm.roastery='${q(r)}';rbRenderForm()`)).join('');
+  const roasteries=allShops().map(r=>chip(f.roastery===r,r,`_rbForm.roastery='${q(r)}';rbRenderForm()`)).join('');
   const origins=Object.values(BEAN_ORIGINS).flat();
   const t=today(),ago=n=>{const d=new Date();d.setDate(d.getDate()-n);return localDate(d);};
   const rdChips=[['오늘',t],['어제',ago(1)],['3일 전',ago(3)],['1주 전',ago(7)]].map(([l,v])=>chip(f.roast_date===v,l,`_rbForm.roast_date='${v}';rbRenderForm()`)).join('');
@@ -80,7 +80,7 @@ function rbRenderForm(){
     <div class="fg"><label class="fl">원두 이름 *</label><input class="inp" placeholder="예: 에티오피아 구지 함벨라" value="${rbEsc(f.name)}" oninput="_rbForm.name=this.value"></div>
     <div class="fg"><label class="fl">로스터리 *</label>
       ${roasteries?`<div class="dc-chips" style="margin-bottom:6px">${roasteries}</div>`:''}
-      <input class="inp" placeholder="로스터리 이름 (새로 입력)" value="${rbEsc(f.roastery)}" oninput="_rbForm.roastery=this.value"></div>
+      <input class="inp" placeholder="목록에 없으면 새로 입력 (다음부터 목록에 나옴)" value="${rbEsc(f.roastery)}" oninput="_rbForm.roastery=this.value"></div>
     <div class="fg"><label class="fl">로스팅 날짜 * <span class="fl-hint">봉투에 적힌 날짜</span></label>
       <div class="dc-chips" style="margin-bottom:6px">${rdChips}</div>
       <input class="inp" type="date" value="${rbEsc(f.roast_date)}" onchange="_rbForm.roast_date=this.value;rbRenderForm()"></div>
@@ -94,19 +94,29 @@ function rbRenderForm(){
       <div class="fg"><label class="fl">로스팅 정도 <span class="fl-hint">로스터리 표기</span></label><div class="dc-chips">${RB_LEVELS.map(p=>chip(f.level===p,p,`_rbForm.level=_rbForm.level==='${p}'?'':'${p}';rbRenderForm()`)).join('')}</div></div>
       <div class="fr"><div class="fg"><label class="fl">가격 (원)</label><input class="inp" inputmode="numeric" value="${rbEsc(f.price)}" oninput="_rbForm.price=this.value.replace(/[^0-9]/g,'')"></div>
         <div class="fg"><label class="fl">구매일</label><input class="inp" type="date" value="${rbEsc(f.buy_date)}" onchange="_rbForm.buy_date=this.value"></div></div>
-      <div class="fg"><label class="fl">컵노트 <span class="fl-hint">봉투에 적힌 것</span></label><input class="inp" placeholder="예: 자스민, 복숭아, 꿀" value="${rbEsc(f.cup_notes)}" oninput="_rbForm.cup_notes=this.value"></div>
+      <div class="fg"><label class="fl">컵노트 <span class="fl-hint">탭해서 추가·제거</span></label><input class="inp" placeholder="예: 자스민, 복숭아, 꿀" value="${rbEsc(f.cup_notes)}" oninput="_rbForm.cup_notes=this.value">
+        <div class="ctag-section cupnote-chips" style="margin-top:6px">${Object.entries(CUPNOTE_GROUPS).map(([g,l])=>`<div class="ctag-cat"><div class="ctag-cat-label">${g}</div><div class="ctag-list">${
+          l.map(n=>`<span class="ctag cpos${hasPick(f.cup_notes||'',n)?' on':''}" onclick="rbToggleNote('${n}')">${n}</span>`).join('')}</div></div>`).join('')}</div></div>
       <div class="fg"><label class="fl">메모</label><input class="inp" value="${rbEsc(f.memo)}" oninput="_rbForm.memo=this.value"></div>
     </div>`:''}
     ${f._id?`<div class="fg" style="margin-top:12px"><label class="fl">상태</label><div class="dc-segs" style="grid-template-columns:1fr 1fr">${
       [RB_STATUS_ON,RB_STATUS_DONE].map(s=>`<button class="dc-seg${f.status===s?' on':''}" onclick="_rbForm.status='${s}';rbRenderForm()">${s}</button>`).join('')}</div></div>`:''}
     <div class="fa">${f._id?`<button class="btnd" onclick="rbDelete()">삭제</button>`:''}<button class="btn2" onclick="closeMo('moRbForm')">취소</button><button class="btn btn-sm" onclick="rbSave()">저장</button></div>`;
 }
+function rbToggleNote(n){
+  const f=_rbForm,box=document.querySelector('#rbFormBody .cupnote-chips'),st=box?box.scrollTop:0;
+  const cur=(f.cup_notes||'').trim();
+  if(hasPick(cur,n))f.cup_notes=cur.replace(new RegExp('(^|[\\s,]+)'+reEsc(n)+'(?=$|[\\s,])','i'),'').replace(/^[\s,]+|[\s,]+$/g,'').replace(/\s*,\s*(,\s*)+/g,', ');
+  else f.cup_notes=cur?cur.replace(/[\s,]+$/,'')+', '+n:n;
+  const mb=document.getElementById('rbFormBody'),y=mb.scrollTop;
+  rbRenderForm();mb.scrollTop=y;const b2=document.querySelector('#rbFormBody .cupnote-chips');if(b2)b2.scrollTop=st;
+}
 function rbSave(){
   const f=_rbForm;
   if(!f.name.trim()){alert('원두 이름을 넣어 주세요.');return;}
   if(!f.roastery.trim()){alert('로스터리를 넣어 주세요.');return;}
   if(!f.roast_date){alert('로스팅 날짜를 넣어 주세요. (디개싱 일수 계산에 필요해요)');return;}
-  const data={id:f._id||('rb_'+genId()),name:f.name.trim(),roastery:f.roastery.trim(),roast_date:f.roast_date,buy_date:f.buy_date||'',
+  const data={id:f._id||('rb_'+genId()),name:f.name.trim(),roastery:canonShop(f.roastery),roast_date:f.roast_date,buy_date:f.buy_date||'',
     origin:f.origin||'',process:f.process||'',level:f.level||'',weight_g:f.weight_g?String(f.weight_g):'',price:f.price||'',
     cup_notes:(f.cup_notes||'').trim(),memo:(f.memo||'').trim(),status:f.status||RB_STATUS_ON};
   const list=rbList();const i=list.findIndex(x=>x.id===data.id);

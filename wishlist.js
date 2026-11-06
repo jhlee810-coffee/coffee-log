@@ -17,6 +17,7 @@ function renderWishlist(){
 
 function openWishForm(){
   ['f_wn','f_wp','f_ws','f_wu','f_wm'].forEach(i=>document.getElementById(i).value='');
+  renderShopPick('f_ws');
   openMo('moWish');
 }
 
@@ -26,7 +27,7 @@ function saveWish(){
   db.wishlist.push({
     id:genId(),name,
     price:document.getElementById('f_wp').value.trim(),
-    source:document.getElementById('f_ws').value.trim(),
+    source:canonShop(document.getElementById('f_ws').value),
     url:document.getElementById('f_wu').value.trim(),
     memo:document.getElementById('f_wm').value.trim(),
   });
@@ -43,10 +44,8 @@ function buyWish(id){
   const w=db.wishlist.find(x=>x.id===id);if(!w)return;
   db.wishlist=db.wishlist.filter(x=>x.id!==id);
   saveDB();
-  document.querySelectorAll('.tb').forEach((t,i)=>{t.classList.remove('on');if(i===1)t.classList.add('on');});
-  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('on'));
-  document.getElementById('tab-beans').classList.add('on');
-  renderBeans();
+  const tb=[...document.querySelectorAll('.tb')].find(t=>(t.getAttribute('onclick')||'').includes("'beans'"));
+  showTab('beans',tb);
   openBeanForm();
   document.getElementById('f_bn').value=w.name;
   setPickValue('f_bsh',w.source);if(typeof renderShopChips==='function')renderShopChips();

@@ -214,7 +214,23 @@ const BEAN_PROCESSES={
 };
 const BEAN_SHOPS=['모모스','커피리브레','세웅지씨','뉴빈','씨에이치빈','커만사','엠아이커피','모지포그라운드','더블유빈'];
 const BEAN_VARIETIES=['게이샤','SL28','SL34','Ruiru11','Batian','Heirloom','74110','74112','74158','Kurume','버번','레드 버번','핑크 버번','옐로 버번','시드라','티피카','카투라','카투아이','파카마라','파카스','마라고지페','카스티요','Bourbon Chiroso'];
-const BEAN_CUPNOTES=['자스민','베르가못','장미','라벤더','레몬','라임','오렌지','자몽','귤','청사과','배','복숭아','살구','망고','파인애플','패션후르츠','리치','블루베리','라즈베리','딸기','블랙커런트','체리','자두','포도','건포도','와인','꿀','흑설탕','카라멜','메이플','초콜릿','다크초콜릿','밀크초콜릿','견과류','아몬드','홍차','얼그레이','허브','시나몬'];
+// ✏️ 컵노트 고르기 목록 (묶음 순서 = 화면 순서). 여기에 넣으면 생두·원두 폼 모두에 나옴
+const CUPNOTE_GROUPS={
+  '꽃':['자스민','장미','라벤더','오렌지꽃','아카시아','히비스커스','카모마일','엘더플라워','목련','백합','인동꽃','제비꽃','플로럴'],
+  '시트러스':['레몬','라임','오렌지','블러드오렌지','자몽','귤','만다린','탠저린','유자','한라봉','깔라만시','베르가못','오렌지필','레몬그라스'],
+  '베리':['딸기','라즈베리','블루베리','블랙베리','크랜베리','블랙커런트','레드커런트','오디','산딸기','베리'],
+  '핵과·과수':['복숭아','백도','황도','천도복숭아','넥타린','살구','자두','플럼','체리','청사과','사과','홍사과','배','서양배','모과','매실'],
+  '열대과일':['망고','파인애플','패션후르츠','리치','람부탄','망고스틴','구아바','파파야','바나나','코코넛','키위','용과','멜론','수박'],
+  '포도·와인':['청포도','적포도','머스캣','샤인머스캣','거봉','화이트와인','레드와인','로제와인','샴페인','와이니'],
+  '건과일·잼':['건포도','무화과','대추야자','프룬','말린 살구','말린 체리','베리잼','과일잼','마멀레이드'],
+  '단맛':['꿀','메이플시럽','흑설탕','황설탕','캐러멜','토피','버터스카치','바닐라','마시멜로','누가','사탕수수','조청','연유','크렘브륄레','솜사탕'],
+  '초콜릿·견과':['밀크초콜릿','다크초콜릿','카카오닙스','코코아','브라우니','아몬드','헤이즐넛','피칸','호두','마카다미아','땅콩','프랄린'],
+  '차·허브':['홍차','얼그레이','우롱차','녹차','백차','보이차','자스민차','루이보스','민트','바질','세이지','타임','허브'],
+  '향신료':['시나몬','정향','카다몬','넛맥','생강','아니스','흑후추','핑크페퍼'],
+  '곡물·로스트':['토스트','비스킷','쿠키','그레이엄크래커','맥아','보리차','시리얼','볶은 곡물','스모키','담배','삼나무','우디'],
+  '질감·여운':['쥬시','실키','크리미','버터리','벨벳','라운드','클린','밝은 산미','부드러운 산미','긴 여운','달콤한 여운','밸런스','복합적','티라이크'],
+};
+const BEAN_CUPNOTES=[...new Set(Object.values(CUPNOTE_GROUPS).flat())];
 const ALT_OPTS=(()=>{const a=[];for(let m=800;m<=2600;m+=50)a.push(String(m));return a;})();
 const CUSTOM_OPT='__custom';
 
@@ -244,7 +260,7 @@ function renderShopChips(){
   const el=document.getElementById('f_bshChips');if(!el)return;
   const cur=document.getElementById('f_bsh').value;
   const esc=s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
-  el.innerHTML=recentShops().slice(0,8).map(s=>`<span class="pchip${s===cur?' on':''}" data-v="${esc(s)}" onclick="setPickValue('f_bsh',this.dataset.v);renderShopChips()">${esc(s)}</span>`).join('');
+  el.innerHTML=allShops().map(s=>`<span class="pchip${s===cur?' on':''}" data-v="${esc(s)}" onclick="setPickValue('f_bsh',this.dataset.v);renderShopChips()">${esc(s)}</span>`).join('');
 }
 function pickSelectChanged(sel){
   if(sel.id==='f_bsh')setTimeout(renderShopChips,0);
@@ -287,7 +303,7 @@ function readAltitude(){
 }
 
 // 품종·컵노트: 입력칸은 그대로 두고, 칩을 탭하면 추가/제거
-const PICK_CHIPS={f_bv:BEAN_VARIETIES,f_bnt:BEAN_CUPNOTES};
+const PICK_CHIPS={f_bv:BEAN_VARIETIES,f_bnt:CUPNOTE_GROUPS};
 const reEsc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
 function hasPick(text,item){return new RegExp('(^|[\\s,])'+reEsc(item)+'(?=$|[\\s,])','i').test(text);}
 function togglePick(inputId,item){
@@ -303,8 +319,10 @@ function togglePick(inputId,item){
 }
 function renderPickChips(inputId){
   const v=document.getElementById(inputId).value;
-  document.getElementById(inputId+'_chips').innerHTML=PICK_CHIPS[inputId].map(it=>
-    `<span class="ctag cpos${hasPick(v,it)?' on':''}" onclick="togglePick('${inputId}','${it}')">${it}</span>`).join('');
+  const src=PICK_CHIPS[inputId];
+  const chip=it=>`<span class="ctag cpos${hasPick(v,it)?' on':''}" onclick="togglePick('${inputId}','${it}')">${it}</span>`;
+  document.getElementById(inputId+'_chips').innerHTML=Array.isArray(src)?src.map(chip).join(''):
+    Object.entries(src).map(([g,l])=>`<div class="ctag-cat"><div class="ctag-cat-label">${g}</div><div class="ctag-list">${l.map(chip).join('')}</div></div>`).join('');
 }
 
 function openBeanForm(id){
@@ -318,7 +336,7 @@ function openBeanForm(id){
   document.getElementById('f_bss').innerHTML=['','재고있음','잔량부족','소진','재고량미입력']
     .map(v=>`<option value="${v}">${v||'선택'}</option>`).join('');
   // 선택형 항목 (수정 시 기존값 유지, 목록에 없던 값도 보존)
-  const shops=recentShops();
+  const shops=allShops();
   fillPickSelect('f_bo',BEAN_ORIGINS,b.origin||'','선택','직접 입력 (기타 국가)…');
   fillPickSelect('f_bp',BEAN_PROCESSES,b.process||'','선택');
   fillPickSelect('f_bsh',shops,b.shop||'','선택','직접 입력 (새 구매처)…');
@@ -370,7 +388,7 @@ function saveBean(){
     variety:document.getElementById('f_bv').value.trim(),
     process:pickVal('f_bp'),
     altitude:readAltitude(),
-    shop:pickVal('f_bsh'),
+    shop:canonShop(pickVal('f_bsh')),
     price:document.getElementById('f_bpr').value,
     stock_initial:document.getElementById('f_bst').value,
     stock_date:document.getElementById('f_bdate').value,

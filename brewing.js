@@ -375,6 +375,7 @@ function openBrewLogForm(id){
   }
 
   document.getElementById('f_ext_roastery').value=b.ext_roastery||'';
+  renderShopPick('f_ext_roastery');
   document.getElementById('f_ext_bean').value=b.ext_bean_name||'';
   document.getElementById('f_ext_roast_date').value=b.ext_roast_date||'';
   showExtDegassing();
@@ -440,7 +441,7 @@ function saveBrewLog(){
     const roast=db.roasts.find(r=>r.id===roastId);
     roastRef=roast?`${roast.date} 모드${roast.mode||'?'} DTR${roast.dtr_pct||'--'}%`:'';
   }else{
-    extRoastery=document.getElementById('f_ext_roastery').value.trim();
+    extRoastery=canonShop(document.getElementById('f_ext_roastery').value);
     extBeanName=document.getElementById('f_ext_bean').value.trim();
     extRoastDate=document.getElementById('f_ext_roast_date').value;
     if(!extBeanName){alert('원두명을 입력하세요');return;}
