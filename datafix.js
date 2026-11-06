@@ -124,6 +124,18 @@ function fixStockStatus(){
   return n>0;
 }
 
+/* ── 2026-11-07 한 번만: 알로 타미루(10)는 1kg 구매였음(사용자 확인) → 11/6에 ×10 한 가격 되돌림 (41.5 → 4.15) ── */
+const MIGRATION_20261107B='fix-20261107b';
+function migrate20261107b(){
+  if(!db||!Array.isArray(db.beans))return false;
+  db.migrations=db.migrations||[];
+  if(db.migrations.includes(MIGRATION_20261107B))return false;
+  const b=db.beans.find(x=>x.id==='10');
+  if(b&&Math.abs(parseFloat(b.price)-41.5)<0.001)b.price='4.15';   // 그 사이 직접 고친 값이면 건드리지 않음
+  db.migrations.push(MIGRATION_20261107B);
+  return true;
+}
+
 /* 앱 열 때(동기화 뒤) 한 번 실행 — 바뀐 게 있으면 한 번만 저장 */
 function runDataFixes(){
   let changed=false;
@@ -131,6 +143,7 @@ function runDataFixes(){
   try{changed=migrate20261106b()||changed;}catch(e){console.warn('데이터 정리 2 실패',e);}
   try{changed=migrate20261106c()||changed;}catch(e){console.warn('데이터 정리 3 실패',e);}
   try{changed=migrate20261106d()||changed;}catch(e){console.warn('데이터 정리 4 실패',e);}
+  try{changed=migrate20261107b()||changed;}catch(e){console.warn('알로 가격 되돌리기 실패',e);}
   try{changed=backfillRoastTimes()||changed;}catch(e){console.warn('로스팅 계산값 채우기 실패',e);}
   try{changed=reapplyRoastLevels()||changed;}catch(e){console.warn('로스팅 단계 다시 지정 실패',e);}
   try{changed=fixStockStatus()||changed;}catch(e){console.warn('재고 상태 정리 실패',e);}
