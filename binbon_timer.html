@@ -328,7 +328,8 @@ function releaseWakeLock(){
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible'){
     if(S.screen==='running'&&!wakeLock)requestWakeLock();
-    if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume();
+    if(audioCtx&&audioCtx.state!=='running')audioCtx.resume();
+    if(S.screen==='running'&&_silentEl&&_silentEl.paused){const pr=_silentEl.play();if(pr&&pr.catch)pr.catch(()=>{});}
   }
 });
 
@@ -340,6 +341,31 @@ function calcEject(popSec,dtr,autoEject){
   const ej=popSec/(1-dtr/100),dev=Math.round(ej-popSec),rem=autoEject-Math.round(ej);
   return{dev,rem,over:rem<0,ejSec:Math.round(ej)};
 }
+/* ── 아이폰 무음 모드에서도 소리 (2026-11-07) ──
+   iOS는 무음 스위치가 켜져 있으면 웹 소리(Web Audio)를 끔 → 로스팅 시작·소리 확인 버튼을 누를 때
+   ① 오디오 세션을 '재생'으로 지정(Safari 17+) ② 소리 없는 오디오를 반복 재생(옛 iOS용) 해서 음악처럼 나오게 함.
+   동기 호출만 하고 기다리지 않음 → 시작 버튼 동작은 그대로 */
+let _silentEl=null;
+function silentWavURL(){
+  const n=4000,buf=new Uint8Array(44+n),v=new DataView(buf.buffer);
+  const w=(o,t)=>{for(let i=0;i<t.length;i++)buf[o+i]=t.charCodeAt(i);};
+  w(0,'RIFF');v.setUint32(4,36+n,true);w(8,'WAVE');w(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
+  v.setUint32(24,8000,true);v.setUint32(28,8000,true);v.setUint16(32,1,true);v.setUint16(34,8,true);w(36,'data');v.setUint32(40,n,true);
+  buf.fill(128,44);let b='';buf.forEach(x=>b+=String.fromCharCode(x));return 'data:audio/wav;base64,'+btoa(b);
+}
+function unlockAudio(){
+  try{if(navigator.audioSession)navigator.audioSession.type='playback';}catch(e){}
+  try{
+    if(!_silentEl){_silentEl=new Audio(silentWavURL());_silentEl.loop=true;_silentEl.setAttribute('playsinline','');_silentEl.preload='auto';}
+    const pr=_silentEl.play();if(pr&&pr.catch)pr.catch(()=>{});
+  }catch(e){}
+  try{
+    if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state!=='running')audioCtx.resume();
+  }catch(e){}
+}
+function stopSilentAudio(){try{if(_silentEl)_silentEl.pause();}catch(e){}}
+function soundCheck(){unlockAudio();beep(880,0.18,0.9);setTimeout(()=>beep(1200,0.3,1),250);}
 function beep(freq=880,dur=0.15,vol=0.7){
   try{
     if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
@@ -369,6 +395,7 @@ function doStart(){
   Object.assign(S,{elapsed:0,popElapsed:null,result:null,countdown:null,countdownDone:false,showTable:false,screen:"running",
     falsePops:[],popAt:0,zoneAlerted:false,earlyWarn:false,predRun:_predVal&&_predVal.has?_predVal:null});
   startTime=Date.now();
+  unlockAudio();   // 무음 모드에서도 알림 소리 (버튼 누른 순간에만 켤 수 있음)
   timerIv=setInterval(()=>{S.elapsed=Math.floor((Date.now()-startTime)/1000);zoneTick();render();},200);
   requestWakeLock();
   beep(660,0.2);render();
@@ -411,7 +438,7 @@ function startEjectCountdown(){
   render();
 }
 function handleReset(){
-  clearInterval(timerIv);clearInterval(cdIv);
+  clearInterval(timerIv);clearInterval(cdIv);stopSilentAudio();
   releaseWakeLock();
   Object.assign(S,{screen:"setup",elapsed:0,popElapsed:null,result:null,countdown:null,countdownDone:false,showTable:false,outputG:'100'});
   render();
@@ -637,6 +664,7 @@ function render(){
       <button class="table-btn" style="border-color:${color};color:${color}" onclick="toggleTable()">
         📋 ${S.showTable?"표 닫기":"전체 표 보기"}</button>
       <button class="start-btn" style="background:${color}" onclick="doStart()">▶ 로스팅 시작</button>
+      <div style="text-align:center;margin-top:10px"><button class="chip" style="font-size:12px;padding:6px 12px" onclick="soundCheck()">🔊 소리 확인 (무음 모드에서도 나는지)</button></div>
     `;
   } else {
     // ── 로스팅 화면 ──
