@@ -70,11 +70,25 @@ function migrate20261106b(){
   return true;
 }
 
+/* ── 2026-11-06 세 번째 (사용자: 샘플과 1kg은 다른 생두로) ──
+   레리다 카스카다 0486 샘플(112)과 카스카다 2025m #0486 1kg(14)의 묶음(group_name·lot_label)을 풂.
+   로스팅 연결(샘플 로스팅 → 112)은 그대로 */
+const MIGRATION_20261106C='fix-20261106c';
+function migrate20261106c(){
+  if(!db||!Array.isArray(db.beans))return false;
+  db.migrations=db.migrations||[];
+  if(db.migrations.includes(MIGRATION_20261106C))return false;
+  ['112','14'].forEach(id=>{const b=db.beans.find(x=>x.id===id);if(b){delete b.group_name;delete b.lot_label;}});
+  db.migrations.push(MIGRATION_20261106C);
+  return true;
+}
+
 /* 앱 열 때(동기화 뒤) 한 번 실행 — 바뀐 게 있으면 한 번만 저장 */
 function runDataFixes(){
   let changed=false;
   try{changed=migrate20261106()||changed;}catch(e){console.warn('데이터 정리 실패',e);}
   try{changed=migrate20261106b()||changed;}catch(e){console.warn('데이터 정리 2 실패',e);}
+  try{changed=migrate20261106c()||changed;}catch(e){console.warn('데이터 정리 3 실패',e);}
   try{changed=backfillRoastTimes()||changed;}catch(e){console.warn('로스팅 계산값 채우기 실패',e);}
   if(changed){saveDB();try{renderBeans();}catch(e){}try{renderDash();}catch(e){}}
 }
