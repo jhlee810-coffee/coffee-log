@@ -91,6 +91,15 @@ body { font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-seri
 .modal-title { font-size:17px; font-weight:800; }
 .modal-close { font-size:24px; color:#888; cursor:pointer; padding:2px 8px; line-height:1; }
 .modal-meta { font-size:13px; color:#888; text-align:center; margin-bottom:10px; }
+.pred-box{background:#eef4fb;border:1px solid #c5d8ee;border-radius:10px;padding:9px 11px;margin-top:8px;font-size:13px;color:#24476b;line-height:1.5}
+.pred-box b{color:#0d3c6e}
+.pred-src{font-size:11px;color:#6b86a3}
+.pred-warn{margin-top:4px;color:#b3261e;font-size:12px;font-weight:700}
+.zone-note{margin-top:6px;font-size:14px;font-weight:800;color:#1565c0}
+.early-warn{margin:-4px 0 10px;text-align:center;font-size:12px;color:#b3261e}
+.realpop-row{display:flex;justify-content:flex-end;align-items:center;gap:6px;margin:-4px 2px 12px;font-size:11px;color:#999}
+.realpop-btn{padding:5px 10px;border-radius:8px;border:1px solid #bbb;background:#fff;color:#555;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer}
+.realpop-btn:disabled{opacity:.35}
 </style>
 </head>
 <body>
@@ -141,6 +150,57 @@ function popAvg(list){
     const q1=q(.25),q3=q(.75),k=1.5*(q3-q1);a=a.filter(x=>x>=q1-k&&x<=q3+k);}
   return a.reduce((s,x)=>s+x,0)/a.length;
 }
+/* ── 예상 1팝 · 주의 (2026-11-07) ──
+   같은 생두(같은 묶음 구매분 포함)+같은 모드 → 같은 생두 다른 모드 → 같은 모드+같은 프로세스 평균.
+   1팝 시점을 믿기 어려운 옛 기록(pop_unreliable)은 뺌. 값은 경과(초) */
+function beanFamily(name){
+  const b=findBeanFor(name);if(!b)return {ids:new Set(),names:new Set([name])};
+  const fam=beansList.filter(x=>x.id===b.id||(b.group_name&&x.group_name===b.group_name));
+  return {ids:new Set(fam.map(x=>x.id)),names:new Set(fam.map(x=>x.name)),bean:b,multi:fam.length>1};
+}
+function roastInFamily(r,f){return r.bean_id?f.ids.has(r.bean_id):f.names.has(r.bean_name);}
+function roastPopElapsed(r){
+  const m=+r.mode;if(!MODES[m]||!r.pop_time)return null;
+  const ae=MODES[m].autoEject,t=_sec(r.pop_time);if(t===null)return null;
+  const rem=r.time_basis==='진행'?ae-t:t;if(!(rem>0&&rem<ae))return null;
+  return ae-rem;
+}
+let _predKey='',_predVal=null;
+function predictPop(beanName,modeKey){
+  const key=beanName+'|'+modeKey+'|'+roastsList.length;
+  if(key===_predKey)return _predVal;
+  _predKey=key;_predVal=null;
+  if(!beanName)return null;
+  const f=beanFamily(beanName);
+  const mine=roastsList.filter(r=>roastInFamily(r,f));
+  const ok=mine.filter(r=>!r.pop_unreliable);
+  const same=ok.filter(r=>+r.mode===modeKey).map(roastPopElapsed).filter(x=>x!=null);
+  let out=null;
+  if(same.length)out={min:Math.min(...same),max:Math.max(...same),n:same.length,src:`같은 생두·${modeKey}번 모드 ${same.length}회`+(f.multi?' (다른 구매분 포함)':'')};
+  else{
+    const oth=ok.filter(r=>MODES[+r.mode]).map(r=>({m:+r.mode,e:roastPopElapsed(r)})).filter(x=>x.e!=null);
+    if(oth.length){const es=oth.map(x=>x.e);out={min:Math.min(...es),max:Math.max(...es),n:oth.length,src:`같은 생두 다른 모드(${[...new Set(oth.map(x=>x.m))].sort().join('·')}번) ${oth.length}회 — 참고용`};}
+    else{
+      const proc=procGroup(f.bean&&f.bean.process,beanName);
+      const rows=popRows().filter(r=>r.m===modeKey&&r.proc===proc);
+      if(rows.length){const avg=MODES[modeKey].autoEject-popAvg(rows.map(r=>r.rem));out={min:Math.round(avg),max:Math.round(avg),n:rows.length,src:`${modeKey}번 모드·${proc} 평균 ${rows.length}회`};}
+    }
+  }
+  // 주의: 이 생두(묶음)의 가짜 팝 · 1팝 소리 약함
+  const warns=[];
+  const fp=mine.filter(r=>r.false_pop);
+  if(fp.length){const pts=[].concat(...fp.map(r=>(r.false_pop_times||[]).map(t=>'잔여 '+t))).concat(fp.map(r=>r.false_pop_note).filter(Boolean));
+    warns.push(`가짜 팝 있었음 ${fp.length}회${pts.length?' — '+[...new Set(pts)].join(' · '):''}`);}
+  const wp=mine.filter(r=>r.weak_pop).length;if(wp)warns.push(`1팝 소리 약함 ${wp}회`);
+  _predVal=out||warns.length?{...(out||{}),has:!!out,warns}:null;
+  return _predVal;
+}
+function predHtml(){
+  const p=predictPop(S.beanName,S.modeKey);if(!p)return '';
+  const ae=MODES[S.modeKey].autoEject;
+  const rng=p.has?(p.min===p.max?`경과 <b>${fmt(p.min)}</b> (잔여 ${fmt(ae-p.min)})`:`경과 <b>${fmt(p.min)} ~ ${fmt(p.max)}</b> (잔여 ${fmt(ae-p.min)} ~ ${fmt(ae-p.max)})`):'';
+  return `<div class="pred-box">${p.has?`🔔 예상 1팝 ${rng}<div class="pred-src">${p.src} · 30초 전부터 알려줌</div>`:''}${p.warns.map(w=>`<div class="pred-warn">⚠ ${w}</div>`).join('')}</div>`;
+}
 // 모드 아래: 프로세스별 평균 1팝 (신규 생두 참고용)
 function modePopHtml(){
   const rows=popRows().filter(r=>r.m===S.modeKey);
@@ -175,6 +235,7 @@ window.addEventListener('message',function(e){
     if(S.screen==='running'&&S.popElapsed===null)handlePop();
     return;
   }
+  if(e.data.type==='timer_realpop'){handleRealPop();render();return;}
   // 부모창(빈본 탭 계획)에서 다음 배치 값 넣기 — 시작 화면일 때만
   if(e.data.type==='plan_apply'){
     if(S.screen!=='setup')return;
@@ -200,7 +261,8 @@ function postTimerState(){
   window.parent.postMessage({type:'timer_state',
     active:S.screen!=='setup',mode:MODES[S.modeKey].label,dtr:S.dtr,
     remain:Math.max(0,ae-S.elapsed),popped:S.popElapsed!==null,
-    over:!!(S.result&&S.result.over),countdown:S.countdown,countdownDone:S.countdownDone},'*');
+    over:!!(S.result&&S.result.over),countdown:S.countdown,countdownDone:S.countdownDone,
+    zone:inPopZone(),realLock:S.popElapsed!==null?realPopLockLeft():0},'*');
 }
 
 // 로스팅 중 아래로 당겨 새로고침 차단 (타이머가 날아가면 안 됨)
@@ -304,16 +366,33 @@ function selectBean(sel){
 }
 function doStart(){
   clearInterval(timerIv);clearInterval(cdIv);
-  Object.assign(S,{elapsed:0,popElapsed:null,result:null,countdown:null,countdownDone:false,showTable:false,screen:"running"});
+  Object.assign(S,{elapsed:0,popElapsed:null,result:null,countdown:null,countdownDone:false,showTable:false,screen:"running",
+    falsePops:[],popAt:0,zoneAlerted:false,earlyWarn:false,predRun:_predVal&&_predVal.has?_predVal:null});
   startTime=Date.now();
-  timerIv=setInterval(()=>{S.elapsed=Math.floor((Date.now()-startTime)/1000);render();},200);
+  timerIv=setInterval(()=>{S.elapsed=Math.floor((Date.now()-startTime)/1000);zoneTick();render();},200);
   requestWakeLock();
   beep(660,0.2);render();
   window.scrollTo(0,0);
 }
+/* 1팝 예상 구간: 예상 최소 30초 전부터 (소리 1번) */
+function inPopZone(){const p=S.predRun;return !!(p&&S.popElapsed===null&&S.elapsed>=p.min-30);}
+function zoneTick(){if(inPopZone()&&!S.zoneAlerted){S.zoneAlerted=true;beep(1000,0.25,0.8);}}
 function handlePop(){
   if(S.popElapsed!==null)return;
-  S.popElapsed=S.elapsed;beep(660,0.2);
+  S.popElapsed=S.elapsed;S.popAt=Date.now();beep(660,0.2);
+  S.earlyWarn=!!(S.predRun&&S.popElapsed<S.predRun.min-60);
+  startEjectCountdown();
+}
+/* 가짜 팝이었을 때: 지금을 진짜 1팝으로. 앞 시점은 가짜로 남김. 1팝 직후 3초는 잠금 */
+function realPopLockLeft(){return Math.max(0,3-Math.floor((Date.now()-(S.popAt||0))/1000));}
+function handleRealPop(){
+  if(S.screen!=='running'||S.popElapsed===null||realPopLockLeft()>0)return;
+  (S.falsePops=S.falsePops||[]).push(S.popElapsed);
+  S.popElapsed=S.elapsed;S.popAt=Date.now();S.earlyWarn=false;beep(660,0.2);
+  startEjectCountdown();
+}
+function startEjectCountdown(){
+  clearInterval(cdIv);S.countdown=null;S.countdownDone=false;
   const ae=MODES[S.modeKey].autoEject;
   S.result=calcEject(S.popElapsed,S.dtr,ae);
   if(!S.result.over){
@@ -351,8 +430,8 @@ function calcTimerDtrLoss(){
   const popSec=S.popElapsed;
   const ejSec=S.result?S.result.ejSec:null;
   let dtr=null,loss=null;
-  if(popSec!==null&&ejSec!==null&&(ae-ejSec)>0&&popSec>ejSec){
-    dtr=((popSec-ejSec)/(ae-ejSec)*100).toFixed(1);
+  if(popSec!==null&&S.result){
+    dtr=S.result.over?((ae-popSec)/ae*100).toFixed(1):String(S.dtr);  // 목표대로면 목표값, 자동배출이면 1팝 잔여÷자동배출
   }
   const ig=parseFloat(S.inputG)||0;
   const og=parseFloat(S.outputG)||0;
@@ -383,6 +462,8 @@ function sendRoastLog(){
     eject_time:ejSec!==null?(S.result&&S.result.over?'0:00':fmtRem(ejSec)):'',
     dtr_target:(S.result&&!S.result.over)?String(S.dtr):'',
     eject_auto:!!(S.result&&S.result.over),
+    false_pop:(S.falsePops||[]).length>0,
+    false_pop_times:(S.falsePops||[]).map(e=>fmt(ae-e)),
     dtr_pct:dtr||'',
     loss_pct:loss||'',
   };
@@ -540,6 +621,7 @@ function render(){
           })()}
         </select>
         ${selectedSoldOut()?`<div style="margin-top:6px;padding:7px 10px;border-radius:8px;background:#fff3e0;color:#c05000;font-size:12px;font-weight:600">⚠ 재고가 소진된 생두예요.</div>`:''}
+        ${predHtml()}
         ${beanPopHtml()}
       </div>`:``}
       <div class="sec">
@@ -558,9 +640,10 @@ function render(){
     `;
   } else {
     // ── 로스팅 화면 ──
-    const hdrBg=S.popElapsed!==null?(S.result?.over?"#e05c00":color):"#333";
+    const zone=inPopZone();
+    const hdrBg=S.popElapsed!==null?(S.result?.over?"#e05c00":color):(zone?"#1565c0":"#333");
     hdr.style.background=hdrBg;
-    hdrT.textContent=S.popElapsed===null?"🔥 로스팅 중...":(S.result?.over?"⚠ 자동배출 초과":"✅ 배출 시간");
+    hdrT.textContent=S.popElapsed===null?(zone?"🔔 1팝 예상 구간":"🔥 로스팅 중..."):(S.result?.over?"⚠ 자동배출 초과":"✅ 배출 시간");
     hdrS.textContent=`${mode.label} · DTR ${S.dtr}% · ${group}`;
     const remDisplay=Math.max(0,mode.autoEject-S.elapsed);
 
@@ -594,11 +677,15 @@ function render(){
         <div class="remain-lbl-main">빈본 잔여시간</div>
         <div class="remain-num">${fmt(remDisplay)}</div>
         <div class="elapsed-lbl">경과 <b>${fmt(S.elapsed)}</b></div>
+        ${S.popElapsed===null&&S.predRun?`<div class="zone-note" style="color:${zone?'#1565c0':'#999'}">${zone?'🔔 ':''}1팝 예상 경과 ${S.predRun.min===S.predRun.max?fmt(S.predRun.min):fmt(S.predRun.min)+'~'+fmt(S.predRun.max)}</div>`:''}
       </div>
       ${S.popElapsed===null
         ?`<button class="pop-btn" style="background:${color};box-shadow:0 4px 16px ${color}55" onclick="handlePop()">🔊 1차 팝!</button>`
         :`<div class="pop-info">1차 팝: 경과 <b>${fmt(S.popElapsed)}</b> / 잔여 ≈ <b>${fmt(mode.autoEject-S.popElapsed)}</b></div>`}
+      ${S.earlyWarn?`<div class="early-warn">예상보다 빠름 — 가짜 팝일 수 있음</div>`:''}
       ${resultHtml}
+      ${S.popElapsed!==null&&!S.countdownDone?(()=>{const lk=realPopLockLeft();const n=(S.falsePops||[]).length;
+        return `<div class="realpop-row">${n?`가짜 ${n}번 · `:''}가짜였으면 <button class="realpop-btn" ${lk?'disabled':''} onclick="handleRealPop()">${lk?lk+'…':'진짜 1팝'}</button></div>`;})():''}
       <div class="sec" style="padding:12px 10px;margin-bottom:12px">
         <div class="lbl" style="margin-bottom:6px">📋 ${mode.label}번 · ${group} · DTR ${S.dtr}% 기준표</div>
         ${buildTableHtml(hitRemain,getDisplayDtrs(MODE_DTRS[S.modeKey].list,S.dtr))}

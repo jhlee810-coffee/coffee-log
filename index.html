@@ -6,7 +6,7 @@
 <title>Coffee Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=Josefin+Sans:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261107c">
+<link rel="stylesheet" href="style.css?v=20261107d">
 </head>
 <body>
 
@@ -37,6 +37,7 @@
       <div class="rb-time" id="rbTime"></div>
     </div>
     <button class="rb-pop" id="rbPop" onclick="roastBarPop()">🔊 1차 팝</button>
+    <button class="rb-real" id="rbReal" onclick="roastBarRealPop()">진짜 1팝</button>
     <button class="rb-back" onclick="roastBarBack()">타이머로 ▶</button>
   </div>
 </div>
@@ -320,7 +321,8 @@
     </div>
     <input type="hidden" id="f_rl">
     <div class="fg" style="margin-bottom:8px"><label class="fl">로스팅 단계 <span class="fl-hint" id="rlHint"></span></label><div class="preset-chips" id="rlChips"></div></div>
-    <label class="dec-row" style="margin:-4px 0 12px"><input type="checkbox" id="f_rfp"> 가짜 1팝 있었음</label>
+    <div class="pop-flags"><label class="dec-row"><input type="checkbox" id="f_rfp"> 가짜 1팝 있었음</label><label class="dec-row"><input type="checkbox" id="f_rwp"> 1팝 소리 약함</label></div>
+    <div class="rt-hint" id="rfFalseTimes"></div><input type="hidden" id="f_rfpt">
     <div class="fg"><label class="fl">이 배치 <span class="fl-hint">지인에게 보낸 배치는 🎁 나눔 — 홈·고르기 목록에서 빠짐</span></label><input type="hidden" id="f_rss"><div class="preset-chips" id="rssChips"></div></div>
 
     <div class="fg"><label class="fl">메모/이슈</label><textarea class="ta" id="f_rn" placeholder="로스팅 중 느낌, 특이사항"></textarea></div>
@@ -715,10 +717,10 @@
 </div>
 
 <script src="data.js?v=20260528f"></script>
-<script src="app.js?v=20261107d"></script>
+<script src="app.js?v=20261107e"></script>
 <script src="dashboard.js?v=20261107a"></script>
 <script src="beans.js?v=20261107a"></script>
-<script src="roasts.js?v=20261107c"></script>
+<script src="roasts.js?v=20261107d"></script>
 <script src="brewing.js?v=20261106a"></script>
 <script src="wishlist.js?v=20261106a"></script>
 <script src="cupping.js?v=20260528f"></script>
@@ -726,7 +728,7 @@
 <script src="dailycup.js?v=20261107a"></script>
 <script src="roasted.js?v=20261106c"></script>
 <script src="shops.js?v=20261106a"></script>
-<script src="datafix.js?v=20261107d"></script>
+<script src="datafix.js?v=20261107e"></script>
 <script src="plan.js?v=20261107a"></script>
 <script>
 // 빈본 타이머 ↔ 로스트 로그 연계
@@ -753,7 +755,7 @@ function updateRoastBar(){
   document.documentElement.classList.toggle('roasting',active);
   if(!active||window.curTab==='timer'){bar.style.display='none';return;}
   let lbl,time,alert=false;
-  if(!st.popped){lbl=`🔥 ${st.mode} · DTR ${st.dtr}% · 빈본 잔여`;time=fmtRB(st.remain);}
+  if(!st.popped){lbl=st.zone?`🔔 1팝 예상 구간 · ${st.mode} · DTR ${st.dtr}%`:`🔥 ${st.mode} · DTR ${st.dtr}% · 빈본 잔여`;time=fmtRB(st.remain);}
   else if(st.over){lbl='⚠ 자동배출 초과 · 잔여';time=fmtRB(st.remain);alert=true;}
   else if(st.countdownDone){lbl='🔔 지금 배출하세요';time='배출!';alert=true;}
   else{lbl='✅ 1차 팝 · 배출까지';time=st.countdown!=null?Math.max(0,st.countdown)+'초':'…';}
@@ -762,11 +764,19 @@ function updateRoastBar(){
   const t=document.getElementById('rbTime');
   t.textContent=time;t.classList.toggle('alert',alert);
   document.getElementById('rbPop').style.display=st.popped?'none':'';
+  const rr=document.getElementById('rbReal');  // 1팝 뒤에만, 작게. 1팝 직후 3초는 잠금
+  rr.style.display=st.popped&&!st.countdownDone?'':'none';
+  rr.disabled=!!st.realLock;rr.textContent=st.realLock?st.realLock+'…':'진짜 1팝';
+  bar.classList.toggle('zone',!!st.zone);
   bar.style.display='flex';
 }
 function roastBarPop(){
   const fr=document.getElementById('timerFrame');
   if(fr&&fr.contentWindow)fr.contentWindow.postMessage({type:'timer_pop'},'*');
+}
+function roastBarRealPop(){
+  const fr=document.getElementById('timerFrame');
+  if(fr&&fr.contentWindow)fr.contentWindow.postMessage({type:'timer_realpop'},'*');
 }
 function roastBarBack(){
   const tb=[...document.querySelectorAll('.tb')].find(t=>(t.getAttribute('onclick')||'').includes("'timer'"));

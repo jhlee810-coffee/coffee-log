@@ -396,7 +396,10 @@ function openRoastForm(id, prefill){
   document.getElementById('rfId').value=id||'';
   document.getElementById('f_rd').value=r.date||p.date||today();
   document.getElementById('f_rb').value=curB?curB.id:'';
-  document.getElementById('f_rfp').checked=!!r.false_pop;
+  document.getElementById('f_rfp').checked=!!(r.false_pop||p.false_pop);
+  document.getElementById('f_rwp').checked=!!r.weak_pop;
+  {const ft=(id?r.false_pop_times:p.false_pop_times)||[];document.getElementById('f_rfpt').value=JSON.stringify(ft);
+   document.getElementById('rfFalseTimes').textContent=ft.length?`가짜 1팝 시점: 잔여 ${ft.join(', ')} (진짜 1팝 버튼으로 기록됨 · 단순 실수였으면 위 체크를 끄세요)`:'';}
   document.getElementById('f_rss').value=r.stock_state||'';renderRssChips();
   document.getElementById('f_rp').value=r.pop_time||p.pop_time||'';
   { // 배출: 기준(타이머 값) + 조정 복원
@@ -494,6 +497,8 @@ function saveRoast(){
     end_time:document.getElementById('f_ret').value,
     batch_no:String(parseInt(document.getElementById('f_rbn').value)||nextBatchNo(document.getElementById('f_rd').value,id)),
     false_pop:document.getElementById('f_rfp').checked,
+    false_pop_times:document.getElementById('f_rfp').checked?(()=>{try{return JSON.parse(document.getElementById('f_rfpt').value||'[]');}catch(e){return [];}})():[],
+    weak_pop:document.getElementById('f_rwp').checked,
     dtr_target:document.getElementById('f_rdt').value,
     dtr_source:dr?dr.source:'',
     eject_adjust_s:ejx&&ejx.adj?ejx.adj:'',

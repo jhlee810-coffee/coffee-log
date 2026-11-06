@@ -180,6 +180,21 @@ function migrate20261107d(){
   return true;
 }
 
+/* ── 2026-11-07 한 번만: 엘 오브라헤 옛 가짜 팝 3건 표시 (다시 볶을 때 주의용) ──
+   5/29 #6: 기록된 1팝(2:13)이 가짜 → 가짜 시점으로, 예상 계산에서 뺌 / 5/29 #7: 2분 초반 가짜 팝 / 9/3 #9: 1차 팝 오류 → 예상 계산에서 뺌 */
+const MIGRATION_20261107E='fix-20261107e';
+function migrate20261107e(){
+  if(!db||!Array.isArray(db.roasts))return false;
+  db.migrations=db.migrations||[];
+  if(db.migrations.includes(MIGRATION_20261107E))return false;
+  const f=(date,no)=>db.roasts.find(r=>r.date===date&&String(r.batch_no)===String(no)&&/오브라헤/.test(r.bean_name||''));
+  const a=f('2026-05-29',6);if(a){a.false_pop=true;a.false_pop_times=a.false_pop_times||[a.pop_time||'2:13'];a.pop_unreliable=true;}
+  const b=f('2026-05-29',7);if(b){b.false_pop=true;b.false_pop_note='2분 초반';}
+  const c=f('2026-09-03',9);if(c){c.false_pop=true;c.pop_unreliable=true;c.false_pop_note='1차 팝 오류';}
+  db.migrations.push(MIGRATION_20261107E);
+  return true;
+}
+
 /* 앱 열 때(동기화 뒤) 한 번 실행 — 바뀐 게 있으면 한 번만 저장 */
 function runDataFixes(){
   let changed=false;
@@ -189,6 +204,7 @@ function runDataFixes(){
   try{changed=migrate20261106d()||changed;}catch(e){console.warn('데이터 정리 4 실패',e);}
   try{changed=migrate20261107b()||changed;}catch(e){console.warn('알로 가격 되돌리기 실패',e);}
   try{changed=migrate20261107d()||changed;}catch(e){console.warn('목표 DTR 정리 실패',e);}
+  try{changed=migrate20261107e()||changed;}catch(e){console.warn('가짜 팝 표시 실패',e);}
   try{changed=backfillRoastTimes()||changed;}catch(e){console.warn('로스팅 계산값 채우기 실패',e);}
   try{changed=reapplyRoastLevels()||changed;}catch(e){console.warn('로스팅 단계 다시 지정 실패',e);}
   try{changed=fixStockStatus()||changed;}catch(e){console.warn('재고 상태 정리 실패',e);}
