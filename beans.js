@@ -177,7 +177,66 @@ function stockMissingBeans(){
 function renderStockFillBanner(){
   const el=document.getElementById('stockFillBanner');if(!el)return;
   const n=stockMissingBeans().length;
-  el.innerHTML=n?`<div class="sf-banner" onclick="openStockFill()">📦 구매량 미입력 생두 <b>${n}개</b> — 한 번에 입력하기 ›</div>`:'';
+  el.innerHTML=(n?`<div class="sf-banner" onclick="openStockFill()">📦 구매량 미입력 생두 <b>${n}개</b> — 한 번에 입력하기 ›</div>`:'')+mdFillBannerHtml();
+}
+
+/* ── 재고 생두 수분율·밀도 한 번에 입력 (구매처별) — 2026-11-06 ── */
+function mdFillBeans(){return db.beans.filter(b=>b.status!=='소진');}
+function mdFillBannerHtml(){
+  const list=mdFillBeans();if(!list.length)return '';
+  const todo=list.filter(b=>!b.moisture_set||!b.density_set).length;
+  return `<div class="sf-banner" onclick="openMDFill()">💧 수분율·밀도 — 재고 생두 ${list.length}개 중 <b>${todo}개 미입력</b> · 구매처별로 입력하기 ›</div>`;
+}
+let _mdSaveTimer=null;
+function mdQueueSave(){clearTimeout(_mdSaveTimer);_mdSaveTimer=setTimeout(()=>{_mdSaveTimer=null;saveDB();},1500);}
+// 저장 대기 중에 앱을 닫거나 다른 앱으로 가면 바로 저장
+window.addEventListener('pagehide',()=>{if(_mdSaveTimer){clearTimeout(_mdSaveTimer);_mdSaveTimer=null;saveDB();}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&_mdSaveTimer){clearTimeout(_mdSaveTimer);_mdSaveTimer=null;saveDB();}});
+function openMDFill(){
+  let mo=document.getElementById('moMDFill');
+  if(!mo){
+    mo=document.createElement('div');mo.className='mo';mo.id='moMDFill';
+    mo.innerHTML=`<div class="mbox"><div class="mtitle">💧 수분율 · 밀도 입력</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:8px">재고 있는 생두만, 구매처별로 모았어요. 버튼이나 숫자를 바꾸면 바로 저장돼요.</div>
+      <div id="mdFillList"></div>
+      <div class="fa"><button class="btn btn-sm" onclick="closeMDFill()">완료</button></div></div>`;
+    document.body.appendChild(mo);
+  }
+  const groups={};
+  mdFillBeans().forEach(b=>{const s=(typeof canonShop==='function'?canonShop(b.shop):b.shop)||'구매처 없음';(groups[s]=groups[s]||[]).push(b);});
+  const order=(typeof allShops==='function'?allShops():[]).filter(s=>groups[s]).concat(Object.keys(groups).filter(s=>!(typeof allShops==='function'?allShops():[]).includes(s)));
+  document.getElementById('mdFillList').innerHTML=order.map(s=>`<div class="md-shop">${s} <span>${groups[s].length}</span></div>`+
+    groups[s].map(b=>`<div class="so-row" id="md_${b.id}">${mdFillRow(b)}</div>`).join('')).join('')
+    ||'<div class="so-why">재고 있는 생두가 없어요</div>';
+  openMo('moMDFill');
+}
+function mdFillRow(b){
+  const mo=(b.moisture!=null&&b.moisture!==''?+b.moisture:BEAN_MOISTURE_DEFAULT),de=(b.density!=null&&b.density!==''?Math.round(+b.density):BEAN_DENSITY_DEFAULT);
+  const mark=(b.moisture_set&&b.density_set)?'<span class="md-done">✓ 입력함</span>':(b.moisture_set||b.density_set)?'<span class="md-half">일부 입력</span>':'';
+  return `<div class="so-name">${b.name} ${mark}</div>
+    <div class="md-fill">
+      <div><div class="md-lbl">수분율 %</div><div class="md-row"><button type="button" class="md-adj" onclick="mdFillAdj('${b.id}','mo',-0.1)">−0.1</button>
+        <input class="inp md-inp" type="number" step="0.1" inputmode="decimal" value="${mo.toFixed(1)}" onchange="mdFillSet('${b.id}','mo',this.value)"><button type="button" class="md-adj" onclick="mdFillAdj('${b.id}','mo',0.1)">+0.1</button></div></div>
+      <div><div class="md-lbl">밀도 g/L</div><div class="md-row"><button type="button" class="md-adj" onclick="mdFillAdj('${b.id}','de',-10)">−10</button>
+        <input class="inp md-inp" type="number" step="1" inputmode="numeric" value="${de}" onchange="mdFillSet('${b.id}','de',this.value)"><button type="button" class="md-adj" onclick="mdFillAdj('${b.id}','de',10)">+10</button></div></div>
+    </div>`;
+}
+function mdFillSet(id,k,v){
+  const b=db.beans.find(x=>x.id===id);if(!b)return;
+  let n=parseFloat(v);
+  if(k==='mo'){if(isNaN(n))n=BEAN_MOISTURE_DEFAULT;b.moisture=Math.round(n*10)/10;b.moisture_set=true;}
+  else{if(isNaN(n))n=BEAN_DENSITY_DEFAULT;b.density=Math.round(n);b.density_set=true;}
+  document.getElementById('md_'+id).innerHTML=mdFillRow(b);
+  mdQueueSave();
+}
+function mdFillAdj(id,k,d){
+  const b=db.beans.find(x=>x.id===id);if(!b)return;
+  const cur=k==='mo'?(b.moisture!=null&&b.moisture!==''?+b.moisture:BEAN_MOISTURE_DEFAULT):(b.density!=null&&b.density!==''?+b.density:BEAN_DENSITY_DEFAULT);
+  mdFillSet(id,k,cur+d);
+}
+function closeMDFill(){
+  if(_mdSaveTimer){clearTimeout(_mdSaveTimer);_mdSaveTimer=null;saveDB();}
+  closeMo('moMDFill');renderBeans();
 }
 function openStockFill(){
   let mo=document.getElementById('moStockFill');
