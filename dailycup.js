@@ -213,9 +213,10 @@ function dcEntryHtml(){
   const quick=window._dcQuick.map((c,i)=>{
     const on=e.sel&&dcBatchKey(e.sel)===dcBatchKey(c.snap);
     return `<button class="dc-qbatch${on?' on':''}" onclick="dcSelect({...window._dcQuick[${i}].snap})">
-      <b>${dcEsc(dcName(c.snap))}</b><span>${dcEsc([dcMD(c.snap.roast_date),dcProfile(c.snap)].filter(Boolean).join(' · '))}</span></button>`;
+      <b class="dc-qname">${dcEsc(String(c.snap.bean||'').replace(/^(케냐|에티오피아|콜롬비아|파나마|과테말라|코스타리카|페루|온두라스|에콰도르)\s+/,''))}</b><span>${dcEsc([dcMD(c.snap.roast_date),dcProfile(c.snap)].filter(Boolean).join(' · '))}</span></button>`;
   }).join('');
-  const selBox=e.sel?`<div class="dc-sel"><div class="dc-sel-name">${dcEsc(e.sel.bean)}</div>
+  const selNotes=e.sel?dcBeanNotes(e.sel).join(', '):'';
+  const selBox=e.sel?`<div class="dc-sel"><div class="dc-sel-name">${dcEsc(e.sel.bean)}</div>${selNotes?`<div class="dc-notes">🍑 ${dcEsc(selNotes)}</div>`:''}
       <div class="dc-sel-meta">${dcEsc([e.sel.roast_date?dcMD(e.sel.roast_date)+' 로스팅':'',dcProfile(e.sel),e.sel.batch_no?`그날 ${e.sel.batch_no}번째`:'',e.sel.manual?'직접 입력':'',e.sel.rb_id?'산 원두':''].filter(Boolean).join(' · '))}</div>
       <div class="dc-sel-deg" id="dcDegText">${dcDegHtml(e.sel,deg)}</div></div>`:'';
   const stars=[1,2,3,4,5].map(n=>`<button class="dc-star${e.stars>=n?' on':''}" onclick="dcSetStars(${n})" aria-label="별 ${n}개">★</button>`).join('');
@@ -395,13 +396,20 @@ function dcRenderPick(){
     if(s.rb_id){k='rb:'+s.rb_id;title=s.bean;sub='산 원두 · '+(s.roastery||'');}
     else if(s.roast_id){const r=db.roasts.find(x=>x.id===s.roast_id);const b=r?beanOfRoast(r):null;k='b:'+(b?b.id:s.bean);title=b?(b.group_name||b.name):s.bean;sub=[b&&b.origin,b&&b.lot_label].filter(Boolean).join(' · ');}
     else{k='m:'+s.bean;title=s.bean;sub='직접 입력';}
-    if(!(k in gi)){gi[k]=groups.length;groups.push({title,sub,rb:!!s.rb_id,items:[]});}
+    if(!(k in gi)){gi[k]=groups.length;groups.push({title,sub,rb:!!s.rb_id,items:[],notes:dcBeanNotes(s).join(', ')});}
     groups[gi[k]].items.push({c,i});
   });
-  document.getElementById('dcPickList').innerHTML=groups.map(g=>`<div class="dc-pg">
-    <div class="dc-pg-t">${g.rb?'<span class="dc-rbtag">산 원두</span> ':''}${dcEsc(g.title)}${g.sub&&!g.rb?`<span>${dcEsc(g.sub)}</span>`:''}${g.rb?`<span>${dcEsc(g.sub.replace('산 원두 · ',''))}</span>`:''}</div>
+  // 묶음마다 가장 최근 로스팅 배치의 숙성 단계로 정렬: 최적기 → 숙성 중(곧) → 지남
+  groups.forEach(g=>{g.items.sort((a,b)=>(b.c.snap.roast_date||'').localeCompare(a.c.snap.roast_date||'')||(+b.c.snap.batch_no||0)-(+a.c.snap.batch_no||0));
+    g.w=dcRestOf(g.items[0].c.snap);g.st={o:9,l:''};g.d=null;
+    g.items.forEach(({c})=>{if(c.held===false)return;const d=dcDays(t,c.snap.roast_date);if(d==null||!g.w)return;const st=restStage(d,g.w);
+      if(st.o<g.st.o||(st.o===g.st.o&&(st.wait??0)<(g.st.wait??0))){g.st=st;g.d=d;}});});   // 가장 마시기 좋은 배치 기준
+  groups.sort((a,b)=>a.st.o-b.st.o||(a.st.wait??0)-(b.st.wait??0)||(a.d??999)-(b.d??999));
+  const SEC={0:'🟢 지금 최적기',1:'⏳ 숙성 중 — 곧 최적기',2:'⌛ 최적기 지남',3:'오래됨',9:'날짜 없음'};let lastSec=null;
+  document.getElementById('dcPickList').innerHTML=groups.map(g=>{const head=g.st.o!==lastSec?`<div class="dc-psec">${SEC[g.st.o]||''}</div>`:'';lastSec=g.st.o;return head+`<div class="dc-pg">
+    <div class="dc-pg-t">${g.rb?'<span class="dc-rbtag">산 원두</span> ':''}${dcEsc(g.title)}<span>${dcEsc([g.rb?g.sub.replace('산 원두 · ',''):g.sub,g.w?`최적 ${g.w.min}~${g.w.max}일`:''].filter(Boolean).join(' · '))}</span>${g.notes?`<span class="dc-notes">🍑 ${dcEsc(g.notes)}</span>`:''}</div>
     <div class="dc-pg-items">${g.items.map(({c,i})=>{const s=c.snap,d=dcDays(t,s.roast_date),n=counts[dcBatchKey(s)]||0;
-      return `<button class="dc-pb${c.drunk?' drunk':''}${c.held===false?' off':''}" onclick="dcPickIdx(${i})"><b>${dcEsc(dcMD(s.roast_date)||'날짜 없음')}${s.roast_id&&dcProfile(s)?' · '+dcEsc(dcProfile(s)):''}</b><span>${[d!=null?d+'일차':'',s.batch_no?'#'+s.batch_no:'',n?n+'잔':'',c.held===false?'정리됨':''].filter(Boolean).join(' · ')}</span></button>`;}).join('')}</div></div>`).join('')
+      return `<button class="dc-pb${c.drunk?' drunk':''}${c.held===false?' off':''}" onclick="dcPickIdx(${i})"><b>${dcEsc(dcMD(s.roast_date)||'날짜 없음')}${s.roast_id&&dcProfile(s)?' · '+dcEsc(dcProfile(s)):''}</b><span>${[d!=null?d+'일차':'',s.batch_no?'#'+s.batch_no:'',n?n+'잔':'',c.held===false?'정리됨':''].filter(Boolean).join(' · ')}</span></button>`;}).join('')}</div></div>`;}).join('')
     ||`<div class="dc-empty">맞는 원두가 없어요.${_dcPickAll?'':' 아래 체크로 다 마신·오래된 것도 볼 수 있어요.'}</div>`;
   window._dcPickList=list;
 }
@@ -460,11 +468,11 @@ function dcListHtml(){
   const list=_dcFilter?all.filter(r=>(r.bean_info||{}).bean===_dcFilter):all;
   return `<select class="sel dc-filter" onchange="_dcFilter=this.value;dcRerender()"><option value="">모든 원두 (${all.length})</option>${
     beans.map(b=>`<option value="${dcEsc(b)}"${b===_dcFilter?' selected':''}>${dcEsc(b)}</option>`).join('')}</select>`+
-    list.map(r=>`<div class="dc-row"><div class="dc-row-sum">${dcEsc(dcSummary(r))}</div>
+    list.map(r=>{const bi=r.bean_info||{},nt=dcBeanNotes(bi).join(', ');return `<div class="dc-row"><div class="dc-row-bean">${dcEsc(bi.bean||'')}</div>${nt?`<div class="dc-notes">🍑 ${dcEsc(nt)}</div>`:''}<div class="dc-row-sum">${dcEsc(dcSummary(r))}</div>
       ${r.memo?`<div class="dc-row-memo">“${dcEsc(r.memo)}”</div>`:''}
       ${r.memo_hot||r.memo_cool?`<div class="dc-row-memo">${r.memo_hot?'따뜻: '+dcEsc(r.memo_hot):''}${r.memo_hot&&r.memo_cool?' / ':''}${r.memo_cool?'식음: '+dcEsc(r.memo_cool):''}</div>`:''}
       ${r.brew?`<div class="dc-row-brew">${dcEsc([r.brew.recipe,r.brew.dripper,r.brew.grinder?r.brew.grinder+(r.brew.clicks?' '+r.brew.clicks+'클릭':''):'',r.brew.coffee_g?r.brew.coffee_g+'g':'',r.brew.water_g?r.brew.water_g+'g':'',r.brew.temp?r.brew.temp+'°C':'',r.brew.bloom?'불림 '+r.brew.bloom:'',r.brew.dilute_g!=null&&r.brew.dilute_g!==''?'가수 '+r.brew.dilute_g+'g':'',r.brew.time,r.brew.water].filter(Boolean).join(' · '))}</div>`:''}
-      <div class="dc-row-btns"><button class="btn2" onclick="dcEdit('${r.id}')">수정</button><button class="btnd" onclick="dcDelete('${r.id}')">삭제</button></div></div>`).join('');
+      <div class="dc-row-btns"><button class="btn2" onclick="dcEdit('${r.id}')">수정</button><button class="btnd" onclick="dcDelete('${r.id}')">삭제</button></div></div>`;}).join('');
 }
 function dcEdit(id){
   const r=dcList().find(x=>x.id===id);if(!r)return;
