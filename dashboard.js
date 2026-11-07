@@ -103,10 +103,10 @@ function renderDash(){
   const lastDate=dates[dates.length-1];
   const lastBatch=lastDate?roasts.filter(r=>r.date===lastDate).sort((a,b)=>(+a.batch_no||0)-(+b.batch_no||0)):[];
   const since=lastDate?dashDays(lastDate,t):null;
-  const recent=roasts.filter(r=>r.input_g&&r.output_g).slice(-20);
+  const recent=roasts.filter(r=>r.input_g&&r.output_g&&!r.weight_unreliable).slice(-20);   // 정전기로 무게 부정확한 옛 기록 제외
   const lossAvg=recent.length?(recent.reduce((s,r)=>s+(1-r.output_g/r.input_g),0)/recent.length*100).toFixed(1):'';
   const low=typeof beanUsage==='function'?inStock.map(b=>({b,u:beanUsage(b)})).filter(x=>x.u.remaining!==null&&x.u.remaining<300&&x.u.count>0).sort((a,b)=>a.u.remaining-b.u.remaining):[];
-  const roastCard=`<div class="dash-card"><div class="dash-t">🔥 로스팅 <span>${lastDate?`마지막 ${dashMD(lastDate)} (${since===0?'오늘':since+'일 전'}) · ${lastBatch.length}배치`:'기록 없음'}${lossAvg?` · 최근 20배치 손실 ${lossAvg}%`:''}</span></div>
+  const roastCard=`<div class="dash-card"><div class="dash-t">🔥 로스팅 <span>${lastDate?`마지막 ${dashMD(lastDate)} (${since===0?'오늘':since+'일 전'}) · ${lastBatch.length}배치`:'기록 없음'}${lossAvg?` · 손실 ${lossAvg}% (무게 정확한 ${recent.length}배치)`:''}</span></div>
     ${lastBatch.length?`<div class="dash-chips">${lastBatch.map(r=>`<span>${r.batch_no?r.batch_no+'. ':''}${dashEsc(dashShort(r.bean_name))} ${r.mode?r.mode+'-'+(r.dtr_pct?Math.round(parseFloat(r.dtr_pct)):'?'):''}</span>`).join('')}</div>`:''}
     ${unroasted.length?`<div class="dash-sub">로스팅 전 생두 ${unroasted.length}종</div><div class="dash-chips">${unroasted.map(b=>`<span>${dashEsc(dashShort(b.name))}</span>`).join('')}</div>`:''}
     ${low.length?`<div class="dash-sub">얼마 안 남은 생두</div><div class="dash-chips">${low.map(x=>`<span class="${x.u.remaining<120?'warn':''}">${dashEsc(dashShort(x.b.name))} ≈${Math.max(0,Math.round(x.u.remaining))}g</span>`).join('')}</div>`:''}

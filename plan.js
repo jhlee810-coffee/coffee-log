@@ -24,7 +24,7 @@ function planItemText(it){return `${planShort(it)} · ${it.mode}-${it.dtr} · ${
 function renderPlanBar(){
   const el=document.getElementById('planBar');if(!el)return;
   const p=planGet();
-  const remote=_planRemote&&(!p||p.file_version!==_planRemote.version);
+  const remote=_planRemote&&(!p||(p.source==='claude'&&p.file_version!==_planRemote.version));  // 직접 만든 계획이 있으면 덮지 않음
   const btn=(t,f,cls)=>`<button class="pb-btn${cls?' '+cls:''}" onclick="${f}">${t}</button>`;
   let html;
   if(remote) html=`<div class="pb-row"><span class="pb-t">📋 Claude 계획 <b>${_planRemote.items.length}배치</b></span>${btn('불러오기','planImportRemote()','hi')}${p?btn('✎','openPlanEditor()'):''}</div>`;
@@ -34,7 +34,7 @@ function renderPlanBar(){
     if(i<0) html=`<div class="pb-row"><span class="pb-t">✓ 오늘 계획 끝 (${done}/${n})</span>${btn('✎','openPlanEditor()')}</div>`;
     else if(_planOffOnce) html=`<div class="pb-row off"><span class="pb-t">✋ 계획 밖 1회 — 저장하면 계획으로</span>${btn('취소',"_planOffOnce=false;_planAppliedKey='';renderPlanBar();planApplyToTimer()")}</div>`;
     else{const it=p.items[i];
-      html=`<div class="pb-row"><span class="pb-t">📋 <b>${i+1}/${n}</b> ${planEsc(planItemText(it))}</span>${btn('건너뛰기','planSkip()')}${btn('계획 밖','_planOffOnce=true;renderPlanBar()')}${btn('✎','openPlanEditor()')}</div>`+
+      html=`<div class="pb-row"><span class="pb-t">📋 다음 <b>${i+1}/${n}</b> ${planEsc(planItemText(it))}</span>${btn('건너뛰기','planSkip()')}${btn('목록','openPlanEditor()')}</div>`+
         (it.note?`<div class="pb-note">${planEsc(it.note)}</div>`:'');}
   }
   el.innerHTML=html;
@@ -57,6 +57,8 @@ window.addEventListener('orientationchange',()=>setTimeout(sizeTimerFrame,300));
 let _timerAtSetup=true;
 function planOnTimerState(st){
   const was=_timerAtSetup;_timerAtSetup=!(st&&st.active);
+  const bar=document.getElementById('planBar');
+  if(bar&&was!==_timerAtSetup){bar.style.display=_timerAtSetup?'':'none';sizeTimerFrame();}
   if(_timerAtSetup&&!was)planApplyToTimer();   // 로스팅이 끝나 시작 화면으로 돌아오면 다음 배치
 }
 function planApplyToTimer(force){
@@ -68,6 +70,21 @@ function planApplyToTimer(force){
   const it=p.items[i];
   fr.contentWindow.postMessage({type:'plan_apply',bean_name:planBeanName(it),mode:+it.mode,dtr:+it.dtr,input_g:String(it.input_g||120),label:`계획 ${i+1}/${p.items.length}`},'*');
   _planAppliedKey=key;
+}
+let _planSaveT=null;
+function planOnTimerSetup(d){
+  const p=planGet();const i=planCurIdx(p);if(i<0||_planOffOnce)return;
+  if(!_planAppliedKey||!_planAppliedKey.startsWith(p.date+'#'+i+'#'))return;   // 이 배치를 타이머에 넣기 전 상태(예전 설정)는 무시
+  const it=p.items[i];
+  const b=(db.beans||[]).find(x=>x.name===d.bean_name);
+  const nv={bean_id:b?b.id:it.bean_id,mode:+d.mode,dtr:+d.dtr,input_g:+d.input_g||it.input_g||120};
+  if(!d.bean_name)nv.bean_id=it.bean_id;
+  if(nv.bean_id===it.bean_id&&nv.mode===+it.mode&&nv.dtr===+it.dtr&&nv.input_g===(+it.input_g||120))return;
+  if(!it.orig)it.orig={bean_id:it.bean_id,bean_name:it.bean_name,mode:it.mode,dtr:it.dtr,input_g:it.input_g};
+  Object.assign(it,nv);const bb=planBean(it);if(bb)it.bean_name=bb.name;
+  p.updated_at=Date.now();_planAppliedKey=p.date+'#'+i+'#'+p.updated_at;
+  renderPlanBar();
+  clearTimeout(_planSaveT);_planSaveT=setTimeout(()=>{_planSaveT=null;saveDB();},1500);
 }
 function planSkip(){
   const p=planGet();const i=planCurIdx(p);if(i<0)return;
@@ -81,9 +98,10 @@ function planDecorateRoast(data,isNew){
   const off=_planOffOnce;_planOffOnce=false;
   const p=planGet();const i=planCurIdx(p);
   if(off||i<0||data.date!==planToday())return;
-  const it=p.items[i];
-  if(it.bean_id&&data.bean_id!==it.bean_id)return;
-  data.plan_date=p.date;data.plan_no=String(i+1);data.plan_mode=String(it.mode);data.plan_dtr=String(it.dtr);
+  const it=p.items[i],o=it.orig||it;
+  data.plan_date=p.date;data.plan_no=String(i+1);data.plan_mode=String(o.mode);data.plan_dtr=String(o.dtr);
+  if(it.orig&&o.bean_id!==data.bean_id)data.plan_bean=o.bean_name||'';
+  if(data.bean_id&&data.bean_id!==it.bean_id){it.bean_id=data.bean_id;it.bean_name=data.bean_name;}
   if(it.gift&&!data.stock_state)data.stock_state='gift';
   it.status='done';it.roast_id=data.id;p.updated_at=Date.now();
 }

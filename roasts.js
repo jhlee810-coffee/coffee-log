@@ -270,7 +270,8 @@ function openRoastDetail(id){
       ${r.roast_level?dr('레벨',`<span style="color:${lc};font-weight:700">${r.roast_level}</span>`):''}
       ${dr('빈본 모드',r.mode?`모드${r.mode}`:'')}
       ${dr('DTR',r.dtr_pct?r.dtr_pct+'%':'')}
-      ${dr('손실율',r.loss_pct?r.loss_pct+'%':'')}
+      ${dr('손실율',r.loss_pct?r.loss_pct+'%'+(r.weight_unreliable?' <span style="color:var(--coral);font-size:12px">⚠ 정전기로 무게 부정확 가능</span>':''):'')}
+      ${r.dtr_over_target?dr('자동배출 초과',`목표 ${r.dtr_over_target}% → 자동배출에 나옴`):''}
       ${dr('투입',r.input_g?r.input_g+'g':'')}
       ${dr('배출',r.output_g?r.output_g+'g':'')}
       ${dr('1팝 경과',popElapsedStr?`${popElapsedStr}${r.pop_time?`<span style="color:var(--muted);font-size:11px"> (잔여 ${r.pop_time})</span>`:''}`:(r.pop_time||''))}
@@ -398,6 +399,7 @@ function openRoastForm(id, prefill){
   document.getElementById('f_rb').value=curB?curB.id:'';
   document.getElementById('f_rfp').checked=!!(r.false_pop||p.false_pop);
   document.getElementById('f_rwp').checked=!!r.weak_pop;
+  document.getElementById('f_rovt').value=id?(r.dtr_over_target||''):(p.dtr_over_target||'');
   {const ft=(id?r.false_pop_times:p.false_pop_times)||[];document.getElementById('f_rfpt').value=JSON.stringify(ft);
    document.getElementById('rfFalseTimes').textContent=ft.length?`가짜 1팝 시점: 잔여 ${ft.join(', ')} (진짜 1팝 버튼으로 기록됨 · 단순 실수였으면 위 체크를 끄세요)`:'';}
   document.getElementById('f_rss').value=r.stock_state||'';renderRssChips();
@@ -499,6 +501,7 @@ function saveRoast(){
     false_pop:document.getElementById('f_rfp').checked,
     false_pop_times:document.getElementById('f_rfp').checked?(()=>{try{return JSON.parse(document.getElementById('f_rfpt').value||'[]');}catch(e){return [];}})():[],
     weak_pop:document.getElementById('f_rwp').checked,
+    dtr_over_target:document.getElementById('f_rovt').value,
     dtr_target:document.getElementById('f_rdt').value,
     dtr_source:dr?dr.source:'',
     eject_adjust_s:ejx&&ejx.adj?ejx.adj:'',

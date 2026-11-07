@@ -216,6 +216,17 @@ function migrate20261107e(){
   return true;
 }
 
+/* ── 2026-11-07 한 번만: 그 전 로스팅의 배출 무게는 정전기로 부정확했을 가능성 (사용자) ── */
+const MIGRATION_20261107G='fix-20261107g';
+function migrate20261107g(){
+  if(!db||!Array.isArray(db.roasts))return false;
+  db.migrations=db.migrations||[];
+  if(db.migrations.includes(MIGRATION_20261107G))return false;
+  db.roasts.forEach(r=>{if((r.date||'')<'2026-11-07'&&r.output_g)r.weight_unreliable=true;});
+  db.migrations.push(MIGRATION_20261107G);
+  return true;
+}
+
 /* 앱 열 때(동기화 뒤) 한 번 실행 — 바뀐 게 있으면 한 번만 저장 */
 function runDataFixes(){
   let changed=false;
@@ -226,6 +237,7 @@ function runDataFixes(){
   try{changed=migrate20261107b()||changed;}catch(e){console.warn('알로 가격 되돌리기 실패',e);}
   try{changed=migrate20261107d()||changed;}catch(e){console.warn('목표 DTR 정리 실패',e);}
   try{changed=migrate20261107e()||changed;}catch(e){console.warn('가짜 팝 표시 실패',e);}
+  try{changed=migrate20261107g()||changed;}catch(e){console.warn('무게 표시 실패',e);}
   try{changed=backfillRoastTimes()||changed;}catch(e){console.warn('로스팅 계산값 채우기 실패',e);}
   try{changed=reapplyRoastLevels()||changed;}catch(e){console.warn('로스팅 단계 다시 지정 실패',e);}
   try{changed=fixStockStatus()||changed;}catch(e){console.warn('재고 상태 정리 실패',e);}

@@ -98,6 +98,15 @@ body { font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-seri
 .pred-box b{color:#0d3c6e}
 .pred-src{font-size:11px;color:#6b86a3}
 .pred-warn{margin-top:4px;color:#b3261e;font-size:12px;font-weight:700}
+.set-sum{margin-top:8px;font-size:14px;font-weight:800;color:#333}
+.set-sum span{font-size:11px;color:#999;font-weight:600}
+.detail-lbl{margin:18px 2px 8px;font-size:12px;font-weight:800;color:#999;letter-spacing:.5px}
+.big2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.big2>div{background:#fff;border-radius:14px;padding:10px 6px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.07)}
+.big2 .b2-l{font-size:12px;color:#777;font-weight:700}
+.big2 .b2-n{font-size:40px;font-weight:900;letter-spacing:-2px;color:#1a1a1a;line-height:1.1}
+.big2 .over .b2-n,.big2 .over .b2-l{color:#e05c00}
+.result-mini{text-align:center;font-size:12px;color:#888;margin:-4px 0 10px}
 .zone-note{margin-top:6px;font-size:14px;font-weight:800;color:#1565c0}
 .early-warn{margin:-4px 0 10px;text-align:center;font-size:12px;color:#b3261e}
 .realpop-row{display:flex;justify-content:flex-end;align-items:center;gap:6px;margin:-4px 2px 12px;font-size:11px;color:#999}
@@ -170,40 +179,55 @@ function roastPopElapsed(r){
   return ae-rem;
 }
 let _predKey='',_predVal=null;
+function todayStr(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function predictPop(beanName,modeKey){
   const key=beanName+'|'+modeKey+'|'+roastsList.length;
   if(key===_predKey)return _predVal;
   _predKey=key;_predVal=null;
   if(!beanName)return null;
-  const f=beanFamily(beanName);
+  const f=beanFamily(beanName),ae=MODES[modeKey].autoEject;
   const mine=roastsList.filter(r=>roastInFamily(r,f));
-  const ok=mine.filter(r=>!r.pop_unreliable);
-  const same=ok.filter(r=>+r.mode===modeKey).map(roastPopElapsed).filter(x=>x!=null);
+  const ok=mine.filter(r=>!r.pop_unreliable&&roastPopElapsed(r)!=null);
+  const ord=a=>a.slice().sort((x,y)=>(x.date||'').localeCompare(y.date||'')||(+x.batch_no||0)-(+y.batch_no||0));
+  const same=ord(ok.filter(r=>+r.mode===modeKey));
+  const md=r=>{const p=String(r.date||'').split('-');return p.length===3?(+p[1])+'/'+(+p[2]):'';};
   let out=null;
-  if(same.length)out={min:Math.min(...same),max:Math.max(...same),n:same.length,src:`같은 생두·${modeKey}번 모드 ${same.length}회`+(f.multi?' (다른 구매분 포함)':'')};
-  else{
-    const oth=ok.filter(r=>MODES[+r.mode]).map(r=>({m:+r.mode,e:roastPopElapsed(r)})).filter(x=>x.e!=null);
-    if(oth.length){const es=oth.map(x=>x.e);out={min:Math.min(...es),max:Math.max(...es),n:oth.length,src:`같은 생두 다른 모드(${[...new Set(oth.map(x=>x.m))].sort().join('·')}번) ${oth.length}회 — 참고용`};}
+  if(same.length){
+    const last=same[same.length-1],els=same.map(roastPopElapsed),le=roastPopElapsed(last);
+    const isToday=last.date===todayStr();
+    out={point:le,min:isToday?le:Math.min(...els),max:isToday?le:Math.max(...els),n:same.length,
+      src:isToday?`방금 #${last.batch_no||''} (오늘 같은 생두·${modeKey}번)`:`최근 ${md(last)} 같은 생두·${modeKey}번`+(same.length>1?` · 전체 ${same.length}회 잔여 ${fmt(ae-Math.min(...els))}~${fmt(ae-Math.max(...els))}`:'')};
+  }else{
+    const oth=ok.map(r=>({m:+r.mode,e:roastPopElapsed(r)}));
+    if(oth.length){const es=oth.map(x=>x.e);out={point:null,min:Math.min(...es),max:Math.max(...es),n:oth.length,src:`같은 생두 다른 모드(${[...new Set(oth.map(x=>x.m))].sort().join('·')}번) 참고`};}
     else{
       const proc=procGroup(f.bean&&f.bean.process,beanName);
       const rows=popRows().filter(r=>r.m===modeKey&&r.proc===proc);
-      if(rows.length){const avg=MODES[modeKey].autoEject-popAvg(rows.map(r=>r.rem));out={min:Math.round(avg),max:Math.round(avg),n:rows.length,src:`${modeKey}번 모드·${proc} 평균 ${rows.length}회`};}
+      if(rows.length){const avg=Math.round(ae-popAvg(rows.map(r=>r.rem)));out={point:avg,min:avg,max:avg,n:rows.length,src:`${modeKey}번·${proc} 평균 ${rows.length}회`};}
     }
   }
-  // 주의: 이 생두(묶음)의 가짜 팝 · 1팝 소리 약함
   const warns=[];
   const fp=mine.filter(r=>r.false_pop);
   if(fp.length){const pts=[].concat(...fp.map(r=>(r.false_pop_times||[]).map(t=>'잔여 '+t))).concat(fp.map(r=>r.false_pop_note).filter(Boolean));
     warns.push(`가짜 팝 있었음 ${fp.length}회${pts.length?' — '+[...new Set(pts)].join(' · '):''}`);}
   const wp=mine.filter(r=>r.weak_pop).length;if(wp)warns.push(`1팝 소리 약함 ${wp}회`);
-  _predVal=out||warns.length?{...(out||{}),has:!!out,warns}:null;
+  const ov=mine.filter(r=>+r.mode===modeKey&&r.dtr_over_target);
+  _predVal=out||warns.length||ov.length?{...(out||{}),has:!!out,warns,overs:ov.map(r=>({t:+r.dtr_over_target,d:md(r)}))}:null;
   return _predVal;
+}
+/* 이 설정이 자동배출을 넘을지: 예상 1팝(가장 늦은 쪽)으로 낼 수 있는 최대 DTR, 지난 초과 기록 */
+function overWarn(p){
+  if(!p)return '';
+  const ae=MODES[S.modeKey].autoEject,out=[];
+  if(p.has){const lateRem=ae-(p.point!=null?p.point:p.max),mx=Math.floor(lateRem/ae*100);if(S.dtr>mx)out.push(`${S.modeKey}번 ${S.dtr}%는 자동배출을 넘을 수 있어요 (예상 최대 DTR ≈ ${mx}%)`);}
+  const o=(p.overs||[]).filter(x=>x.t<=S.dtr);if(o.length)out.push(`지난 ${o.map(x=>x.d+' '+S.modeKey+'번 '+x.t+'%').join(', ')}: 자동배출 초과였어요`);
+  return out.map(w=>`<div class="pred-warn">⚠ ${w} — 모드나 DTR을 바꿔 보세요</div>`).join('');
 }
 function predHtml(){
   const p=predictPop(S.beanName,S.modeKey);if(!p)return '';
   const ae=MODES[S.modeKey].autoEject;
-  const rng=p.has?(p.min===p.max?`경과 <b>${fmt(p.min)}</b> (잔여 ${fmt(ae-p.min)})`:`경과 <b>${fmt(p.min)} ~ ${fmt(p.max)}</b> (잔여 ${fmt(ae-p.min)} ~ ${fmt(ae-p.max)})`):'';
-  return `<div class="pred-box">${p.has?`🔔 예상 1팝 ${rng}<div class="pred-src">${p.src} · 30초 전부터 알려줌</div>`:''}${p.warns.map(w=>`<div class="pred-warn">⚠ ${w}</div>`).join('')}</div>`;
+  const rem=p.has?(p.point!=null?`<b>${fmt(ae-p.point)}</b>`:`<b>${fmt(ae-p.min)} ~ ${fmt(ae-p.max)}</b>`):'';
+  return `<div class="pred-box">${p.has?`🔔 예상 1팝 잔여 ${rem}<div class="pred-src">${p.src}</div>`:''}${p.warns.map(w=>`<div class="pred-warn">⚠ ${w}</div>`).join('')}${overWarn(p)}</div>`;
 }
 // 모드 아래: 프로세스별 평균 1팝 (신규 생두 참고용)
 function modePopHtml(){
@@ -243,7 +267,7 @@ window.addEventListener('message',function(e){
   // 부모창(빈본 탭 계획)에서 다음 배치 값 넣기 — 시작 화면일 때만
   if(e.data.type==='plan_apply'){
     if(S.screen!=='setup')return;
-    const d=e.data;
+    const d=e.data;_setupKey=[d.bean_name,d.mode,d.dtr,d.input_g].join('|');
     if(d.bean_name&&beansList.some(b=>b.name===d.bean_name))S.beanName=d.bean_name;
     if(MODES[d.mode]){S.modeKey=d.mode;}
     if(d.dtr)S.dtr=+d.dtr;
@@ -259,6 +283,13 @@ window.addEventListener('message',function(e){
 });
 
 // 로스팅 중 상태를 부모창(커피 로그)에 전달 → 다른 탭에서 상단 미니바로 표시
+let _setupKey='';
+function postSetup(){
+  if(window.parent===window||S.screen!=='setup')return;
+  const k=[S.beanName,S.modeKey,S.dtr,S.inputG].join('|');if(k===_setupKey)return;_setupKey=k;
+  window.parent.postMessage({type:'timer_setup',bean_name:S.beanName,mode:S.modeKey,dtr:S.dtr,input_g:S.inputG},'*');
+}
+function shortBean(n){const w=String(n||'').trim().split(/\s+/);if(w.length>1&&/^(케냐|에티오피아|콜롬비아|파나마|과테말라|코스타리카|페루|온두라스|에콰도르|르완다|브라질|엘살바도르|니카라과|부룬디|인도네시아|예멘)$/.test(w[0]))w.shift();return w.slice(0,(w[0]||'').length<=2||/^(AA|AB|PB|G1)$/i.test(w[1]||'')?2:1).join(' ');}
 function postTimerState(){
   if(window.parent===window)return;
   const ae=MODES[S.modeKey].autoEject;
@@ -493,6 +524,8 @@ function sendRoastLog(){
     eject_time:ejSec!==null?(S.result&&S.result.over?'0:00':fmtRem(ejSec)):'',
     dtr_target:(S.result&&!S.result.over)?String(S.dtr):'',
     eject_auto:!!(S.result&&S.result.over),
+    dtr_over_target:(S.result&&S.result.over)?String(S.dtr):'',
+    bean_short:shortBean(S.beanName),
     false_pop:(S.falsePops||[]).length>0,
     false_pop_times:(S.falsePops||[]).map(e=>fmt(ae-e)),
     dtr_pct:dtr||'',
@@ -594,43 +627,14 @@ function render(){
 
   if(S.screen==="setup"){
     hdr.style.background=color;
+    hdr.style.display=document.documentElement.classList.contains('embedded')?'none':'';
     hdrT.textContent="☕ 빈본 로스팅 타이머";
     hdrS.textContent="1차 팝 → 배출 시간 즉시 계산";
     const dtrList=MODE_DTRS[S.modeKey].list;
     app.innerHTML=`
-      <div class="sec">
-        <div class="lbl" style="display:flex;justify-content:space-between;align-items:center">빈본 모드<button class="snd-btn" onclick="soundCheck()">🔊 소리 확인</button></div>
-        <div class="btn-row">
-          ${Object.entries(MODES).map(([k,v])=>{
-            const c=GROUP_COLOR[MODE_DTRS[+k].group];
-            return `<button class="chip" style="${S.modeKey===+k?`background:${c};border-color:${c};color:#fff`:""}"
-              onclick="S.modeKey=${k};S.dtr=MODE_DTRS[${k}].list[0];render()">${v.label}</button>`;
-          }).join("")}
-        </div>
-        <div style="font-size:11px;color:#888;margin-top:8px">${group} 로스팅 · 자동배출 ${fmt(mode.autoEject)}</div>
-        ${modePopHtml()}
-      </div>
-      <div class="sec">
-        <div class="lbl">DTR 목표</div>
-        <div class="btn-row">
-          ${dtrList.map(d=>`
-            <button class="chip" style="${S.dtr===d?`background:${color};border-color:${color};color:#fff`:""}"
-              onclick="S.dtr=${d};render()">${d}%</button>`).join("")}
-        </div>
-      </div>
-      <div class="info-row">
-        <div class="info-card" style="border-top:3px solid ${color}">
-          <div class="info-val">${mode.label}</div>
-          <div class="info-lab">모드 (${fmt(mode.autoEject)})</div>
-        </div>
-        <div class="info-card" style="border-top:3px solid ${color}">
-          <div class="info-val">DTR ${S.dtr}%</div>
-          <div class="info-lab">${group}</div>
-        </div>
-      </div>
       ${beansList.length?`
       <div class="sec">
-        <div class="lbl">생두 선택 <span style="color:#bbb;font-weight:400">(선택사항)</span></div>
+        <div class="lbl">생두</div>
         <select style="width:100%;padding:9px 10px;border-radius:8px;border:2px solid #ddd;font-size:13px;font-weight:600;color:#333;background:#fff;font-family:inherit" onchange="selectBean(this)">
           <option value="">선택 안 함</option>
           ${(()=>{
@@ -652,9 +656,32 @@ function render(){
           })()}
         </select>
         ${selectedSoldOut()?`<div style="margin-top:6px;padding:7px 10px;border-radius:8px;background:#fff3e0;color:#c05000;font-size:12px;font-weight:600">⚠ 재고가 소진된 생두예요.</div>`:''}
+        <div class="set-sum">${mode.label} · DTR ${S.dtr}% · ${S.inputG||120}g <span>(자동배출 ${fmt(mode.autoEject)})</span></div>
         ${predHtml()}
-        ${beanPopHtml()}
       </div>`:``}
+      <button class="start-btn" style="background:${color}" onclick="doStart()">▶ 로스팅 시작</button>
+      <div class="detail-lbl">상세 설정</div>
+      <div class="sec">
+        <div class="lbl" style="display:flex;justify-content:space-between;align-items:center">빈본 모드<button class="snd-btn" onclick="soundCheck()">🔊 소리 확인</button></div>
+        <div class="btn-row">
+          ${Object.entries(MODES).map(([k,v])=>{
+            const c=GROUP_COLOR[MODE_DTRS[+k].group];
+            return `<button class="chip" style="${S.modeKey===+k?`background:${c};border-color:${c};color:#fff`:""}"
+              onclick="S.modeKey=${k};S.dtr=MODE_DTRS[${k}].list[0];render()">${v.label}</button>`;
+          }).join("")}
+        </div>
+        <div style="font-size:11px;color:#888;margin-top:8px">${group} 로스팅 · 자동배출 ${fmt(mode.autoEject)}</div>
+        ${modePopHtml()}
+        ${beanPopHtml()}
+      </div>
+      <div class="sec">
+        <div class="lbl">DTR 목표</div>
+        <div class="btn-row">
+          ${dtrList.map(d=>`
+            <button class="chip" style="${S.dtr===d?`background:${color};border-color:${color};color:#fff`:""}"
+              onclick="S.dtr=${d};render()">${d}%</button>`).join("")}
+        </div>
+      </div>
       <div class="sec">
         <div class="lbl">투입량(g) <span style="color:#bbb;font-weight:400">(선택사항)</span></div>
         <div style="display:flex;gap:6px;align-items:center">
@@ -667,16 +694,14 @@ function render(){
       </div>
       <button class="table-btn" style="border-color:${color};color:${color}" onclick="toggleTable()">
         📋 ${S.showTable?"표 닫기":"전체 표 보기"}</button>
-      <button class="start-btn" style="background:${color}" onclick="doStart()">▶ 로스팅 시작</button>
-
     `;
   } else {
     // ── 로스팅 화면 ──
     const zone=inPopZone();
     const hdrBg=S.popElapsed!==null?(S.result?.over?"#e05c00":color):(zone?"#1565c0":"#333");
-    hdr.style.background=hdrBg;
-    hdrT.textContent=S.popElapsed===null?(zone?"🔔 1팝 예상 구간":"🔥 로스팅 중..."):(S.result?.over?"⚠ 자동배출 초과":"✅ 배출 시간");
-    hdrS.textContent=`${mode.label} · DTR ${S.dtr}% · ${group}`;
+    hdr.style.background=hdrBg;hdr.style.display='';
+    hdrT.textContent=`🔥 ${shortBean(S.beanName)||'로스팅'} · ${S.modeKey}-${S.dtr}`;
+    hdrS.textContent=S.popElapsed===null?(zone?"🔔 1팝 예상 구간":"로스팅 중"):(S.result?.over?"⚠ 자동배출 초과":"✅ 1팝 → 배출 대기");
     const remDisplay=Math.max(0,mode.autoEject-S.elapsed);
 
     // 1차팝 하이라이트 행
@@ -691,11 +716,7 @@ function render(){
       const rc=r.over?"#e05c00":color;
       const rs=r.over?`+${fmt(Math.abs(r.rem))}`:fmt(r.rem);
       resultHtml=`
-        <div class="result-box" style="background:${r.over?"#fff5f0":"#fff"};border-color:${rc}">
-          <div class="result-title">${r.over?"⚠ 자동배출 초과 — 강제배출 불가":"배출 잔여시간 (빈본 표시)"}</div>
-          <div class="result-main" style="color:${rc}">${rs}</div>
-          <div class="result-sub">발달시간 <b>${r.dev}초</b> · 배출 경과 <b>${fmt(r.ejSec)}</b></div>
-        </div>
+        <div class="result-mini">${r.over?`⚠ 목표 DTR ${S.dtr}%는 자동배출을 넘어요 — 자동배출에 나옴`:`발달시간 ${r.dev}초`}</div>
         ${!r.over?`
         <div class="cd-box" style="background:${S.countdownDone?"#e8f5e9":"#fffde7"};border-color:${S.countdownDone?"#4caf50":"#ffc107"}">
           ${S.countdownDone
@@ -708,12 +729,12 @@ function render(){
       <div class="timer-box">
         <div class="remain-lbl-main">빈본 잔여시간</div>
         <div class="remain-num">${fmt(remDisplay)}</div>
-        <div class="elapsed-lbl">경과 <b>${fmt(S.elapsed)}</b></div>
-        ${S.popElapsed===null&&S.predRun?`<div class="zone-note" style="color:${zone?'#1565c0':'#999'}">${zone?'🔔 ':''}1팝 예상 경과 ${S.predRun.min===S.predRun.max?fmt(S.predRun.min):fmt(S.predRun.min)+'~'+fmt(S.predRun.max)}</div>`:''}
+        ${S.popElapsed===null&&S.predRun?`<div class="zone-note" style="color:${zone?'#1565c0':'#999'}">${zone?'🔔 ':''}1팝 예상 잔여 ${S.predRun.point!=null?fmt(mode.autoEject-S.predRun.point)+' 쯤':fmt(mode.autoEject-S.predRun.min)+'~'+fmt(mode.autoEject-S.predRun.max)}</div>`:''}
       </div>
       ${S.popElapsed===null
         ?`<button class="pop-btn" style="background:${color};box-shadow:0 4px 16px ${color}55" onclick="handlePop()">🔊 1차 팝!</button>`
-        :`<div class="pop-info">1차 팝: 경과 <b>${fmt(S.popElapsed)}</b> / 잔여 ≈ <b>${fmt(mode.autoEject-S.popElapsed)}</b></div>`}
+        :`<div class="big2"><div><div class="b2-l">1팝 잔여</div><div class="b2-n">${fmt(mode.autoEject-S.popElapsed)}</div></div>
+           <div class="${S.result&&S.result.over?'over':''}"><div class="b2-l">${S.result&&S.result.over?'자동배출 초과':'배출 잔여'}</div><div class="b2-n">${S.result?(S.result.over?'0:00':fmt(S.result.rem)):'…'}</div></div></div>`}
       ${S.earlyWarn?`<div class="early-warn">예상보다 빠름 — 가짜 팝일 수 있음</div>`:''}
       ${resultHtml}
       ${S.popElapsed!==null&&!S.countdownDone?(()=>{const lk=realPopLockLeft();const n=(S.falsePops||[]).length;
@@ -766,7 +787,7 @@ function render(){
 
 // 화면을 다시 그릴 때마다 부모창 미니바에도 상태 전달
 const _renderBase=render;
-render=function(){_renderBase();postTimerState();};
+render=function(){_renderBase();postTimerState();postSetup();};
 
 render();
 </script>
