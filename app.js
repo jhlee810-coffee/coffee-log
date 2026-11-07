@@ -180,7 +180,7 @@ function showTab(name,el){
   if(name==='timer'){
     const fr=document.getElementById('timerFrame');
     if(!fr.getAttribute('src')){
-      fr.src='binbon_timer.html?v=20261107f';
+      fr.src='binbon_timer.html?v=20261107g';
       fr.addEventListener('load',function(){
         fr.contentWindow.postMessage({type:'beans_list',beans:db.beans,roasts:db.roasts},'*');
         if(window.planApplyToTimer)setTimeout(()=>planApplyToTimer(true),150);
@@ -247,6 +247,25 @@ document.querySelectorAll('.mo').forEach(el=>el.addEventListener('click',e=>{if(
 
 document.getElementById('f_blbean').addEventListener('change',function(){updateRoastSel(this.value,'');showBrewDegassing();});
 
+/* ── 새 버전 자동 적용 (2026-11-07) ──
+   아이폰 홈 화면 앱은 첫 화면(index.html)을 최대 10분 이상 저장해 두고 씀 → 배포해도 옛 화면이 뜸.
+   앱을 열 때 사이트의 최신 index.html을 확인해서, app.js 버전이 다르면 주소에 꼬리표를 붙여 한 번 새로 엶.
+   (앱을 연 직후에만 — 로스팅 중이나 입력 중에는 절대 안 함. 같은 실행에서 한 번만) */
+const APP_VER=((document.querySelector('script[src*="app.js?v="]')||{}).src||'').replace(/.*app\.js\?v=([^&]+).*/,'$1');
+async function checkAppUpdate(){
+  try{
+    if(sessionStorage.getItem('cl_upd_tried'))return;
+    const r=await fetch('index.html?nc='+Date.now(),{cache:'no-store'});if(!r.ok)return;
+    const m=(await r.text()).match(/app\.js\?v=([\w]+)/);
+    if(!m||!APP_VER||m[1]===APP_VER)return;
+    if(document.documentElement.classList.contains('roasting')||document.querySelector('.mo.open'))return;
+    sessionStorage.setItem('cl_upd_tried','1');
+    document.getElementById('saveInd').textContent='⟳ 새 버전으로…';
+    location.replace(location.pathname+'?u='+m[1]);
+  }catch(e){}
+}
 try{renderDash();}catch(e){}
 document.getElementById('saveInd').textContent='☁ 동기화 중...';
+checkAppUpdate();
+{const v=document.getElementById('appVer');if(v)v.textContent='앱 버전 '+APP_VER;}
 syncFromSheets();
