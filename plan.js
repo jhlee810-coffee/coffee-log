@@ -24,18 +24,34 @@ function planItemText(it){return `${planShort(it)} · ${it.mode}-${it.dtr} · ${
 function renderPlanBar(){
   const el=document.getElementById('planBar');if(!el)return;
   const p=planGet();
-  const remoteBtn=_planRemote&&(!p||p.file_version!==_planRemote.version)?`<button class="pb-btn hi" onclick="planImportRemote()">Claude 계획 불러오기 (${_planRemote.items.length}배치)</button>`:'';
-  if(!p||!p.items.length){
-    el.innerHTML=`<div class="pb-row"><span class="pb-t">📋 오늘 로스팅 계획 없음</span>${remoteBtn}<button class="pb-btn" onclick="openPlanEditor()">계획 만들기</button></div>`;return;
+  const remote=_planRemote&&(!p||p.file_version!==_planRemote.version);
+  const btn=(t,f,cls)=>`<button class="pb-btn${cls?' '+cls:''}" onclick="${f}">${t}</button>`;
+  let html;
+  if(remote) html=`<div class="pb-row"><span class="pb-t">📋 Claude 계획 <b>${_planRemote.items.length}배치</b></span>${btn('불러오기','planImportRemote()','hi')}${p?btn('✎','openPlanEditor()'):''}</div>`;
+  else if(!p||!p.items.length) html=`<div class="pb-row"><span class="pb-t">📋 오늘 계획 없음</span>${btn('계획 만들기','openPlanEditor()')}</div>`;
+  else{
+    const i=planCurIdx(p),n=p.items.length,done=p.items.filter(x=>x.status==='done').length;
+    if(i<0) html=`<div class="pb-row"><span class="pb-t">✓ 오늘 계획 끝 (${done}/${n})</span>${btn('✎','openPlanEditor()')}</div>`;
+    else if(_planOffOnce) html=`<div class="pb-row off"><span class="pb-t">✋ 계획 밖 1회 — 저장하면 계획으로</span>${btn('취소',"_planOffOnce=false;_planAppliedKey='';renderPlanBar();planApplyToTimer()")}</div>`;
+    else{const it=p.items[i];
+      html=`<div class="pb-row"><span class="pb-t">📋 <b>${i+1}/${n}</b> ${planEsc(planItemText(it))}</span>${btn('건너뛰기','planSkip()')}${btn('계획 밖','_planOffOnce=true;renderPlanBar()')}${btn('✎','openPlanEditor()')}</div>`+
+        (it.note?`<div class="pb-note">${planEsc(it.note)}</div>`:'');}
   }
-  const i=planCurIdx(p),n=p.items.length,done=p.items.filter(x=>x.status==='done').length;
-  if(i<0){el.innerHTML=`<div class="pb-row"><span class="pb-t">✓ 오늘 계획 끝 (${done}/${n} 로스팅)</span>${remoteBtn}<button class="pb-btn" onclick="openPlanEditor()">계획 보기</button></div>`;return;}
-  const it=p.items[i];
-  el.innerHTML=_planOffOnce
-    ?`<div class="pb-row off"><span class="pb-t">✋ 계획 밖으로 볶는 중 — 저장하면 계획으로 돌아가요</span><button class="pb-btn" onclick="_planOffOnce=false;_planAppliedKey='';renderPlanBar();planApplyToTimer()">취소</button></div>`
-    :`<div class="pb-row"><span class="pb-t">📋 계획 <b>${i+1}/${n}</b> · ${planEsc(planItemText(it))}${it.note?` <small>${planEsc(it.note)}</small>`:''}</span></div>
-      <div class="pb-btns">${remoteBtn}<button class="pb-btn" onclick="planSkip()">건너뛰기</button><button class="pb-btn" onclick="_planOffOnce=true;renderPlanBar()">계획 밖 1회</button><button class="pb-btn" onclick="openPlanEditor()">목록 ✎</button></div>`;
+  el.innerHTML=html;
+  sizeTimerFrame();
 }
+/* 빈본 탭: 타이머 창을 화면 남은 높이에 딱 맞춤 (계획 줄·메뉴 높이를 빼고) */
+function sizeTimerFrame(){
+  const fr=document.getElementById('timerFrame'),sec=document.getElementById('tab-timer');
+  if(!fr||!sec||!sec.classList.contains('on'))return;
+  const vh=(window.visualViewport&&window.visualViewport.height)||window.innerHeight;
+  const nav=document.querySelector('.nav');const navH=nav?nav.getBoundingClientRect().height:0;
+  const bar=document.getElementById('planBar');const barH=bar?bar.getBoundingClientRect().height+8:0;
+  fr.style.height=Math.max(320,Math.floor(vh-navH-barH-32))+'px';
+}
+window.addEventListener('resize',sizeTimerFrame);
+if(window.visualViewport)window.visualViewport.addEventListener('resize',sizeTimerFrame);
+window.addEventListener('orientationchange',()=>setTimeout(sizeTimerFrame,300));
 
 /* ── 타이머에 지금 배치 넣기 (타이머가 시작 화면일 때만) ── */
 let _timerAtSetup=true;

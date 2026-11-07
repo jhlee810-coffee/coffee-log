@@ -6,7 +6,7 @@
 <title>Coffee Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=Josefin+Sans:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261107e">
+<link rel="stylesheet" href="style.css?v=20261107f">
 </head>
 <body>
 
@@ -720,7 +720,7 @@
 </div>
 
 <script src="data.js?v=20260528f"></script>
-<script src="app.js?v=20261107f"></script>
+<script src="app.js?v=20261107g"></script>
 <script src="dashboard.js?v=20261107b"></script>
 <script src="beans.js?v=20261107b"></script>
 <script src="roasts.js?v=20261107d"></script>
@@ -732,7 +732,7 @@
 <script src="roasted.js?v=20261107a"></script>
 <script src="shops.js?v=20261106a"></script>
 <script src="datafix.js?v=20261107f"></script>
-<script src="plan.js?v=20261107a"></script>
+<script src="plan.js?v=20261107b"></script>
 <script>
 // 빈본 타이머 ↔ 로스트 로그 연계
 window.addEventListener('message', function(e){
@@ -773,6 +773,7 @@ function updateRoastBar(){
   bar.classList.toggle('zone',!!st.zone);
   bar.style.display='flex';
 }
+window.addEventListener('load',()=>{if(window.sizeTimerFrame)sizeTimerFrame();});
 function roastBarPop(){
   const fr=document.getElementById('timerFrame');
   if(fr&&fr.contentWindow)fr.contentWindow.postMessage({type:'timer_pop'},'*');

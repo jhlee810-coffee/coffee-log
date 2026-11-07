@@ -19,7 +19,9 @@ html,body { overflow-x:hidden; width:100%; overscroll-behavior-y:none; }
 .pop-hist small { color:#999; font-size:11px; }
 .pop-hist .ph-other .ph-item { cursor:pointer; text-decoration:underline dotted #bbb; }
 body { font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif; background:#f4f6f8; min-height:100vh; display:flex; flex-direction:column; align-items:center; }
-.header { width:100%; color:#fff; text-align:center; padding:48px 16px 16px; transition:background 0.3s; }
+.header { width:100%; color:#fff; text-align:center; padding:48px 16px 16px; transition:background 0.3s; position:relative; }
+.embedded .header { padding-top:14px; }
+.snd-btn { background:#fff; color:#555; border:1px solid #ccc; border-radius:14px; padding:4px 10px; font-size:12px; font-weight:700; font-family:inherit; cursor:pointer; letter-spacing:0; }
 .header h1 { font-size:20px; font-weight:800; letter-spacing:-0.5px; }
 .header p { font-size:13px; opacity:0.85; margin-top:3px; }
 .body { width:100%; max-width:420px; padding:16px 14px 40px; }
@@ -112,6 +114,7 @@ body { font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-seri
 
 <script>
 let beansList=[],roastsList=[];
+if(window.parent!==window)document.documentElement.classList.add('embedded');  // 커피 로그 안에서는 머리 여백 줄임
 
 /* ── 지난 1팝 기록 (2026-11-04) ──
    로스팅 기록의 pop_time은 빈본 화면의 '잔여'(time_basis '진행'이면 경과 → 잔여로 환산).
@@ -595,7 +598,7 @@ function render(){
     const dtrList=MODE_DTRS[S.modeKey].list;
     app.innerHTML=`
       <div class="sec">
-        <div class="lbl">빈본 모드</div>
+        <div class="lbl" style="display:flex;justify-content:space-between;align-items:center">빈본 모드<button class="snd-btn" onclick="soundCheck()">🔊 소리 확인</button></div>
         <div class="btn-row">
           ${Object.entries(MODES).map(([k,v])=>{
             const c=GROUP_COLOR[MODE_DTRS[+k].group];
@@ -664,7 +667,7 @@ function render(){
       <button class="table-btn" style="border-color:${color};color:${color}" onclick="toggleTable()">
         📋 ${S.showTable?"표 닫기":"전체 표 보기"}</button>
       <button class="start-btn" style="background:${color}" onclick="doStart()">▶ 로스팅 시작</button>
-      <div style="text-align:center;margin-top:10px"><button class="chip" style="font-size:12px;padding:6px 12px" onclick="soundCheck()">🔊 소리 확인 (무음 모드에서도 나는지)</button></div>
+
     `;
   } else {
     // ── 로스팅 화면 ──
