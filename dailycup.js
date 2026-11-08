@@ -22,6 +22,8 @@ const DC_PRESETS=[
    steps:'스위치 닫고 블룸 50g → 1분 오픈 50g → 1:30 50g → 2:00 50g → 2:30 50g (총 250g) · 가수 10g',decaf:true,regularTwin:'펄사 미니 15'},
   {name:'펄사 미니 20',dripper:'펄사 미니',grinder:'ZP6',clicks:'75',coffee_g:'20',water_g:'300',dilute_g:'50',temp:'94',bloom:'1분',water:'백산수10+딥스골드1',
    steps:'스위치 닫고 블룸 50g → 1분 오픈 50g → 1:30 50g → 2:00 50g → 2:30 50g → 3:00 50g (총 300g) · 가수 50g'},
+  {name:'10푸어',dripper:'하리오 네오',grinder:'코만단테 C40',clicks:'40',coffee_g:'20',water_g:'310',dilute_g:'30',temp:'90',bloom:'30초',time:'3:15~3:30',water:'백산수10+딥스골드1',
+   steps:'필터 카펙 TH-2 (하리오 V60도 가능) · 블룸 40g → 0:30 60g → 1:00부터 약 15초 간격 센터 푸어 30g×7 (총 310g) → 3:15~3:30 다 떨어질 때까지 · 가수 30g'},
 ];
 const DC_BAD_TAGS=['향 약함','발효취·술 냄새','단맛 없음','밋밋함','떫음','물 같음(얇음)','풋내·곡물 냄새','탄맛·스모키','텁텁함(구운 빵 맛)','오래된 맛(종이·눅눅)'];
 const DC_BALANCE=[
