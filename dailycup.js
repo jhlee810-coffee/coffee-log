@@ -16,10 +16,12 @@ const DC_TIMES=['2:30','3:00','3:30','4:00','4:30'];
 const DC_WATERS=['백산수10+딥스골드1'];
 // 레시피 프리셋: 고르면 아래 값이 한 번에 채워짐 (decafOf/decafTwin: 디카페인 원두를 고르면 자동으로 짝 프리셋)
 const DC_PRESETS=[
-  {name:'펄사 15g',dripper:'펄사 미니',grinder:'ZP6',clicks:'75',coffee_g:'15',water_g:'250',dilute_g:'20',temp:'94',bloom:'1분',water:'백산수10+딥스골드1',
-   steps:'스위치 닫고 50g → 1분 오픈 50g → 1:30 50g → 2:00 50g → 2:30 50g',decafTwin:'펄사 15g 디카페인'},
-  {name:'펄사 15g 디카페인',dripper:'펄사 미니',grinder:'ZP6',clicks:'75',coffee_g:'15',water_g:'250',dilute_g:'20',temp:'90',bloom:'30초',water:'백산수10+딥스골드1',
-   steps:'스위치 닫고 50g → 1분 오픈 50g → 1:30 50g → 2:00 50g → 2:30 50g',decaf:true,regularTwin:'펄사 15g'},
+  {name:'펄사 미니 15',dripper:'펄사 미니',grinder:'ZP6',clicks:'75',coffee_g:'15',water_g:'250',dilute_g:'10',temp:'94',bloom:'1분',water:'백산수10+딥스골드1',
+   steps:'스위치 닫고 블룸 50g → 1분 오픈 50g → 1:30 50g → 2:00 50g → 2:30 50g (총 250g) · 가수 10g',decafTwin:'펄사 미니 15 디카페인'},
+  {name:'펄사 미니 15 디카페인',dripper:'펄사 미니',grinder:'ZP6',clicks:'75',coffee_g:'15',water_g:'250',dilute_g:'10',temp:'90',bloom:'30초',water:'백산수10+딥스골드1',
+   steps:'스위치 닫고 블룸 50g → 1분 오픈 50g → 1:30 50g → 2:00 50g → 2:30 50g (총 250g) · 가수 10g',decaf:true,regularTwin:'펄사 미니 15'},
+  {name:'펄사 미니 20',dripper:'펄사 미니',grinder:'ZP6',clicks:'75',coffee_g:'20',water_g:'300',dilute_g:'50',temp:'94',bloom:'1분',water:'백산수10+딥스골드1',
+   steps:'스위치 닫고 블룸 50g → 1분 오픈 50g → 1:30 50g → 2:00 50g → 2:30 50g → 3:00 50g (총 300g) · 가수 50g'},
 ];
 const DC_BAD_TAGS=['향 약함','발효취·술 냄새','단맛 없음','밋밋함','떫음','물 같음(얇음)','풋내·곡물 냄새','탄맛·스모키','텁텁함(구운 빵 맛)','오래된 맛(종이·눅눅)'];
 const DC_BALANCE=[
