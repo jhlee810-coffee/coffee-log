@@ -3,16 +3,16 @@ const BINBON_MODES={1:460,2:445,3:397,4:406,5:470,6:363,7:406,8:459};
 let rFilterKey='all';
 let rSortDir='desc'; // desc=최신순, asc=번호순(오래된것부터)
 
-/* ✏️ 로스팅 단계 기준 (DTR %, min 이상 ~ 다음 min 미만). 8% 미만은 비워 둠.
+/* ✏️ 로스팅 단계 기준 (DTR %, min 이상 ~ 다음 min 미만). 4% 미만은 비워 둠.
    여기를 바꾸면 앱을 열 때 DTR이 있는 기존 기록도 새 기준으로 다시 붙음 (datafix.js reapplyRoastLevels)
    color: 앱 안 배지·글자 색 (빈본 타이머 화면 색은 따로) */
-const ROAST_LEVELS=[
-  {min:8,  label:'울트라 라이트', color:'#c9e7a0'},  // 연두빛 — 생두 색이 남아 있는 아주 밝은 단계
+const ROAST_LEVELS=[   // 2026-11-08: 4~10 울트라라이트 / 11~13 라이트 / 14~16 라이트-미디엄 / 17~20 미디엄 / 21~25 미디엄-다크 / 26~ 다크
+  {min:4,  label:'울트라 라이트', color:'#c9e7a0'},  // 연두빛 — 생두 색이 남아 있는 아주 밝은 단계
   {min:11, label:'라이트',        color:'#ffd966'},  // 밝은 노랑
-  {min:15, label:'라이트-미디엄', color:'#ffb347'},  // 앰버
-  {min:19, label:'미디엄',        color:'#f5893a'},  // 주황
-  {min:23, label:'미디엄-다크',   color:'#e0663a'},  // 적갈
-  {min:27, label:'다크',          color:'#c8553f'},  // 짙은 적갈
+  {min:14, label:'라이트-미디엄', color:'#ffb347'},  // 앰버
+  {min:17, label:'미디엄',        color:'#f5893a'},  // 주황
+  {min:21, label:'미디엄-다크',   color:'#e0663a'},  // 적갈
+  {min:26, label:'다크',          color:'#c8553f'},  // 짙은 적갈
 ];
 function dtrToLevel(dtr){
   const d=parseFloat(dtr);
