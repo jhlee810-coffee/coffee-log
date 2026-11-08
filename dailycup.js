@@ -329,7 +329,7 @@ function dcTimeAdj(d){
 function dcApplyPreset(i){
   const p=DC_PRESETS[i];if(!p)return;
   if(_dc.brew.recipe===p.name){_dc.brew.recipe='';dcRerender();return;}
-  ['dripper','grinder','clicks','coffee_g','water_g','dilute_g','temp','bloom','water'].forEach(k=>{if(p[k]!=null)_dc.brew[k]=p[k];});
+  ['dripper','grinder','clicks','coffee_g','water_g','dilute_g','temp','bloom','time','water'].forEach(k=>{if(p[k]!=null)_dc.brew[k]=p[k];});
   _dc.brew.recipe=p.name;dcRerender();
 }
 /* 디카페인 원두를 고르면 짝 프리셋으로 바꿔 줌 (반대도) */
