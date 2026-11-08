@@ -56,6 +56,16 @@ body { font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-seri
 .reset-btn { width:100%; padding:14px; border-radius:14px; background:#eee; color:#444; font-size:17px; font-weight:700; border:none; cursor:pointer; font-family:inherit; margin-top:4px; }
 /* 인라인 표 — 다열 공용 (설정 모달 / 로스팅 인라인) */
 .inline-table-wrap { overflow-x:auto; margin:0 -2px; }
+.ej-tog{display:flex;gap:6px;margin-top:8px}.ej-tog button{flex:1;padding:7px;border-radius:8px;border:2px solid #ddd;background:#fff;font-size:12px;font-weight:700;color:#777;font-family:inherit}
+.ej-tog button.on{border-color:#7A3B10;background:#7A3B10;color:#fff}
+.ej-row{display:flex;align-items:center;gap:8px;margin-top:8px;justify-content:center}.ej-row b{font-size:18px;color:#333}
+.ej-row button{padding:7px 12px;border-radius:8px;border:1.5px solid #ccc;background:#fff;font-size:13px;font-weight:700;font-family:inherit}
+.ej-row.sm{margin:4px 0 8px}.ej-row.sm b{font-size:14px}.ej-row.sm button{padding:4px 9px;font-size:12px}
+.ej-dtr{font-size:12px;color:#999}
+.ej-hist{margin-top:8px;background:#faf7f4;border-radius:8px;padding:6px 8px}.eh-r{display:flex;flex-wrap:wrap;gap:2px 8px;font-size:11px;color:#555;padding:3px 0;border-top:1px solid #eee}
+.eh-r:first-of-type{border-top:none}.eh-d{font-weight:700;color:#333}.eh-t{color:#7A3B10}
+.ej-none{margin-top:8px;font-size:11px;color:#999}.pop-dev{text-align:center;font-size:11px;color:#c05000;margin:-4px 0 8px}
+.itbl.ejt{width:100%}.itbl.ejt th{background:#7A3B10;color:#fff}.itbl.ejt td{text-align:center;font-size:13px;padding:5px}.itbl.ejt tr.is-hit td{background:#fff3e0;font-weight:700}
 .itbl { width:100%; border-collapse:collapse; font-size:10px; }
 .itbl th { padding:5px 2px; text-align:center; color:#fff; font-size:9px; font-weight:700; border-right:1px solid rgba(255,255,255,0.2); }
 .itbl th:last-child { border-right:none; }
@@ -256,6 +266,60 @@ function beanPopHtml(){
   }).join('');
   return `<div class="pop-hist"><div class="ph-title">이 생두의 지난 1팝 (빈본 잔여 · ${proc})</div>${curHtml}${others?`<div class="ph-other">다른 모드: ${others}</div>`:''}</div>`;
 }
+/* ── 배출시간 방식 (2026-11-08) ──
+   같은 생두(같은 묶음)+같은 모드로 볶은 적 있으면 '배출 잔여 시간'을 목표로 볶음 (처음이면 DTR 방식).
+   처음 목표 = 최근 3번 배출 평균, 예상 DTR = 같은 생두·모드 1팝 평균 기준 */
+let roastTastes={};
+function mdOf(d){const p=String(d||'').split('-');return p.length===3?(+p[1])+'/'+(+p[2]):'';}
+function roastEjRem(r){const m=+r.mode;if(!MODES[m]||!r.eject_time)return null;const ae=MODES[m].autoEject,t=_sec(r.eject_time);if(t===null)return null;
+  const rem=r.time_basis==='진행'?ae-t:t;return rem>=0&&rem<ae?rem:null;}
+function sameHist(){if(!S.beanName)return [];const f=beanFamily(S.beanName);
+  return roastsList.filter(r=>roastInFamily(r,f)&&+r.mode===S.modeKey).sort((x,y)=>(y.date||'').localeCompare(x.date||'')||(+y.batch_no||0)-(+x.batch_no||0));}
+function sameHistPops(){return sameHist().filter(r=>!r.pop_unreliable).map(roastPopElapsed).filter(x=>x!=null);}
+function avgPopEl(){const a=sameHistPops();return a.length?popAvg(a):null;}
+function ejDefault(){const a=sameHist().map(roastEjRem).filter(x=>x!=null).slice(0,3);return a.length?Math.round(a.reduce((s,x)=>s+x,0)/a.length):null;}
+function ejDtr(popEl,rem){const ae=MODES[S.modeKey].autoEject,ej=ae-(rem==null?S.ejRem:rem);if(popEl==null||ej<=popEl)return null;return (ej-popEl)/ej*100;}
+let _ejKey='';
+function syncEjMode(){const k=S.beanName+'|'+S.modeKey;if(k===_ejKey)return;_ejKey=k;
+  const d=ejDefault();if(d==null){S.ejMode='dtr';S.ejRem=null;}else{S.ejMode='time';S.ejRem=d;}}
+function setEjMode(m){S.ejMode=m;if(m==='time'&&S.ejRem==null)S.ejRem=ejDefault()??30;render();}
+function adjEj(d){
+  const ae=MODES[S.modeKey].autoEject,minRem=0,maxRem=ae-(S.popElapsed!=null?S.popElapsed+5:30);
+  S.ejRem=Math.min(maxRem,Math.max(minRem,(S.ejRem||0)-d));   // −5초 = 잔여 숫자 5초 줄임
+  if(S.screen==='running'&&S.popElapsed!==null&&!S.countdownDone)startEjectCountdown();else render();
+}
+function ejRowHtml(popEl,sm){
+  const d=ejDtr(popEl);
+  return `<div class="ej-row${sm?' sm':''}"><button onclick="adjEj(5)">−5초</button><b>배출 ${fmt(S.ejRem)}</b><button onclick="adjEj(-5)">+5초</button>${d!=null?`<span class="ej-dtr">· DTR ${d.toFixed(1)}%</span>`:''}</div>`;
+}
+function histHtml(){
+  if(!S.beanName)return '';
+  const h=sameHist().slice(0,5);
+  if(!h.length)return `<div class="ej-none">이 생두는 ${S.modeKey}번 모드로 처음이에요 — DTR 방식</div>`;
+  const ae=MODES[S.modeKey].autoEject;
+  return `<div class="ej-hist"><div class="ph-title">최근 ${S.modeKey}번 기록 (잔여 기준)</div>`+h.map(r=>{const pe=roastPopElapsed(r),er=roastEjRem(r);
+    return `<div class="eh-r"><span class="eh-d">${mdOf(r.date)}</span><span>1팝 ${pe!=null?fmt(ae-pe):'-'}</span><span>배출 ${er!=null?fmt(er):'-'}</span><span>DTR ${r.dtr_pct||'-'}</span><span>손실 ${r.loss_pct?r.loss_pct+'%':'-'}</span><span class="eh-t">${roastTastes[r.id]||''}</span></div>`;}).join('')+'</div>';
+}
+function ejSetupHtml(){
+  syncEjMode();
+  const has=sameHist().length>0||S.ejMode==='time';
+  if(!has)return histHtml();
+  return `<div class="ej-tog"><button class="${S.ejMode==='time'?'on':''}" onclick="setEjMode('time')">배출시간 방식</button><button class="${S.ejMode!=='time'?'on':''}" onclick="setEjMode('dtr')">DTR 방식</button></div>`
+    +(S.ejMode==='time'?ejRowHtml(avgPopEl()):'')+histHtml();
+}
+// 배출시간 표: 목표를 가운데로 5줄
+function buildEjTableHtml(popEl){
+  const ae=MODES[S.modeKey].autoEject,c=S.ejRem;
+  const rows=[c+10,c+5,c,c-5,c-10].filter(r=>r>=0&&r<ae);
+  return `<table class="itbl ejt"><thead><tr><th>배출 잔여<br><span style="font-size:8px;opacity:.8">(경과)</span></th><th>DTR<br><span style="font-size:8px;opacity:.8">${S.popElapsed!=null?'실제 1팝':'평균 1팝'} 기준</span></th><th>발달</th></tr></thead><tbody>`+
+    rows.map(r=>{const d=ejDtr(popEl,r),ej=ae-r;return `<tr class="${r===c?'is-hit':''}"><td><b>${fmt(r)}</b> <small>(${fmt(ej)})</small>${r===c?' ★':''}</td><td>${d!=null?d.toFixed(1)+'%':'-'}</td><td>${popEl!=null&&ej>popEl?Math.round(ej-popEl)+'초':'-'}</td></tr>`;}).join('')+'</tbody></table>';
+}
+function ejOn(){return S.ejMode==='time'&&S.ejRem!=null;}
+function popDevNote(){
+  const r=S.popRange;if(!r||S.popElapsed==null)return '';
+  const p=S.popElapsed,d=p<r[0]-15?p-r[0]:p>r[1]+15?p-r[1]:0;
+  return d?`<div class="pop-dev">1팝이 평소(${fmt(MODES[S.modeKey].autoEject-r[0])}~${fmt(MODES[S.modeKey].autoEject-r[1])})보다 ${Math.abs(d)}초 ${d<0?'빠름':'늦음'}</div>`:'';
+}
 window.addEventListener('message',function(e){
   if(!e.data)return;
   // 상단 미니바(부모창)의 1차 팝 버튼
@@ -267,17 +331,21 @@ window.addEventListener('message',function(e){
   // 부모창(빈본 탭 계획)에서 다음 배치 값 넣기 — 시작 화면일 때만
   if(e.data.type==='plan_apply'){
     if(S.screen!=='setup')return;
-    const d=e.data;_setupKey=[d.bean_name,d.mode,d.dtr,d.input_g].join('|');
+    const d=e.data;_setupKey=[d.bean_name,d.mode,d.dtr,d.input_g,d.ej!=null&&d.ej!==''?+d.ej:null].join('|');
     if(d.bean_name&&beansList.some(b=>b.name===d.bean_name))S.beanName=d.bean_name;
     if(MODES[d.mode]){S.modeKey=d.mode;}
     if(d.dtr)S.dtr=+d.dtr;
     if(d.input_g)S.inputG=String(d.input_g);
     S.planLabel=d.label||'';
+    _ejKey='';syncEjMode();
+    if(d.ej!=null&&d.ej!==''){S.ejMode='time';S.ejRem=+d.ej;}else if(d.dtr)S.ejMode='dtr';
     render();return;
   }
   if(e.data.type!=='beans_list')return;
   beansList=e.data.beans||[];
+  if(e.data.roasts&&e.data.roasts.length!==roastsList.length)_ejKey='';
   if(e.data.roasts)roastsList=e.data.roasts;
+  if(e.data.tastes)roastTastes=e.data.tastes;
   _popRows=null;  // 생두/로스팅 목록이 바뀌면 1팝 통계 다시 계산
   if(S.screen==='setup')render();
 });
@@ -286,15 +354,16 @@ window.addEventListener('message',function(e){
 let _setupKey='';
 function postSetup(){
   if(window.parent===window||S.screen!=='setup')return;
-  const k=[S.beanName,S.modeKey,S.dtr,S.inputG].join('|');if(k===_setupKey)return;_setupKey=k;
-  window.parent.postMessage({type:'timer_setup',bean_name:S.beanName,mode:S.modeKey,dtr:S.dtr,input_g:S.inputG},'*');
+  const ej=ejOn()?S.ejRem:null;
+  const k=[S.beanName,S.modeKey,S.dtr,S.inputG,ej].join('|');if(k===_setupKey)return;_setupKey=k;
+  window.parent.postMessage({type:'timer_setup',bean_name:S.beanName,mode:S.modeKey,dtr:S.dtr,input_g:S.inputG,ej},'*');
 }
 function shortBean(n){const w=String(n||'').trim().split(/\s+/);if(w.length>1&&/^(케냐|에티오피아|콜롬비아|파나마|과테말라|코스타리카|페루|온두라스|에콰도르|르완다|브라질|엘살바도르|니카라과|부룬디|인도네시아|예멘)$/.test(w[0]))w.shift();return w.slice(0,(w[0]||'').length<=2||/^(AA|AB|PB|G1)$/i.test(w[1]||'')?2:1).join(' ');}
 function postTimerState(){
   if(window.parent===window)return;
   const ae=MODES[S.modeKey].autoEject;
   window.parent.postMessage({type:'timer_state',
-    active:S.screen!=='setup',mode:MODES[S.modeKey].label,dtr:S.dtr,
+    active:S.screen!=='setup',mode:MODES[S.modeKey].label,dtr:S.dtr,ejt:ejOn()?fmt(S.ejRem):'',
     remain:Math.max(0,ae-S.elapsed),popped:S.popElapsed!==null,
     over:!!(S.result&&S.result.over),countdown:S.countdown,countdownDone:S.countdownDone,
     zone:inPopZone(),realLock:S.popElapsed!==null?realPopLockLeft():0},'*');
@@ -324,11 +393,11 @@ const MODES = {
 };
 // 모드별 DTR 선택 목록 (2026-08-24 확정: 원두종류 대신 모드+DTR로만 구성)
 const MODE_DTRS = {
-  1:{group:"라이트",list:[9,10,11,12,13,14,15,16]},      // 2026-11-04: 9% 추가, 17%↑ 삭제
-  2:{group:"라이트",list:[9,10,11,12,13,14,15,16]},             // 2026-11-07: 9% 추가
-  3:{group:"라이트",list:[9,10,11,12,13,14,15,16]},             // 2026-11-07: 9% 추가
-  4:{group:"미디움",list:[12,13,14,15,16,17,18,19]},            // 2026-11-07: 12~19 1%씩
-  5:{group:"미디움",list:[13,14,15,16,17,18,19,20]},            // 2026-11-07: 13~20 1%씩
+  1:{group:"라이트",list:[5,6,7,8,9,10,11,12,13,14,15,16]},      // 2026-11-04: 9% 추가, 17%↑ 삭제
+  2:{group:"라이트",list:[5,6,7,8,9,10,11,12,13,14,15,16]},             // 2026-11-07: 9% 추가
+  3:{group:"라이트",list:[5,6,7,8,9,10,11,12,13,14,15,16]},             // 2026-11-07: 9% 추가
+  4:{group:"미디움",list:[5,6,7,8,9,10,12,13,14,15,16,17,18,19]},            // 2026-11-07: 12~19 1%씩
+  5:{group:"미디움",list:[5,6,7,8,9,10,13,14,15,16,17,18,19,20]},            // 2026-11-07: 13~20 1%씩
   6:{group:"미디움",list:[15,16,17,18,19,20,22,24]},            // 2026-11-07: 15~20 + 22·24, 다크→미디움
   7:{group:"다크",list:[18,20,22,24,26,28]},             // 2026-11-04: 18% 추가, 30%↑ 삭제
   8:{group:"다크",list:[20,22,24,26,28,30,32,34]},       // 2026-11-04: 20% 추가, 35% 삭제
@@ -348,7 +417,7 @@ const POP_ROWS = {
 };
 let S={screen:"setup",modeKey:3,dtr:MODE_DTRS[3].list[0],
   elapsed:0,popElapsed:null,result:null,countdown:null,countdownDone:false,showTable:false,
-  beanName:'',inputG:'',outputG:'100'};
+  beanName:'',inputG:'',outputG:'100',ejMode:'dtr',ejRem:null};
 let timerIv=null,cdIv=null,startTime=null,audioCtx=null,wakeLock=null;
 
 async function requestWakeLock(){
@@ -428,7 +497,8 @@ function selectBean(sel){
 function doStart(){
   clearInterval(timerIv);clearInterval(cdIv);
   Object.assign(S,{elapsed:0,popElapsed:null,result:null,countdown:null,countdownDone:false,showTable:false,screen:"running",
-    falsePops:[],popAt:0,zoneAlerted:false,earlyWarn:false,predRun:_predVal&&_predVal.has?_predVal:null});
+    falsePops:[],popAt:0,zoneAlerted:false,earlyWarn:false,predRun:_predVal&&_predVal.has?_predVal:null,
+    avgPopRun:avgPopEl(),popRange:(a=>a.length?[Math.min(...a),Math.max(...a)]:null)(sameHistPops())});
   startTime=Date.now();
   unlockAudio();   // 무음 모드에서도 알림 소리 (버튼 누른 순간에만 켤 수 있음)
   timerIv=setInterval(()=>{S.elapsed=Math.floor((Date.now()-startTime)/1000);zoneTick();render();},200);
@@ -456,7 +526,8 @@ function handleRealPop(){
 function startEjectCountdown(){
   clearInterval(cdIv);S.countdown=null;S.countdownDone=false;
   const ae=MODES[S.modeKey].autoEject;
-  S.result=calcEject(S.popElapsed,S.dtr,ae);
+  if(ejOn()){const ej=ae-S.ejRem;S.result={ejSec:ej,dev:ej-S.popElapsed,rem:S.ejRem,over:false,time:true};}
+  else S.result=calcEject(S.popElapsed,S.dtr,ae);
   if(!S.result.over){
     const target=S.result.ejSec;
     cdIv=setInterval(()=>{
@@ -493,7 +564,7 @@ function calcTimerDtrLoss(){
   const ejSec=S.result?S.result.ejSec:null;
   let dtr=null,loss=null;
   if(popSec!==null&&S.result){
-    dtr=S.result.over?((ae-popSec)/ae*100).toFixed(1):String(S.dtr);  // 목표대로면 목표값, 자동배출이면 1팝 잔여÷자동배출
+    dtr=S.result.time?((ejSec-popSec)/ejSec*100).toFixed(1):S.result.over?((ae-popSec)/ae*100).toFixed(1):String(S.dtr);  // 목표대로면 목표값, 자동배출이면 1팝 잔여÷자동배출
   }
   const ig=parseFloat(S.inputG)||0;
   const og=parseFloat(S.outputG)||0;
@@ -522,7 +593,8 @@ function sendRoastLog(){
     pop_time:popSec!==null?fmtRem(popSec):'',
     // 목표가 자동배출을 넘으면(over) 자동배출 시점(잔여 0:00)에 나온 것 — 예전엔 음수가 양수로 뒤집혀 기록됐음
     eject_time:ejSec!==null?(S.result&&S.result.over?'0:00':fmtRem(ejSec)):'',
-    dtr_target:(S.result&&!S.result.over)?String(S.dtr):'',
+    dtr_target:(S.result&&!S.result.over&&!S.result.time)?String(S.dtr):'',
+    eject_target:S.result&&S.result.time?fmt(S.ejRem):'',
     eject_auto:!!(S.result&&S.result.over),
     dtr_over_target:(S.result&&S.result.over)?String(S.dtr):'',
     bean_short:shortBean(S.beanName),
@@ -614,11 +686,11 @@ function render(){
       <div class="modal-overlay" onclick="if(event.target===this)toggleTable()">
         <div class="modal">
           <div class="modal-header">
-            <div class="modal-title" style="color:${color}">${mode.label}번 · ${group} · DTR ${S.dtr}% 선택중</div>
+            <div class="modal-title" style="color:${color}">${mode.label} · ${group} · ${ejOn()?'배출 '+fmt(S.ejRem):'DTR '+S.dtr+'%'} 선택중</div>
             <div class="modal-close" onclick="toggleTable()">✕</div>
           </div>
           <div class="modal-meta">자동배출 ${fmt(mode.autoEject)} · 남은시간 기준 · 괄호=경과 · ★=선택된 DTR</div>
-          ${buildTableHtml(null)}
+          ${ejOn()?buildEjTableHtml(avgPopEl()):buildTableHtml(null)}
         </div>
       </div>`;
   } else {
@@ -656,7 +728,7 @@ function render(){
           })()}
         </select>
         ${selectedSoldOut()?`<div style="margin-top:6px;padding:7px 10px;border-radius:8px;background:#fff3e0;color:#c05000;font-size:12px;font-weight:600">⚠ 재고가 소진된 생두예요.</div>`:''}
-        <div class="set-sum">${mode.label} · DTR ${S.dtr}% · ${S.inputG||120}g <span>(자동배출 ${fmt(mode.autoEject)})</span></div>
+        ${(()=>{const ej=ejSetupHtml();return `<div class="set-sum">${mode.label} · ${ejOn()?'배출 '+fmt(S.ejRem):'DTR '+S.dtr+'%'} · ${S.inputG||120}g <span>(자동배출 ${fmt(mode.autoEject)})</span></div>${ej}`;})()}
         ${predHtml()}
       </div>`:``}
       <button class="start-btn" style="background:${color}" onclick="doStart()">▶ 로스팅 시작</button>
@@ -674,7 +746,7 @@ function render(){
         ${modePopHtml()}
         ${beanPopHtml()}
       </div>
-      <div class="sec">
+      <div class="sec"${ejOn()?' style="display:none"':''}>
         <div class="lbl">DTR 목표</div>
         <div class="btn-row">
           ${dtrList.map(d=>`
@@ -700,7 +772,7 @@ function render(){
     const zone=inPopZone();
     const hdrBg=S.popElapsed!==null?(S.result?.over?"#e05c00":color):(zone?"#1565c0":"#333");
     hdr.style.background=hdrBg;hdr.style.display='';
-    hdrT.textContent=`🔥 ${shortBean(S.beanName)||'로스팅'} · ${S.modeKey}-${S.dtr}`;
+    hdrT.textContent=`🔥 ${shortBean(S.beanName)||'로스팅'} · ${S.modeKey}-${ejOn()?'배출'+fmt(S.ejRem):S.dtr}`;
     hdrS.textContent=S.popElapsed===null?(zone?"🔔 1팝 예상 구간":"로스팅 중"):(S.result?.over?"⚠ 자동배출 초과":"✅ 1팝 → 배출 대기");
     const remDisplay=Math.max(0,mode.autoEject-S.elapsed);
 
@@ -716,7 +788,8 @@ function render(){
       const rc=r.over?"#e05c00":color;
       const rs=r.over?`+${fmt(Math.abs(r.rem))}`:fmt(r.rem);
       resultHtml=`
-        <div class="result-mini">${r.over?`⚠ 목표 DTR ${S.dtr}%는 자동배출을 넘어요 — 자동배출에 나옴`:`발달시간 ${r.dev}초`}</div>
+        ${r.time?`<div class="result-mini">현재 목표 DTR <b>${(ejDtr(S.popElapsed)||0).toFixed(1)}%</b> · 발달 ${r.dev}초</div>${!S.countdownDone?ejRowHtml(S.popElapsed,true):''}`
+          :`<div class="result-mini">${r.over?`⚠ 목표 DTR ${S.dtr}%는 자동배출을 넘어요 — 자동배출에 나옴`:`발달시간 ${r.dev}초`}</div>`}
         ${!r.over?`
         <div class="cd-box" style="background:${S.countdownDone?"#e8f5e9":"#fffde7"};border-color:${S.countdownDone?"#4caf50":"#ffc107"}">
           ${S.countdownDone
@@ -735,13 +808,15 @@ function render(){
         ?`<button class="pop-btn" style="background:${color};box-shadow:0 4px 16px ${color}55" onclick="handlePop()">🔊 1차 팝!</button>`
         :`<div class="big2"><div><div class="b2-l">1팝 잔여</div><div class="b2-n">${fmt(mode.autoEject-S.popElapsed)}</div></div>
            <div class="${S.result&&S.result.over?'over':''}"><div class="b2-l">${S.result&&S.result.over?'자동배출 초과':'배출 잔여'}</div><div class="b2-n">${S.result?(S.result.over?'0:00':fmt(S.result.rem)):'…'}</div></div></div>`}
+      ${S.popElapsed===null&&ejOn()?ejRowHtml(S.avgPopRun,true):''}
       ${S.earlyWarn?`<div class="early-warn">예상보다 빠름 — 가짜 팝일 수 있음</div>`:''}
+      ${popDevNote()}
       ${resultHtml}
       ${S.popElapsed!==null&&!S.countdownDone?(()=>{const lk=realPopLockLeft();const n=(S.falsePops||[]).length;
         return `<div class="realpop-row">${n?`가짜 ${n}번 · `:''}가짜였으면 <button class="realpop-btn" ${lk?'disabled':''} onclick="handleRealPop()">${lk?lk+'…':'진짜 1팝'}</button></div>`;})():''}
       <div class="sec" style="padding:12px 10px;margin-bottom:12px">
-        <div class="lbl" style="margin-bottom:6px">📋 ${mode.label}번 · ${group} · DTR ${S.dtr}% 기준표</div>
-        ${buildTableHtml(hitRemain,getDisplayDtrs(MODE_DTRS[S.modeKey].list,S.dtr))}
+        <div class="lbl" style="margin-bottom:6px">📋 ${mode.label} · ${group} · ${ejOn()?'배출 '+fmt(S.ejRem):'DTR '+S.dtr+'%'} 기준표</div>
+        ${ejOn()?buildEjTableHtml(S.popElapsed!==null?S.popElapsed:S.avgPopRun):buildTableHtml(hitRemain,getDisplayDtrs(MODE_DTRS[S.modeKey].list,S.dtr))}
       </div>
       ${S.countdownDone||S.result?.over?`
       <div style="background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.07)">

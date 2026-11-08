@@ -820,3 +820,7 @@ html.roasting,html.roasting body{overscroll-behavior-y:none;}
 .dc-qname{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:12px;line-height:1.25;text-align:center;}
 .dc-qbatch{min-height:70px;}
 .dc-row-bean{font-size:14px;font-weight:700;line-height:1.35;}
+
+/* 계획표: 같은 생두·모드 최근 기록 (2026-11-08) */
+.pl-hist{font-size:11px;color:var(--muted);margin:4px 0 6px;line-height:1.5}.pl-hist span{color:var(--coral)}.pl-hist.none{font-style:italic}
+.pl-sw{font-size:10px;color:var(--coral);text-decoration:underline;margin-left:4px;cursor:pointer}

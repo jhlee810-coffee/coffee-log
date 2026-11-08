@@ -373,7 +373,7 @@ function calcRoastLive(){
   const r=roastFormDTR();
   if(r){dtrStr=(r.source==='target'?String(r.dtr):r.dtr.toFixed(1))+'%'+(r.source==='target'?' (목표)':'');levelStr=dtrToLevel(r.dtr)||'—';}
   const h=document.getElementById('ejBaseHint');
-  if(h){const t=document.getElementById('f_rdt').value;h.textContent=t?`타이머 목표 DTR ${t}% 배출 시점`:'빈본 화면의 남은 시간 (자동배출은 0:00)';}
+  if(h){const t=document.getElementById('f_rdt').value;const et=document.getElementById('f_rejt').value;h.textContent=t?`타이머 목표 DTR ${t}% 배출 시점`:et?`타이머 목표 배출 ${et} 시점`:'빈본 화면의 남은 시간 (자동배출은 0:00)';}
   document.getElementById('ac_loss').textContent='손실율 '+lossStr;
   document.getElementById('ac_dtr').textContent='DTR '+dtrStr;
   document.getElementById('ac_level').textContent='레벨 '+levelStr;
@@ -410,6 +410,7 @@ function openRoastForm(id, prefill){
     document.getElementById('f_re').value=base;
     document.getElementById('f_rad').value=String(adj);
     document.getElementById('f_rdt').value=id?(r.dtr_target||''):(p.dtr_target||'');
+    document.getElementById('f_rejt').value=id?(r.eject_target||''):(p.eject_target||'');
     document.getElementById('f_rbase').value=(id?(r.dtr_target?base:''):(p.dtr_target?base:''));
   }
   document.getElementById('f_rn').value=r.notes||p.notes||'';
@@ -503,6 +504,7 @@ function saveRoast(){
     weak_pop:document.getElementById('f_rwp').checked,
     dtr_over_target:document.getElementById('f_rovt').value,
     dtr_target:document.getElementById('f_rdt').value,
+    eject_target:document.getElementById('f_rejt').value,
     dtr_source:dr?dr.source:'',
     eject_adjust_s:ejx&&ejx.adj?ejx.adj:'',
     eject_over_s:ejx&&ejx.actual<0?-ejx.actual:'',
