@@ -36,7 +36,7 @@ const DC_STRENGTH=[{v:'weak',l:'연하다'},{v:'ok',l:'적당'},{v:'strong',l:'�
 const DC_DRIPPERS=['하리오 V60','하리오 네오','하리오 알파','펄사 미니','옥소 래피드 브루어'];
 const DC_GRINDERS=[
   {name:'코만단테 C40',min:5,max:50},
-  {name:'ZP6',min:5,max:250},
+  {name:'ZP6',min:5,max:250,scale:10},   // ZP6는 화면에 1/10로 표시 (저장 75 → 7.5)
   {name:'A4Z',min:35,max:350},
 ];
 // 힌트: 최근 7번 기록 중 조건에 맞는 게 3번 이상이면 화면 위에 표시
@@ -159,6 +159,7 @@ function dcLastBrew(){
   const r=dcSortedRecords().find(x=>x.brew&&Object.keys(x.brew).length);
   return r?{...r.brew}:{};
 }
+function dcClickLabel(gr,c){const G=dcGrinder(gr);if(c===''||c==null)return '';return G&&G.scale?(+c/G.scale).toFixed(1):String(c)+'클릭';}
 function dcGrinder(name){return DC_GRINDERS.find(g=>g.name===name)||null;}
 function dcAllRecipes(){
   const conv=r=>({name:r.name,coffee_g:r.coffee||r.coffee_g||'',water_g:r.water||r.water_g||'',temp:r.temp||''});
@@ -262,8 +263,8 @@ function dcMoreHtml(){
   const grs=DC_GRINDERS.map(g=>chip(b.grinder===g.name,g.name,`dcSetGrinder('${q(g.name)}')`)).join('');
   const G=dcGrinder(b.grinder);
   let clickSel='';
-  if(G){let o='<option value="">클릭</option>';for(let c=G.min;c<=G.max;c++)o+=`<option value="${c}"${+b.clicks===c?' selected':''}>${c}클릭</option>`;
-    clickSel=`<div class="dc-clicks"><button class="dc-adj" onclick="dcClick(-1)">−1</button><select class="sel" onchange="_dc.brew.clicks=this.value">${o}</select><button class="dc-adj" onclick="dcClick(1)">+1</button></div>`;}
+  if(G){let o='<option value="">클릭</option>';for(let c=G.min;c<=G.max;c++)o+=`<option value="${c}"${+b.clicks===c?' selected':''}>${dcClickLabel(G.name,c)}</option>`;
+    clickSel=`<div class="dc-clicks"><button class="dc-adj" onclick="dcClick(-1)">${G.scale?'−0.1':'−1'}</button><select class="sel" onchange="_dc.brew.clicks=this.value">${o}</select><button class="dc-adj" onclick="dcClick(1)">${G.scale?'+0.1':'+1'}</button></div>`;}
   const inp=(k,ph,mode)=>`<input class="inp" ${mode?`inputmode="${mode}"`:''} placeholder="${ph}" value="${dcEsc(b[k])}" oninput="_dc.brew.${k}=this.value">`;
   return `<div class="dc-more">
     <div class="dc-sub">① 맛</div>
@@ -473,7 +474,7 @@ function dcListHtml(){
     list.map(r=>{const bi=r.bean_info||{},nt=dcBeanNotes(bi).join(', ');return `<div class="dc-row"><div class="dc-row-bean">${dcEsc(bi.bean||'')}</div>${nt?`<div class="dc-notes">🍑 ${dcEsc(nt)}</div>`:''}<div class="dc-row-sum">${dcEsc(dcSummary(r))}</div>
       ${r.memo?`<div class="dc-row-memo">“${dcEsc(r.memo)}”</div>`:''}
       ${r.memo_hot||r.memo_cool?`<div class="dc-row-memo">${r.memo_hot?'따뜻: '+dcEsc(r.memo_hot):''}${r.memo_hot&&r.memo_cool?' / ':''}${r.memo_cool?'식음: '+dcEsc(r.memo_cool):''}</div>`:''}
-      ${r.brew?`<div class="dc-row-brew">${dcEsc([r.brew.recipe,r.brew.dripper,r.brew.grinder?r.brew.grinder+(r.brew.clicks?' '+r.brew.clicks+'클릭':''):'',r.brew.coffee_g?r.brew.coffee_g+'g':'',r.brew.water_g?r.brew.water_g+'g':'',r.brew.temp?r.brew.temp+'°C':'',r.brew.bloom?'불림 '+r.brew.bloom:'',r.brew.dilute_g!=null&&r.brew.dilute_g!==''?'가수 '+r.brew.dilute_g+'g':'',r.brew.time,r.brew.water].filter(Boolean).join(' · '))}</div>`:''}
+      ${r.brew?`<div class="dc-row-brew">${dcEsc([r.brew.recipe,r.brew.dripper,r.brew.grinder?r.brew.grinder+(r.brew.clicks?' '+dcClickLabel(r.brew.grinder,r.brew.clicks):''):'',r.brew.coffee_g?r.brew.coffee_g+'g':'',r.brew.water_g?r.brew.water_g+'g':'',r.brew.temp?r.brew.temp+'°C':'',r.brew.bloom?'불림 '+r.brew.bloom:'',r.brew.dilute_g!=null&&r.brew.dilute_g!==''?'가수 '+r.brew.dilute_g+'g':'',r.brew.time,r.brew.water].filter(Boolean).join(' · '))}</div>`:''}
       <div class="dc-row-btns"><button class="btn2" onclick="dcEdit('${r.id}')">수정</button><button class="btnd" onclick="dcDelete('${r.id}')">삭제</button></div></div>`;}).join('');
 }
 function dcEdit(id){
