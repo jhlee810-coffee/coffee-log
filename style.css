@@ -824,3 +824,15 @@ html.roasting,html.roasting body{overscroll-behavior-y:none;}
 /* 계획표: 같은 생두·모드 최근 기록 (2026-11-08) */
 .pl-hist{font-size:11px;color:var(--muted);margin:4px 0 6px;line-height:1.5}.pl-hist span{color:var(--coral)}.pl-hist.none{font-style:italic}
 .pl-sw{font-size:10px;color:var(--coral);text-decoration:underline;margin-left:4px;cursor:pointer}
+
+/* 쉬운 커핑 단계별 진행 (2026-11-09) */
+.ec-set{display:flex;align-items:center;gap:8px;margin-bottom:8px}.ec-set span{width:64px;flex-shrink:0;font-size:14px;color:var(--text2)}.ec-set .inp{flex:1;min-width:0}.ec-set em{font-style:normal;color:var(--muted);font-size:13px}
+.ec-pick-row.four{grid-template-columns:1fr 1fr 1fr 1fr}
+.ec-guide{margin-top:10px;background:var(--bg3);border-radius:9px;padding:10px 12px;font-size:14px;line-height:1.6}.ec-guide ol{margin:4px 0 0 18px;padding:0}
+.ec-stage{border-radius:10px;padding:2px 0 6px}.ec-stage.now{background:rgba(232,160,64,.12);outline:2px solid var(--amber);padding:6px}
+.ec-stage .ec-step b{flex:1}.ec-stage .ec-step em{font-style:normal;font-size:13px;color:var(--muted)}
+.ec-stage-g{font-size:14px;color:var(--text2);margin:6px 4px;line-height:1.5}.ec-stage.done:not(.now) .ec-stage-g{opacity:.6}
+.ec-stage .ec-q{margin-top:8px}
+.ec-clock{position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:90;display:flex;align-items:center;gap:12px;background:var(--bg2);border:2px solid var(--amber);border-radius:14px;padding:8px 14px;box-shadow:0 4px 16px rgba(0,0,0,.35)}
+.ec-clock-n{font-size:34px;font-weight:800;color:var(--amber);font-variant-numeric:tabular-nums}.ec-clock-s{font-size:13px;color:var(--text2);line-height:1.4}
+.ec-done-seat{margin-top:10px;font-size:16px;font-weight:700;line-height:1.6}
