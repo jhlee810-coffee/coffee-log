@@ -3,7 +3,7 @@
 
 const EC_KEY='easyCuppingLog';
 // 2026-11-09: 혼자서도 순서대로 따라 하는 커핑 — 단계(시간) 안에 그 단계 평가가 들어 있음
-const EC_DEFAULT_SET={coffee_g:'8.3',water_g:'150',temp:'93',grind:'지피식스, 펄사보다 1~1.5단계 굵게'};
+const EC_DEFAULT_SET={coffee_g:'8.3',water_g:'150',temp:'93',grind:'지피식스 7.5'};
 const EC_STAGES=[
   {t:null,label:'마른 향',time:'물 붓기 전',guide:'분쇄 직후 두 볼 향을 번갈아 맡아요',qs:[]},
   {t:0,   label:'물 붓기',time:'0:00',guide:'{temp}°C 물을 {water}g까지, 가루가 다 젖게 빠르게',qs:[],start:true},
