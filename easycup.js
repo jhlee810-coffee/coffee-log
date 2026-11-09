@@ -103,9 +103,12 @@ function ecWinnerSide(rec){return rec.picks.final==='A'||rec.picks.final==='B'?r
 function renderEasyCup(){
   const el=document.getElementById('ecRoot');
   if(!el)return;
+  // 커핑 계획(cupplan.js): 목록·저장 완료 화면 위에 배너
+  const bar=_ecView!=='form'&&typeof cpBannerHtml==='function'?cpBannerHtml():'';
+  if(typeof cpCheckRemote==='function'&&Date.now()-(window._cpChecked||0)>60000){window._cpChecked=Date.now();cpCheckRemote();}
   if(_ecView==='form'&&_ec)el.innerHTML=ecFormHtml();
-  else if(_ecView==='done')el.innerHTML=ecDoneHtml();
-  else el.innerHTML=ecListHtml();
+  else if(_ecView==='done')el.innerHTML=bar+ecDoneHtml();
+  else el.innerHTML=bar+ecListHtml();
 }
 function ecGo(view){_ecView=view;renderEasyCup();window.scrollTo(0,0);}
 
@@ -165,10 +168,12 @@ function ecStagesHtml(){
   }).join('');
 }
 function ecClockHtml(){
-  const e=_ec,el=ecElapsed();if(el==null)return '';
+  const e=_ec,el=ecElapsed();
+  const q=e.planRef&&e.planRef.question?`<div class="ec-clock-q">❓ ${ecEsc(e.planRef.question)}</div>`:'';
+  if(el==null)return q?`<div class="ec-clock qonly">${q}</div>`:'';
   const i=ecStageIdx(),nx=EC_STAGES.slice(i+1).find(x=>x.t!=null);
   return `<div class="ec-clock" onclick="ecScrollStage()"><div class="ec-clock-n" id="ecClock">${ecFmt(el)}</div>
-    <div class="ec-clock-s">지금 <b>${i+1}. ${EC_STAGES[i].label}</b>${nx?`<br><span id="ecClockNext">다음 ${nx.label} ${ecFmt(nx.t)} (${ecFmt(nx.t-el)} 남음)</span>`:''}</div></div>`;
+    <div class="ec-clock-s">지금 <b>${i+1}. ${EC_STAGES[i].label}</b>${nx?`<br><span id="ecClockNext">다음 ${nx.label} ${ecFmt(nx.t)} (${ecFmt(nx.t-el)} 남음)</span>`:''}</div>${q}</div>`;
 }
 function ecSelfGuide(){
   return `<div class="ec-guide"><b>혼자 섞기 순서</b><ol>
@@ -196,6 +201,7 @@ function ecFormHtml(){
       <button class="btn2" onclick="ecShuffle()">다시 섞기</button></div>`:e.blindMode==='self'&&!e.editId?ecSelfGuide():'';
   return `<div class="sh"><div class="stl">${e.editId?'쉬운 커핑 수정':'새 비교'}</div><button class="btn2" onclick="ecCancel()">닫기</button></div>
   ${tour}
+  ${e.planRef?`<div class="ec-plan-q">📋 커핑 계획 ${e.planRef.idx+1}/${e.planRef.n}${e.planRef.question?`<b>❓ ${ecEsc(e.planRef.question)}</b>`:''}</div>`:''}
   <div class="ec-card"><div class="ec-card-t">1. 기본 설정</div>
     <label class="ec-set"><span>커핑 날짜</span><input class="inp" type="date" value="${e.date}" onchange="_ec.date=this.value||today()" onblur="ecSetDate(this.value)"></label>
     ${set('coffee_g','원두','g','num')}${set('water_g','물','g','num')}${set('temp','물 온도','°C','num')}${set('grind','분쇄','')}
@@ -209,7 +215,7 @@ function ecFormHtml(){
   <div class="ec-card"><div class="ec-q"><div class="ec-q-hd"><b>한 줄 메모</b> <span class="ec-opt">선택</span></div>
     <input class="inp" id="ecMemo" placeholder="예: 2번이 향이 더 또렷" value="${ecEsc(e.memo)}" oninput="_ec.memo=this.value"></div></div>
   <button class="ec-save" onclick="ecSubmit()">${e.editId?'수정 저장':'저장하기'}</button>
-  ${e.t0?'<div style="height:90px"></div>':''}${ecClockHtml()}`;
+  ${e.t0||e.planRef?`<div style="height:${e.t0?110:60}px"></div>`:''}${ecClockHtml()}`;
 }
 function ecRerenderKeep(){const y=window.scrollY;renderEasyCup();window.scrollTo(0,y);}
 function ecToggleStep(i){_ec.steps[i]=!_ec.steps[i];ecRerenderKeep();}
@@ -268,10 +274,13 @@ function ecRenderPickList(){
     return `<div class="ec-pick-item" onclick="ecChooseRoast('${r.id}')"><div class="ec-pi-top"><span>${ecMD(r.date)}</span><b>${ecEsc(r.bean_name)}</b></div><div class="ec-pi-meta">${meta}</div></div>`;
   }).join('')+(list.length>80?`<div class="ec-hint">최근 80개만 보여요. 생두 이름으로 걸러 보세요.</div>`:'');
 }
+function ecSnapRoast(r){
+  return {roast_id:r.id,bean:r.bean_name||'',roast_date:r.date||'',mode:r.mode?String(r.mode):'',
+    dtr:ecRoastDTR(r),loss:ecRoastLoss(r),batch:ecBatchMap()[r.id]||'',memo:'',manual:false};
+}
 function ecChooseRoast(id){
   const r=(db.roasts||[]).find(x=>x.id===id);if(!r)return;
-  _ec[_ecPickSide]={roast_id:r.id,bean:r.bean_name||'',roast_date:r.date||'',mode:r.mode?String(r.mode):'',
-    dtr:ecRoastDTR(r),loss:ecRoastLoss(r),batch:ecBatchMap()[r.id]||'',memo:'',manual:false};
+  _ec[_ecPickSide]=ecSnapRoast(r);
   closeMo('moEcPick');renderEasyCup();
 }
 
@@ -340,6 +349,7 @@ function ecSubmit(){
     updated_at:Date.now(),
   };
   if(!rec.tournament_id)rec.tournament_id=rec.id;
+  if(e.planRef&&!old){rec.plan_date=e.planRef.date;rec.plan_no=e.planRef.idx+1;if(typeof cpMarkDone==='function')cpMarkDone(e.planRef,rec.id);}  // 커핑 계획 완료
   rec.summary=ecSummary(rec);
   if(old)list[list.indexOf(old)]=rec;else list.push(rec);
   ecSave(list);
