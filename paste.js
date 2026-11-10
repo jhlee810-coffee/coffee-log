@@ -2,7 +2,7 @@
 // 모바일 Claude가 봉투 사진을 읽어 만든 글("항목: 값" 줄, 여러 개는 --- 로 구분)을 붙여넣어 한 번에 등록.
 // 저장: 생두 → db.beans, 원두(구매) → db.roasted_beans (기존 등록 폼과 같은 필드 이름)
 // 맞는 필드가 없는 항목(수확연도, 원두의 지역·농장·고도·품종 등)은 메모(memo)에 덧붙임. 생두는 memo 필드가 새로 생김 (상세 화면에 표시)
-// 가격은 kg당 원 → 생두는 만원/kg(price), 원두는 봉투 가격(원) = kg당 가격 × 수량/1000 으로 바꿔 저장
+// 가격: 생두는 kg당 원 → 만원/kg(price)로 바꿔 저장. 원두는 구매한 가격(원) 그대로 저장 (kg 환산 없음 — 2026-11-10 사용자 요청)
 //
 // 형식 예시는 COFFEE_LOG_FOR_CLAUDE.md 의 "붙여넣기 등록 형식" 참고
 
@@ -75,6 +75,9 @@ function pstAlt(s){
   const n=(String(s||'').match(/\d{3,4}/g)||[]).map(Number).slice(0,2).sort((a,b)=>a-b);
   if(!n.length)return '';return n.length===2&&n[0]!==n[1]?`${n[0]}~${n[1]}`:String(n[0]);
 }
+// 구매처·로스터리 끝의 괄호 설명은 뗌: "커피정경 (情逕)" → "커피정경", "커피 마시는 고래 (네이버 스마트스토어)" → "커피 마시는 고래"
+const pstPlain=s=>String(s||'').replace(/\s*[(（][^)）]*[)）]\s*$/,'').trim();
+const pstIsDecaf=it=>/디카페인|decaf/i.test((it.f.name||'')+' '+(it.f.process||''));
 function pstList(s){return String(s||'').split(/[,，、]/).map(x=>x.trim()).filter(Boolean).join(', ');}
 // 가공: 생두는 앱 목록 표기(Washed/Natural/Honey), 원두는 고르기 칩(워시드/내추럴/허니/무산소/기타)에 맞춤
 function pstProcGreen(s){s=String(s||'').trim();return ({'워시드':'Washed','내추럴':'Natural','허니':'Honey'})[s]||s;}
@@ -149,23 +152,23 @@ function pstBuild(it){
     const region=[f.region,f.farm].map(s=>String(s||'').trim()).filter(Boolean).join(' / ');   // 기존 표기 "지역 / 농장"
     const memo=[f.harvest?'수확연도: '+f.harvest.trim():'',String(f.memo||'').trim()].filter(Boolean).join(' · ');
     const rec={id:pstUniqueId(''),name:f.name.trim(),origin:f.origin.trim(),region,variety,process:pstProcGreen(f.process),altitude:alt,
-      shop:canonShop(f.shop),price:kg?String(+(kg/10000).toFixed(2)):'',pay_amount:'',decaf:false,rest_min:'',rest_max:'',
+      shop:canonShop(pstPlain(f.shop)),price:kg?String(+(kg/10000).toFixed(2)):'',pay_amount:'',decaf:pstIsDecaf(it),rest_min:'',rest_max:'',
       moisture:BEAN_MOISTURE_DEFAULT,moisture_set:false,density:BEAN_DENSITY_DEFAULT,density_set:false,
       stock_initial:g?String(g):'',stock_date:f.buy_date||'',status:'재고있음',cup_notes:cup,score_momos:'',score_wonderroom:''};
     if(memo)rec.memo=memo;
     return rec;
   }
-  const proc=pstProcRb(f.process),procRaw=String(f.process||'').trim();
+  const decaf=pstIsDecaf(it);
+  const procRaw0=String(f.process||'').trim();
+  const proc=pstProcRb(procRaw0===''||/^디카페인$/.test(procRaw0)?'':procRaw0),procRaw=procRaw0;
   const trivial=['washed','워시드','natural','내추럴','honey','허니','anaerobic','무산소'];
-  const roastery=canonShop(f.roastery||f.shop);
-  const bag=kg&&g?String(Math.round(kg*g/1000)):'';
+  const roastery=canonShop(pstPlain(f.roastery||f.shop));
   const extras=[f.region&&'지역: '+f.region.trim(),f.farm&&'농장: '+f.farm.trim(),alt&&'고도: '+alt+'m',variety&&'품종: '+variety,f.harvest&&'수확연도: '+f.harvest.trim(),
-    procRaw&&proc!==procRaw&&!trivial.includes(procRaw.toLowerCase())&&'가공: '+procRaw,
-    f.roastery&&f.shop&&canonShop(f.shop)!==roastery&&'구매처: '+canonShop(f.shop),
-    kg&&!bag&&'kg당 가격: '+kg.toLocaleString()+'원'].filter(Boolean);
+    procRaw&&proc!==procRaw&&!trivial.includes(procRaw.toLowerCase())&&!(decaf&&/^디카페인$/.test(procRaw))&&'가공: '+procRaw,
+    f.roastery&&f.shop&&canonShop(pstPlain(f.shop))!==roastery&&'구매처: '+canonShop(pstPlain(f.shop))].filter(Boolean);
   const memo=[...extras,String(f.memo||'').trim()].filter(Boolean).join(' · ');
   return {id:pstUniqueId('rb_'),name:f.name.trim(),roastery,roast_date:f.roast_date||'',buy_date:f.buy_date||'',origin:f.origin.trim(),
-    process:proc,level:pstLevel(f.level),weight_g:g?String(g):'',price:bag,cup_notes:cup,memo,status:RB_STATUS_ON,decaf:false,rest_min:'',rest_max:''};
+    process:proc,level:pstLevel(f.level),weight_g:g?String(g):'',price:kg?String(kg):'',cup_notes:cup,memo,status:RB_STATUS_ON,decaf,rest_min:'',rest_max:''};   // 원두 가격 = 구매 가격(원) 그대로
 }
 
 /* ── 같은 이름 확인 ── */
@@ -194,7 +197,7 @@ function pstRender(){
   const el=document.getElementById('pasteBody');if(!el)return;
   if(_pst.step==='in'){
     el.innerHTML=`<div class="mtitle">📥 붙여넣기로 ${PST_KINDS[_pst.kind]} 등록</div>
-      <div class="ps-help">Claude가 봉투 사진을 보고 만든 글을 붙여넣으세요.<br>한 원두에 <b>항목: 값</b> 줄들, 여러 개면 <b>---</b> 로 구분해요. <b>종류: 생두</b> 또는 <b>종류: 원두</b>가 있으면 그대로 따라가요 (없으면 ${PST_KINDS[_pst.kind]}).<br>가격은 kg당 원, 수량은 g.</div>
+      <div class="ps-help">Claude가 봉투 사진을 보고 만든 글을 붙여넣으세요.<br>한 원두에 <b>항목: 값</b> 줄들, 여러 개면 <b>---</b> 로 구분해요. <b>종류: 생두</b> 또는 <b>종류: 원두</b>가 있으면 그대로 따라가요 (없으면 ${PST_KINDS[_pst.kind]}).<br>수량은 g. 가격은 생두 = kg당 원, 원두 = 구매한 가격(원) 그대로.</div>
       <textarea class="ta ps-ta" id="pstText" placeholder="${pstEsc(PST_EXAMPLE)}" oninput="_pst.text=this.value">${pstEsc(_pst.text)}</textarea>
       <div class="fa"><button class="btn2" onclick="closeMo('moPaste')">취소</button><button class="btn btn-sm" onclick="pstRead()">읽기 ›</button></div>`;
     return;
@@ -239,7 +242,7 @@ function pstCard(it,i){
       F('price','가격 (원/kg)',{num:1}),F('qty','수량 (g)',{num:1}),F('cup_notes','컵노트',{full:1}),F('memo','메모',{full:1})]
     :[F('name','이름',{full:1,req:1}),F('roastery','로스터리',{req:1}),F('roast_date','로스팅날짜',{date:1,req:1}),F('level','로스팅정도'),F('process','가공'),
       F('origin','원산지'),F('region','지역'),F('farm','농장'),F('altitude','고도 (m)',{ph:'1700-1800'}),F('variety','품종'),F('harvest','수확연도'),
-      F('buy_date','구매일',{date:1}),F('shop','구매처'),F('price','가격 (원/kg)',{num:1}),F('qty','수량 (g)',{num:1}),F('cup_notes','컵노트',{full:1}),F('memo','메모',{full:1})];
+      F('buy_date','구매일',{date:1}),F('shop','구매처'),F('price','가격 (원, 구매한 금액)',{num:1}),F('qty','수량 (g)',{num:1}),F('cup_notes','컵노트',{full:1}),F('memo','메모',{full:1})];
   return `<div class="ps-card" id="pstC${i}">
     <div class="ps-top"><span class="ps-no">${i+1}</span>
       <div class="ps-kind">${Object.entries(PST_KINDS).map(([k,l])=>`<button class="${it.kind===k?'on':''}" onclick="pstKind(${i},'${k}')">${l}</button>`).join('')}</div>
@@ -261,9 +264,8 @@ function pstWarnHtml(it){
   if(it.kind==='roasted'){
     if(!f.roastery.trim()&&!f.shop.trim())w.push('로스터리가 비어 있어요');
     if(!f.roast_date)w.push('로스팅날짜가 비어 있어요 — 디개싱 일수를 계산할 수 없어요');
-    if(+f.price&&!+f.qty)w.push('수량이 없어서 봉투 가격을 계산 못 해요 — 메모에 kg당 가격으로 남겨요');
   }
-  if(+f.price&&+f.price<1000)w.push(`가격 ${f.price}원 — kg당 "원" 단위가 맞나요? (2.8만원이면 28000)`);
+  if(it.kind==='green'&&+f.price&&+f.price<1000)w.push(`가격 ${f.price}원 — kg당 "원" 단위가 맞나요? (2.8만원이면 28000)`);
   (it.parseWarns||[]).forEach(x=>w.push(x));
   const ign=(it.ignored||[]).length?`<div class="ps-ign">무시한 항목: ${pstEsc(it.ignored.join(', '))}</div>`:'';
   return e.map(x=>`<div class="err">⛔ ${pstEsc(x)}</div>`).join('')+w.map(x=>`<div>⚠ ${pstEsc(x)}</div>`).join('')+ign;
@@ -273,7 +275,7 @@ function pstSumHtml(it){
   const r=pstBuild(it);
   const parts=it.kind==='green'
     ?[r.price?`${r.price}만원/kg`:'',r.stock_initial?`구매량 ${(+r.stock_initial).toLocaleString()}g`:'',r.process?`가공 ${r.process}`:'',r.altitude?`고도 ${r.altitude}m`:'',r.region?`지역 ${r.region}`:'']
-    :[r.price?`봉투 ${(+r.price).toLocaleString()}원`:'',r.weight_g?`${(+r.weight_g).toLocaleString()}g`:'',r.process?`가공 ${r.process}`:'',r.level?`정도 ${r.level}`:''];
+    :[r.price?`가격 ${(+r.price).toLocaleString()}원`:'',r.decaf?'디카페인':'',r.weight_g?`${(+r.weight_g).toLocaleString()}g`:'',r.process?`가공 ${r.process}`:'',r.level?`정도 ${r.level}`:''];
   return '<b>저장될 값</b> · '+pstEsc(parts.filter(Boolean).join(' · ')||'—')+(r.memo?`<br>메모 → ${pstEsc(r.memo)}`:'');
 }
 function pstFooter(){
