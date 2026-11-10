@@ -154,7 +154,7 @@ function reapplyRoastLevels(){
   if(typeof roastLevelRule!=='function'||!db||!Array.isArray(db.roasts))return false;
   const rule=roastLevelRule();
   if(db.level_rule===rule)return false;
-  db.roasts.forEach(r=>{const d=roastDTRValue(r);if(d!=null)r.roast_level=dtrToLevel(d);});  // 8% 미만이면 비움
+  db.roasts.forEach(r=>{const d=roastDTRValue(r);if(d!=null)r.roast_level=dtrToLevel(d);});  // 4% 미만이면 비움
   db.level_rule=rule;
   return true;
 }
@@ -227,6 +227,32 @@ function migrate20261107g(){
   return true;
 }
 
+/* ── 2026-11-10 한 번만: Claude가 조사한 산 원두 6개 등록 (사용자 요청, 가격은 사용자가 직접 입력) ──
+   커피 마시는 고래 3개(합타무 G1 · 사티마 AA TOP · 예가체프 게뎁 초르소) + 커피정경 3개(디카페인 콜롬비아 · 디카페인 두바 · 엘 인헤르또 게이샤).
+   붙여넣기 등록(paste.js)과 같은 필드. 같은 이름+로스팅날짜가 이미 있으면(직접 붙여넣어 등록했으면) 건너뜀 */
+const MIGRATION_20261110='fix-20261110-rb6';
+function migrate20261110(){
+  if(!db||!Array.isArray(db.beans))return false;
+  db.migrations=db.migrations||[];
+  if(db.migrations.includes(MIGRATION_20261110))return false;
+  const recs=[
+    {"id":"rb_20261110_1","name":"에티오피아 합타무 페카두 아가 고로 G1","roastery":"커피 마시는 고래","roast_date":"2026-11-06","buy_date":"2026-11-09","origin":"에티오피아","process":"워시드","level":"","weight_g":"100","price":"","cup_notes":"플로럴, 자두, 레몬, 만다린, 캔디","memo":"품종: 74110 · 집에서 볶는 생두 '합티무 페카두 아가 고로 워시드'와 같은 콩. 로스터리 비교용. 로스터리 권장 상미기간 확인 필요","status":"마시는 중","decaf":false,"rest_min":"","rest_max":""},
+    {"id":"rb_20261110_2","name":"케냐 사티마 AA TOP","roastery":"커피 마시는 고래","roast_date":"2026-11-07","buy_date":"2026-11-09","origin":"케냐","process":"워시드","level":"","weight_g":"100","price":"","cup_notes":"자몽, 백향과, 루바브, 황설탕, 홍차","memo":"품종: SL28, SL34 · 가공: 풀리 워시드 · 로스터리 권장 상미기간 확인 필요","status":"마시는 중","decaf":false,"rest_min":"","rest_max":""},
+    {"id":"rb_20261110_3","name":"에티오피아 예가체프 게뎁 초르소","roastery":"커피 마시는 고래","roast_date":"2026-11-07","buy_date":"2026-11-09","origin":"에티오피아","process":"워시드","level":"","weight_g":"100","price":"","cup_notes":"플로럴, 사과, 베르가못, 청포도","memo":"지역: 예가체프 게뎁 · 품종: 74110, Kurume · 집에서 볶는 생두 '게뎁 초르소'와 같은 콩. 로스터리 비교용 (로스터리 손실 10.5%). 로스터리 권장 상미기간 확인 필요","status":"마시는 중","decaf":false,"rest_min":"","rest_max":""},
+    {"id":"rb_20261110_4","name":"디카페인 콜롬비아 엘 파라이소 리치 & 피치","roastery":"커피정경","roast_date":"2026-11-04","buy_date":"2026-11-09","origin":"콜롬비아","process":"","level":"","weight_g":"100","price":"","cup_notes":"복숭아, 리치, 라즈베리, 요거트, 자두","memo":"농장: 엘 파라이소 (El Paraiso) · 로스터리 권장 상미기간 로스팅 후 10~60일 (11/14~1/3). 디카페인 방식 표기 없음","status":"마시는 중","decaf":true,"rest_min":"","rest_max":""},
+    {"id":"rb_20261110_5","name":"디카페인 에티오피아 시다모 벤사 두바","roastery":"커피정경","roast_date":"2026-11-06","buy_date":"2026-11-09","origin":"에티오피아","process":"워시드","level":"","weight_g":"100","price":"","cup_notes":"레몬그라스, 라임, 캐모마일, 사탕수수, 당밀","memo":"지역: 시다모 벤사 · 농장: 두바 (Duba) · 가공: 워시드 + 마운틴워터 디카페인(MWP) · 로스터리 권장 상미기간 로스팅 후 10~70일 (11/16~1/15)","status":"마시는 중","decaf":true,"rest_min":"","rest_max":""},
+    {"id":"rb_20261110_6","name":"과테말라 엘 인헤르또 게이샤 워시드","roastery":"커피정경","roast_date":"2026-11-04","buy_date":"2026-11-09","origin":"과테말라","process":"워시드","level":"","weight_g":"100","price":"","cup_notes":"라벤더, 아카시아, 인동꽃, 라임, 꽃꿀","memo":"지역: 후에후에테낭고 · 농장: 엘 인헤르또 (El Injerto) · 품종: 게이샤 · 로스터리 권장 상미기간 로스팅 후 10~70일 (11/14~1/13)","status":"마시는 중","decaf":false,"rest_min":"","rest_max":""}
+  ];
+  if(!Array.isArray(db.roasted_beans))db.roasted_beans=[];
+  const norm=s=>String(s||'').toLowerCase().replace(/[\s().,·_\-#\/]/g,'');
+  recs.forEach(r=>{
+    if(db.roasted_beans.some(x=>x.id===r.id||(norm(x.name)===norm(r.name)&&x.roast_date===r.roast_date)))return;
+    db.roasted_beans.push({...r});
+  });
+  db.migrations.push(MIGRATION_20261110);
+  return true;
+}
+
 /* 앱 열 때(동기화 뒤) 한 번 실행 — 바뀐 게 있으면 한 번만 저장 */
 function runDataFixes(){
   let changed=false;
@@ -238,6 +264,7 @@ function runDataFixes(){
   try{changed=migrate20261107d()||changed;}catch(e){console.warn('목표 DTR 정리 실패',e);}
   try{changed=migrate20261107e()||changed;}catch(e){console.warn('가짜 팝 표시 실패',e);}
   try{changed=migrate20261107g()||changed;}catch(e){console.warn('무게 표시 실패',e);}
+  try{changed=migrate20261110()||changed;}catch(e){console.warn('원두 6개 등록 실패',e);}
   try{changed=backfillRoastTimes()||changed;}catch(e){console.warn('로스팅 계산값 채우기 실패',e);}
   try{changed=reapplyRoastLevels()||changed;}catch(e){console.warn('로스팅 단계 다시 지정 실패',e);}
   try{changed=fixStockStatus()||changed;}catch(e){console.warn('재고 상태 정리 실패',e);}
