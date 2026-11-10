@@ -69,7 +69,7 @@ function showBeanDetail(id){
       ${dr('원산지',b.origin)}${dr('지역/농장',b.region)}${dr('품종',b.variety)}
       ${dr('가공방식',b.process)}${dr('고도',b.altitude?(b.altitude+'m'):'')}
       ${dr('구매처',b.shop)}${dr('가격',b.price?(b.price+'만원/kg'):'')}
-      ${dr('초기재고',b.stock_initial?(b.stock_initial+'g'):'')}${dr('상태',b.status)}
+      ${dr('초기재고',b.stock_initial?(b.stock_initial+'g'):'')}${dr('상태',b.status)}${dr('메모',b.memo?rbEsc(b.memo):'')}
     </div>
     ${(b.score_momos||b.score_wonderroom)?`<div class="ds"><div class="dstitle">스코어</div>${dr('모모스',b.score_momos)}${dr('원더룸',b.score_wonderroom)}</div>`:''}
     ${b.cup_notes?`<div class="ds"><div class="dstitle">컵노트</div><div style="font-family:'Playfair Display',serif;font-size:13px;color:var(--muted2);line-height:1.7;font-style:italic">${b.cup_notes}</div></div>`:''}

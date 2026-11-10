@@ -36,7 +36,7 @@ function renderRoastedBeans(){
   list=list.slice().sort((a,b)=>(b.roast_date||'')>(a.roast_date||'')?1:-1);
   const fc=(k,l)=>`<div class="fc ${_rbFilter===k?'on':''}" onclick="_rbFilter='${k}';renderRoastedBeans()">${l}</div>`;
   const nOn=all.filter(b=>b.status!==RB_STATUS_DONE).length;
-  el.innerHTML=`<div class="sh"><div class="stl">원두 목록</div><button class="btn btn-sm" onclick="openRbForm()">+ 원두 등록</button></div>
+  el.innerHTML=`<div class="sh"><div class="stl">원두 목록</div><div class="sh-btns"><button class="btn2 ps-open" onclick="openPasteReg('roasted')">📥 붙여넣기로 등록</button><button class="btn btn-sm" onclick="openRbForm()">+ 원두 등록</button></div></div>
     <input class="search" placeholder="원두 · 로스터리 · 원산지 · 컵노트 검색..." value="${rbEsc(_rbSearch)}" oninput="_rbSearch=this.value;renderRoastedBeans();const i=document.querySelector('#rbRoot .search');i.focus();i.setSelectionRange(i.value.length,i.value.length)">
     <div class="filters">${fc('on',`${RB_STATUS_ON} ${nOn}`)}${fc('done',RB_STATUS_DONE)}${fc('all','전체')}</div>
     <div class="grid">${list.map(rbCard).join('')||
