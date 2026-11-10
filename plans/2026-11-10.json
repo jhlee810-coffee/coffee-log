@@ -1,0 +1,46 @@
+{
+ "date": "2026-11-10",
+ "version": 1,
+ "items": [
+  {
+   "bean_id": "mv1wir3tnhd",
+   "bean": "케냐 카구모 AA",
+   "mode": 3,
+   "dtr": 12,
+   "ej": 70,
+   "input_g": 120,
+   "gift": false,
+   "note": "배출 82.4%"
+  },
+  {
+   "bean_id": "mw1eyk1z4jo",
+   "bean": "에티오피아 합티무 페카두 아가 고로 워시드",
+   "mode": 3,
+   "dtr": 12,
+   "ej": 60,
+   "input_g": 120,
+   "gift": false,
+   "note": "배출 84.9%"
+  },
+  {
+   "bean_id": "mv1wir3tnhd",
+   "bean": "케냐 카구모 AA",
+   "mode": 3,
+   "dtr": 12,
+   "ej": 50,
+   "input_g": 120,
+   "gift": false,
+   "note": "배출 87.4%"
+  },
+  {
+   "bean_id": "mw1eyk1z4jo",
+   "bean": "에티오피아 합티무 페카두 아가 고로 워시드",
+   "mode": 3,
+   "dtr": 12,
+   "ej": 40,
+   "input_g": 120,
+   "gift": false,
+   "note": "배출 89.9%"
+  }
+ ]
+}
