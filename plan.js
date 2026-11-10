@@ -174,7 +174,7 @@ function renderPlanEditor(){
     ${rows||'<div class="pl-empty">아직 배치가 없어요. 아래에서 추가하거나 붙여넣으세요.</div>'}
     <button class="pl-add" onclick="planAddRow()">+ 배치 추가</button>
     <details class="pl-paste"><summary>글로 붙여넣기 (Claude가 짜 준 계획 등)</summary>
-      <textarea class="ta" id="planPaste" placeholder="1. 카구모 AA 3-13 120g&#10;2. 카구모 AA 2-12 120g 🎁&#10;3. 합티무 3-12"></textarea>
+      <textarea class="ta" id="planPaste" placeholder="1. 카구모 AA 3-13 120g&#10;2. 카구모 AA 2-12 120g 🎁&#10;3. 합타무 3-12"></textarea>
       <div class="pl-paste-btns"><button class="btn2" onclick="planPasteText(false)">뒤에 추가</button><button class="btn2" onclick="planPasteText(true)">전부 바꾸기</button></div>
     </details>
     <div class="fa">${planGet()?'<button class="btnd" onclick="planDelete()">계획 지우기</button>':''}<button class="btn2" onclick="closeMo(\'moPlan\')">취소</button><button class="btn btn-sm" onclick="planSave()">저장</button></div>`;

@@ -236,7 +236,7 @@ function migrate20261110(){
   db.migrations=db.migrations||[];
   if(db.migrations.includes(MIGRATION_20261110))return false;
   const recs=[
-    {"id":"rb_20261110_1","name":"에티오피아 합타무 페카두 아가 고로 G1","roastery":"커피 마시는 고래","roast_date":"2026-11-06","buy_date":"2026-11-09","origin":"에티오피아","process":"워시드","level":"","weight_g":"100","price":"","cup_notes":"플로럴, 자두, 레몬, 만다린, 캔디","memo":"품종: 74110 · 집에서 볶는 생두 '합티무 페카두 아가 고로 워시드'와 같은 콩. 로스터리 비교용. 로스터리 권장 상미기간 확인 필요","status":"마시는 중","decaf":false,"rest_min":"","rest_max":""},
+    {"id":"rb_20261110_1","name":"에티오피아 합타무 페카두 아가 고로 G1","roastery":"커피 마시는 고래","roast_date":"2026-11-06","buy_date":"2026-11-09","origin":"에티오피아","process":"워시드","level":"","weight_g":"100","price":"","cup_notes":"플로럴, 자두, 레몬, 만다린, 캔디","memo":"품종: 74110 · 집에서 볶는 생두 '합타무 페카두 아가 고로 워시드'와 같은 콩. 로스터리 비교용. 로스터리 권장 상미기간 확인 필요","status":"마시는 중","decaf":false,"rest_min":"","rest_max":""},
     {"id":"rb_20261110_2","name":"케냐 사티마 AA TOP","roastery":"커피 마시는 고래","roast_date":"2026-11-07","buy_date":"2026-11-09","origin":"케냐","process":"워시드","level":"","weight_g":"100","price":"","cup_notes":"자몽, 백향과, 루바브, 황설탕, 홍차","memo":"품종: SL28, SL34 · 가공: 풀리 워시드 · 로스터리 권장 상미기간 확인 필요","status":"마시는 중","decaf":false,"rest_min":"","rest_max":""},
     {"id":"rb_20261110_3","name":"에티오피아 예가체프 게뎁 초르소","roastery":"커피 마시는 고래","roast_date":"2026-11-07","buy_date":"2026-11-09","origin":"에티오피아","process":"워시드","level":"","weight_g":"100","price":"","cup_notes":"플로럴, 사과, 베르가못, 청포도","memo":"지역: 예가체프 게뎁 · 품종: 74110, Kurume · 집에서 볶는 생두 '게뎁 초르소'와 같은 콩. 로스터리 비교용 (로스터리 손실 10.5%). 로스터리 권장 상미기간 확인 필요","status":"마시는 중","decaf":false,"rest_min":"","rest_max":""},
     {"id":"rb_20261110_4","name":"디카페인 콜롬비아 엘 파라이소 리치 & 피치","roastery":"커피정경","roast_date":"2026-11-04","buy_date":"2026-11-09","origin":"콜롬비아","process":"","level":"","weight_g":"100","price":"","cup_notes":"복숭아, 리치, 라즈베리, 요거트, 자두","memo":"농장: 엘 파라이소 (El Paraiso) · 로스터리 권장 상미기간 로스팅 후 10~60일 (11/14~1/3). 디카페인 방식 표기 없음","status":"마시는 중","decaf":true,"rest_min":"","rest_max":""},
@@ -253,6 +253,25 @@ function migrate20261110(){
   return true;
 }
 
+/* ── 2026-11-10 한 번만: "합티무" → "합타무" (사용자: 합타무가 맞음) ──
+   생두 이름·로스팅 기록·커피 한 잔·계획·커핑 등 데이터의 모든 글자를 바꿈. 쉬운 커핑 원본(localStorage easyCuppingLog)도 같이 */
+const MIGRATION_20261110B='fix-20261110b';
+function migrate20261110b(){
+  if(!db)return false;
+  db.migrations=db.migrations||[];
+  if(db.migrations.includes(MIGRATION_20261110B))return false;
+  const FROM='합티무',TO='합타무';
+  const fix=v=>v.split(FROM).join(TO);
+  const walk=o=>{
+    const keys=Array.isArray(o)?o.map((_,i)=>i):Object.keys(o);
+    keys.forEach(k=>{const v=o[k];if(typeof v==='string'){if(v.includes(FROM))o[k]=fix(v);}else if(v&&typeof v==='object')walk(v);});
+  };
+  walk(db);
+  try{const s=localStorage.getItem('easyCuppingLog');if(s&&s.includes(FROM))localStorage.setItem('easyCuppingLog',fix(s));}catch(e){}
+  db.migrations.push(MIGRATION_20261110B);
+  return true;
+}
+
 /* 앱 열 때(동기화 뒤) 한 번 실행 — 바뀐 게 있으면 한 번만 저장 */
 function runDataFixes(){
   let changed=false;
@@ -265,6 +284,7 @@ function runDataFixes(){
   try{changed=migrate20261107e()||changed;}catch(e){console.warn('가짜 팝 표시 실패',e);}
   try{changed=migrate20261107g()||changed;}catch(e){console.warn('무게 표시 실패',e);}
   try{changed=migrate20261110()||changed;}catch(e){console.warn('원두 6개 등록 실패',e);}
+  try{changed=migrate20261110b()||changed;}catch(e){console.warn('합타무 이름 정리 실패',e);}
   try{changed=backfillRoastTimes()||changed;}catch(e){console.warn('로스팅 계산값 채우기 실패',e);}
   try{changed=reapplyRoastLevels()||changed;}catch(e){console.warn('로스팅 단계 다시 지정 실패',e);}
   try{changed=fixStockStatus()||changed;}catch(e){console.warn('재고 상태 정리 실패',e);}
