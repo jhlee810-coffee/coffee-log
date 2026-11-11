@@ -73,20 +73,20 @@ function lbVacRbData(b,g){
 }
 
 /* ── 디자인 마크업 (design/labels 의 인라인 스타일 그대로) ── */
-const lbFit=(cap,val)=>`<div style="display:flex;flex-direction:column"><div style="font-size:24px;font-weight:500;line-height:1.2">${cap}</div><div data-fit="2" data-min="24" style="${LB_WRAP}font-size:28px;font-weight:700;line-height:1.25">${lbEsc(val)||'&nbsp;'}</div></div>`;
+const lbFit=(cap,val)=>`<div style="display:flex;flex-direction:column"><div style="font-size:24px;font-weight:700;line-height:1.2">${cap}</div><div data-fit="2" data-min="24" style="${LB_WRAP}font-size:28px;font-weight:700;line-height:1.25">${lbEsc(val)||'&nbsp;'}</div></div>`;
 function lbHtmlBean(d){
   return `<div class="lb-root" style="width:720px;height:400px;box-sizing:border-box;background:#ffffff;color:#000000;${LB_FONT}display:flex;flex-direction:column;overflow:hidden">
-<div style="background:#000000;color:#ffffff;padding:18px 32px 16px;display:flex;justify-content:space-between;align-items:baseline;gap:16px">
+<div style="background:#000000;color:#ffffff;padding:18px 32px 16px;display:flex;justify-content:space-between;align-items:flex-end;gap:16px">
 <div data-fit="2" data-min="30" style="${LB_WRAP}font-size:44px;font-weight:900;line-height:1.1;letter-spacing:-0.5px">${lbEsc(d.name)}</div>
-<div style="font-size:26px;font-weight:700;white-space:nowrap">${lbEsc(d.shop)}</div>
+<div style="font-size:26px;font-weight:700;line-height:1.1;white-space:nowrap;margin-bottom:2px">${lbEsc(d.shop)}</div>
 </div>
-<div style="flex-grow:1;padding:16px 32px 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:28px;row-gap:8px;align-content:start">
+<div style="flex-grow:1;padding:16px 32px 0;display:grid;grid-template-columns:minmax(0,1fr) fit-content(300px);column-gap:28px;row-gap:8px;align-content:start">
 ${lbFit('지역 · 농장',d.regionFarm)}${lbFit('고도',d.altitude)}${lbFit('품종',d.variety)}${lbFit('가공',d.process)}
 </div>
 <div style="margin:0 32px 20px;padding-top:10px;border-top:3px solid #000000;display:flex;gap:14px;align-items:baseline">
 <div style="font-size:24px;font-weight:700;white-space:nowrap">컵노트</div>
-<div data-fit="2" data-min="24" style="${LB_WRAP}flex-grow:1;min-width:0;font-size:28px;font-weight:500;line-height:1.25">${lbEsc(d.notes)}</div>
-<div style="font-size:24px;font-weight:500;white-space:nowrap">${lbEsc(d.price)}</div>
+<div data-fit="2" data-min="24" style="${LB_WRAP}flex-grow:1;min-width:0;font-size:28px;font-weight:700;line-height:1.25">${lbEsc(d.notes)}</div>
+<div style="font-size:24px;font-weight:700;white-space:nowrap">${lbEsc(d.price)}</div>
 </div>
 </div>`;
 }
