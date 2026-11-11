@@ -61,8 +61,18 @@ function lbRoastData(r){
   const md=r.mode?`${r.mode}${dtr?'-'+dtr+'%':''}`:(dtr?dtr+'%':'—');
   let loss=r.loss_pct;
   if(!loss&&+r.input_g>0&&+r.output_g>0)loss=((+r.input_g-+r.output_g)/+r.input_g*100).toFixed(1);
-  return {date:lbDate(r.date),batch:r.batch_no?'#'+r.batch_no:'',md,pop:r.pop_elapsed||'—',total:r.total_time||'—',
+  let lvl='';try{lvl=r.roast_level||(typeof dtrToLevel==='function'&&dtr?dtrToLevel(dtr):'');}catch(e){}
+  return {date:lbDate(r.date),batch:r.batch_no?'#'+r.batch_no:'',md,level:lbLevel3(lvl),pop:r.pop_elapsed||'—',total:r.total_time||'—',
     loss:loss?loss+'%':'—',out:r.output_g?r.output_g+'g':'—'};
+}
+/* 로스팅 단계를 라벨에는 세 가지로만: 울트라 라이트·라이트 → 라이트 / 라이트-미디엄·미디엄·미디엄-다크 → 미디엄 / 다크 → 다크 */
+function lbLevel3(name){
+  name=String(name||'').replace(/\s+/g,'');if(!name)return '';
+  if(name==='울트라라이트'||name==='라이트')return '라이트';
+  if(/미디엄|미디움/.test(name))return '미디엄';
+  if(/다크/.test(name))return '다크';
+  if(/라이트/.test(name))return '라이트';
+  return '';
 }
 function lbVacRoastData(r,g){
   const b=(typeof beanOfRoast==='function'?beanOfRoast(r):null)||{};
@@ -89,14 +99,18 @@ ${lbFit('지역 · 농장',d.regionFarm)}${lbFit('고도',d.altitude)}${lbFit('�
 </div>`;
 }
 function lbHtmlRoast(d){
-  const row=(k,v)=>`<div style="display:flex;justify-content:space-between;gap:8px"><span style="font-weight:500">${k}</span><span style="font-weight:700">${lbEsc(v)}</span></div>`;
-  return `<div class="lb-root" style="width:400px;height:240px;box-sizing:border-box;background:#ffffff;color:#000000;${LB_FONT}padding:18px 24px 20px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden">
+  // 항목 이름은 고정 폭(62점)이라 값이 줄마다 같은 자리에서 시작함 (1팝/총/손실/최종 어느 줄이든 왼쪽 맞춤)
+  const row=(k,v)=>`<div style="display:flex;gap:6px"><span style="flex:none;width:62px;font-weight:500">${k}</span><span style="font-weight:700;white-space:nowrap">${lbEsc(v)}</span></div>`;
+  return `<div class="lb-root" style="width:400px;height:240px;box-sizing:border-box;background:#ffffff;color:#000000;${LB_FONT}padding:18px 24px 20px;display:flex;flex-direction:column;overflow:hidden">
 <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
 <div style="font-size:42px;font-weight:900;line-height:1.05;letter-spacing:-1px;white-space:nowrap">${lbEsc(d.date)}</div>
 <div style="font-size:24px;font-weight:700;white-space:nowrap">${lbEsc(d.batch)}</div>
 </div>
-<div data-fit="1" data-min="24" style="font-size:32px;font-weight:900;line-height:1.1;border-bottom:3px solid #000000;padding-bottom:6px;white-space:nowrap">${lbEsc(d.md)}</div>
-<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:16px;row-gap:6px;font-size:26px;line-height:1.2">
+<div style="margin-top:12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;border-bottom:3px solid #000000;padding-bottom:6px">
+<div data-fit="1" data-min="24" style="font-size:32px;font-weight:900;line-height:1.1;white-space:nowrap">${lbEsc(d.md)}</div>
+${d.level?`<div style="font-size:28px;font-weight:900;line-height:1.1;white-space:nowrap">${lbEsc(d.level)}</div>`:''}
+</div>
+<div style="margin-top:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:16px;row-gap:6px;font-size:26px;line-height:1.2">
 ${row('1팝',d.pop)}${row('총',d.total)}${row('손실',d.loss)}${row('최종',d.out)}
 </div>
 </div>`;
