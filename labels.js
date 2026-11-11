@@ -291,19 +291,30 @@ function lbPrintCanvas(res,cfg){
 /* ── 프린터 연결 ── */
 function lbCan(){return {ble:!!navigator.bluetooth,serial:!!navigator.serial,any:!!(navigator.bluetooth||navigator.serial)};}
 const lbConnected=()=>!!(LB.client&&LB.client.isConnected&&LB.client.isConnected());
+/* 연결 종류: 'ble'(프린터 이름·서비스로 찾기 — 라이브러리 기본) / 'ble-all'(필터 없이 주변 모든 블루투스 기기 중에서 고르기) / 'serial'(PC USB)
+   아이폰 Bluefy는 'ble'의 필터에 프린터가 안 잡히는 일이 있어서, 아이폰은 처음부터 'ble-all'을 기본으로 씀 */
+const LB_BLE_SERVICES=['e7810a71-73ae-499d-8c15-faa9aef0c3f2'];   // 님봇 서비스 (필터 없이 고를 때도 이 서비스는 쓸 수 있게 허용해 둠)
+const lbIsIOS=()=>/iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+function lbBleKind(){const m=lbCfg().bleMode;return (m==='all'||(!m&&lbIsIOS()))?'ble-all':'ble';}
 async function lbConnect(kind){
   if(LB.connecting)return;
-  LB.connecting=true;lbChip();lbPrState();
+  LB.connecting=true;LB.lastErr='';LB.lastKind=kind;lbChip();lbPrState();
   try{
-    await lbEnsureNb();
     const f=window.__lbClientFactory;
+    let dev=null;
+    // 기기 고르기 창은 버튼을 누른 바로 그 순간에 띄워야 해서(브라우저 규칙) 라이브러리 불러오기보다 먼저
+    if(kind==='ble-all'&&!f)dev=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:LB_BLE_SERVICES});
+    if(!window.niimbluelib)await lbEnsureNb();
     const client=f?f(kind):(kind==='serial'?new niimbluelib.NiimbotSerialClient():new niimbluelib.NiimbotBluetoothClient());
     client.on('disconnect',()=>{if(LB.client===client){LB.client=null;LB.name='';lbChip();lbPrState();lbPreviewState();}});
-    const info=await client.connect();
-    if(info&&info.result===0)throw new Error('프린터와 연결하지 못했어요');
-    LB.client=client;LB.kind=kind;LB.name=(info&&info.deviceName)||'B1';
+    const info=await client.connect(dev?{authorizedDevice:dev}:undefined);
+    if(info&&info.result===0)throw new Error('프린터와 연결하지 못했어요 (프린터가 응답하지 않아요)');
+    LB.client=client;LB.kind=kind==='serial'?'serial':'ble';LB.name=(info&&info.deviceName)||'B1';
+    if(kind!=='serial')lbCfgSet({bleMode:kind==='ble-all'?'all':'default'});   // 되는 방식을 기억
   }catch(e){
-    if(!(e&&(e.name==='NotFoundError'||/cancel|chosen|선택/i.test(String(e.message)))))alert('프린터 연결 실패: '+(e&&e.message||e));   // 선택 창을 그냥 닫은 건 조용히
+    // 기기 선택 창에서 아무것도 못 골랐거나 닫은 경우(NotFoundError)도 "안 보임"일 수 있어서 안내를 띄움
+    LB.lastErr=(e&&e.name&&e.name!=='Error'?e.name+': ':'')+(e&&e.message||e);
+    setTimeout(lbOpenPr,0);
   }finally{LB.connecting=false;lbChip();lbPrState();lbPreviewState();lbRollRefresh();}
 }
 async function lbRollRefresh(){   // 미리보기가 열려 있으면 끼운 롤 확인을 다시
@@ -362,7 +373,7 @@ function lbChipClick(){
   const can=lbCan();
   if(!can.any||lbConnected()){lbOpenPr();return;}
   if(can.ble&&can.serial){lbOpenPr();return;}   // 둘 다 되면 고르게
-  lbConnect(can.ble?'ble':'serial');
+  lbConnect(can.ble?lbBleKind():'serial');
 }
 function lbOpenMo(id){const m=document.getElementById(id);if(m){document.body.appendChild(m);openMo(id);}}   // 맨 위로
 function lbOpenPr(){
@@ -377,8 +388,20 @@ function lbPrState(){
   el.innerHTML=`<div class="mtitle">🏷 라벨 프린터</div>
     <div class="lb-st ${on?'ok':''}">${on?`✓ 연결됨 · ${lbEsc(LB.name)} (${LB.kind==='serial'?'USB':'블루투스'})`:LB.connecting?'연결 중…':'연결 안 됨'}</div>
     ${can.any?`<div class="lb-conn">${on?`<button class="btn2" onclick="lbDisconnect()">연결 끊기</button>`:
-      `${can.ble?`<button class="btn btn-sm" onclick="lbConnect('ble')">블루투스로 연결</button>`:''}${can.serial?`<button class="btn btn-sm" onclick="lbConnect('serial')">USB로 연결 (PC)</button>`:''}`}</div>`
+      `${can.ble?(()=>{const all=lbBleKind()==='ble-all'||(!!LB.lastErr&&LB.lastKind==='ble');   // 이름 찾기가 실패한 직후엔 "모든 기기"를 강조
+        return `<button class="${all?'btn':'btn2'} btn-sm" ${LB.connecting?'disabled':''} onclick="lbConnect('ble-all')">블루투스 · 모든 기기에서 고르기</button><button class="${all?'btn2':'btn'} btn-sm" ${LB.connecting?'disabled':''} onclick="lbConnect('ble')">블루투스 · 프린터 이름으로 찾기</button>`;})():''}${can.serial?`<button class="btn btn-sm" ${LB.connecting?'disabled':''} onclick="lbConnect('serial')">USB로 연결 (PC)</button>`:''}`}</div>`
     :`<div class="lb-warn">이 브라우저는 프린터 연결을 지원하지 않아요.<br>아이폰은 <b>Bluefy</b> 브라우저, PC는 <b>크롬</b>에서 열어 주세요. 라벨 이미지 저장은 지금도 돼요.</div>`}
+    ${!on&&LB.lastErr?`<div class="lb-warn">연결하지 못했어요<br><span class="lb-errtxt">${lbEsc(LB.lastErr)}</span></div>`:''}
+    ${!on&&can.any?`<details class="lb-help" ${LB.lastErr?'open':''}><summary>프린터가 목록에 안 보이거나 연결이 안 될 때</summary>
+      <ol>
+        <li>프린터 전원을 켜고 폰 가까이(1m 안)에 두세요.</li>
+        <li><b>님봇 공식 앱이나 다른 폰·PC가 프린터에 연결돼 있으면 목록에 안 떠요.</b> 그 앱을 완전히 끄고(앱 종료), 다른 기기의 연결도 끊으세요. 블루투스는 한 번에 한 기기만 연결돼요.</li>
+        <li>아이폰은 설정 → <b>Bluefy</b> → 블루투스(근처 기기) 허용이 켜져 있어야 해요.</li>
+        <li><b>[블루투스 · 모든 기기에서 고르기]</b>로 다시 해 보세요. 목록에서 <b>B1</b>로 시작하는 이름을 고르면 돼요. 이름 없는 기기만 보이면 프린터를 껐다 켠 뒤 다시 시도하세요.</li>
+        <li>그래도 안 되면 프린터가 목록에 아예 안 잡히는 거예요. 같은 폰의 Bluefy에서 <b>niim.blue</b>로도 연결이 되는지 확인해서 알려 주세요.</li>
+      </ol>
+      <div class="lb-diag">웹 블루투스 ${navigator.bluetooth?'가능':'불가'} · 보안 연결(https) ${window.isSecureContext?'예':'아니오'} · ${lbEsc(navigator.userAgent.replace(/\(.*?\)/g,'').trim().slice(0,70))}</div>
+    </details>`:''}
     <div class="lb-set"><div class="lb-l">출력 농도 (1 연함 ~ 5 진함)</div>${seg([1,2,3,4,5].map(n=>[n,n]),cfg.density,'lbSetDensity')}</div>
     <div class="lb-set"><div class="lb-l">50×90 라벨 방향 <span>글자가 거꾸로 나오면 바꾸세요</span></div>${seg([['cw','시계 방향'],['ccw','반시계 방향']],cfg.rot,'lbSetRot')}</div>
     <div class="fa"><button class="btn btn-sm" onclick="closeMo('moLbPr')">닫기</button></div>`;
@@ -465,7 +488,7 @@ function lbPreviewState(){
       :!on?`<button class="btn btn-sm" ${LB.connecting?'disabled':''} onclick="lbChipClick2()">프린터 연결</button>`
       :`<button class="btn btn-sm" ${ready&&!LB.printing?'':'disabled'} onclick="lbDoPrint()">${force?'그래도 출력':'출력'} (${n}장)</button>`);
 }
-function lbChipClick2(){const can=lbCan();if(can.ble&&can.serial)lbOpenPr();else lbConnect(can.ble?'ble':'serial');}
+function lbChipClick2(){const can=lbCan();if(can.ble&&can.serial)lbOpenPr();else lbConnect(can.ble?lbBleKind():'serial');}
 async function lbDoPrint(){
   if(LB.printing||!_lb.res.length)return;
   _lb.err='';
@@ -540,7 +563,7 @@ async function lbAutoPrintRoast(id,manual){
     lbToast('라벨 출력 실패 — '+(e&&e.message||e),{label:'다시 출력',fn:()=>lbAutoPrintRoast(id,true)},20000);
   }
 }
-async function lbConnectThenPrint(id){const can=lbCan();if(can.ble&&can.serial){lbOpenPr();return;}await lbConnect(can.ble?'ble':'serial');if(lbConnected())lbAutoPrintRoast(id,true);}
+async function lbConnectThenPrint(id){const can=lbCan();if(can.ble&&can.serial){lbOpenPr();return;}await lbConnect(can.ble?lbBleKind():'serial');if(lbConnected())lbAutoPrintRoast(id,true);}
 function lbAfterRoastSave(id){
   // 저장은 이미 끝난 뒤. 어떤 일이 생겨도 저장·화면 이동에 영향 없게 따로 돌림
   setTimeout(()=>{try{lbAutoPrintRoast(id,false).catch(()=>{});}catch(e){}},0);

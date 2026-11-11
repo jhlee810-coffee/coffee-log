@@ -920,3 +920,11 @@ html.roasting,html.roasting body{overscroll-behavior-y:none;}
 .lb-toast button.x{background:transparent;color:var(--muted);padding:6px 4px;}
 #lbAct .btn[disabled]{opacity:.45;cursor:default;}
 @media(min-width:700px){.tabs{grid-template-columns:repeat(10,1fr);}}
+.lb-help{margin-top:10px;font-size:13px;line-height:1.6;color:var(--text2);}
+.lb-help summary{cursor:pointer;color:var(--amber);font-weight:700;padding:4px 0;}
+.lb-help ol{margin:6px 0 6px 18px;padding:0;}
+.lb-help li{margin-bottom:6px;}
+.lb-help b{color:var(--text);}
+.lb-diag{font-size:11px;color:var(--muted);word-break:break-all;}
+.lb-errtxt{font-family:monospace;font-size:12px;word-break:break-all;}
+.lb-conn .btn[disabled],.lb-conn .btn2[disabled]{opacity:.45;}
