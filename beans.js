@@ -45,6 +45,7 @@ function beanCard(b){
       const parts=[];if(u.remaining!==null)parts.push(`잔량 ≈ ${Math.max(0,Math.round(u.remaining))}g`);if(u.count)parts.push(`로스팅 ${u.count}회`);
       return`<div class="bstock${u.remaining!==null&&u.remaining<SOLDOUT_REMAIN_G?' low':''}">${parts.join(' · ')}</div>`;})()}
     ${db.roasts.some(r=>roastOfBean(r,b))?`<button class="dc-open" onclick="event.stopPropagation();openDailyCupFor('${b.id}')">☕ 한 잔 기록</button>`:''}
+    <button class="lb-btn" onclick="event.stopPropagation();lbBeanLabel('${b.id}')">🏷 생두 라벨</button>
     <div class="bfoot">
       <span class="bfmeta">${meta}</span>
       <span style="display:flex;align-items:center;gap:6px">
@@ -77,6 +78,7 @@ function showBeanDetail(id){
     ${(()=>{const cs=getCuppingsForBean(b.name);return cs.length?`<div class="ds"><div class="dstitle">커핑 히스토리</div>${cuppingMiniHtml(cs,b.name)}</div>`:''})()}
     <div style="display:flex;gap:8px;margin-top:4px">
       <button class="btn2" onclick="editBean('${b.id}');closeMo('moBeanDetail')">수정</button>
+      <button class="btn2" onclick="closeMo('moBeanDetail');lbBeanLabel('${b.id}')">🏷 생두 라벨</button>
       <button class="btnd" onclick="deleteBean('${b.id}')">삭제</button>
     </div>`;
   openMo('moBeanDetail');

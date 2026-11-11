@@ -6,7 +6,7 @@
 <title>Coffee Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=Josefin+Sans:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261110a">
+<link rel="stylesheet" href="style.css?v=20261111a">
 </head>
 <body>
 
@@ -28,6 +28,7 @@
     <div class="tb" onclick="showTab('roasted',this)">원두</div>
     <div class="tb" onclick="showTab('cupping',this)">커핑</div>
     <div class="tb" onclick="showTab('easycup',this)">쉬운커핑</div>
+    <button class="lb-chip" id="lbChip" onclick="lbChipClick()">🏷 연결</button>   <!-- 라벨 프린터 연결 (labels.js) — 메뉴 두 번째 줄 빈 칸 -->
     <!-- 구매 검토 탭은 메뉴에서 뺌 (2026-11-06, 데이터·기능은 그대로: showTab('wishlist')) -->
   </div>
   <!-- 로스팅 중 다른 탭에서 보이는 미니바 (빈본 타이머 상태) -->
@@ -77,6 +78,7 @@
   <div class="sh">
     <div class="stl">로스팅 로그</div>
     <div style="display:flex;gap:6px;align-items:center">
+      <label class="lb-auto" title="로스팅 기록을 저장하면 로스팅 라벨을 자동으로 출력해요 (프린터가 연결돼 있을 때)"><input type="checkbox" id="lbAuto" onchange="lbSetAuto(this.checked)">🏷 자동 출력</label>
       <button class="adj-btn" id="rSortBtn" onclick="toggleRSort()" style="font-size:11px;padding:5px 10px">최신순↓</button>
       <button class="btn btn-sm" onclick="openRoastForm()">+ 추가</button>
     </div>
@@ -722,21 +724,22 @@
 </div>
 
 <script src="data.js?v=20260528f"></script>
-<script src="app.js?v=20261110d"></script>
+<script src="app.js?v=20261111a"></script>
 <script src="dashboard.js?v=20261107c"></script>
-<script src="beans.js?v=20261110a"></script>
-<script src="roasts.js?v=20261108b"></script>
+<script src="beans.js?v=20261111a"></script>
+<script src="roasts.js?v=20261111a"></script>
 <script src="brewing.js?v=20261106a"></script>
 <script src="wishlist.js?v=20261106a"></script>
 <script src="cupping.js?v=20260528f"></script>
 <script src="easycup.js?v=20261109d"></script>
 <script src="cupplan.js?v=20261109a"></script>
 <script src="dailycup.js?v=20261109a"></script>
-<script src="roasted.js?v=20261110a"></script>
+<script src="roasted.js?v=20261111a"></script>
 <script src="shops.js?v=20261106a"></script>
 <script src="datafix.js?v=20261110b"></script>
-<script src="plan.js?v=20261110a"></script>
+<script src="plan.js?v=20261111a"></script>
 <script src="paste.js?v=20261110b"></script>
+<script src="labels.js?v=20261111a"></script>
 <script>
 // 빈본 타이머 ↔ 로스트 로그 연계
 window.addEventListener('message', function(e){

@@ -165,6 +165,7 @@ function renderPlanEditor(){
         <div><div class="pl-l">투입 g</div><div class="pl-step"><button onclick="planAdj(${i},'input_g',-10)">−</button><b>${it.input_g||120}</b><button onclick="planAdj(${i},'input_g',10)">+</button></div></div>
       </div>
       <div class="pl-act"><button class="${it.gift?'on':''}" onclick="_planEdit.items[${i}].gift=!_planEdit.items[${i}].gift;renderPlanEditor()">🎁 나눔</button>
+        <button onclick="lbPlanLabel(${i})">🏷 생두 라벨</button>
         <button onclick="planMove(${i},-1)">↑</button><button onclick="planMove(${i},1)">↓</button>
         ${it.status?`<button onclick="_planEdit.items[${i}].status='';renderPlanEditor()">다시</button>`:''}
         <button class="del" onclick="_planEdit.items.splice(${i},1);renderPlanEditor()">삭제</button></div>
@@ -173,6 +174,7 @@ function renderPlanEditor(){
   document.getElementById('planBody').innerHTML=`<div class="mtitle">📋 ${planEsc(e.date)} 로스팅 계획</div>
     ${rows||'<div class="pl-empty">아직 배치가 없어요. 아래에서 추가하거나 붙여넣으세요.</div>'}
     <button class="pl-add" onclick="planAddRow()">+ 배치 추가</button>
+    ${e.items.some(x=>x.status!=='skip')?`<button class="pl-add pl-lb" onclick="lbPlanAll()">🏷 생두 라벨 전체 출력 (${e.items.filter(x=>x.status!=='skip').length}장)</button>`:''}
     <details class="pl-paste"><summary>글로 붙여넣기 (Claude가 짜 준 계획 등)</summary>
       <textarea class="ta" id="planPaste" placeholder="1. 카구모 AA 3-13 120g&#10;2. 카구모 AA 2-12 120g 🎁&#10;3. 합타무 3-12"></textarea>
       <div class="pl-paste-btns"><button class="btn2" onclick="planPasteText(false)">뒤에 추가</button><button class="btn2" onclick="planPasteText(true)">전부 바꾸기</button></div>

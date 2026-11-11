@@ -206,6 +206,10 @@ function renderRoasts(){
         <button class="ract-st${st==='gift'?' on':''}" onclick="setRoastState('${r.id}','gift')">🎁 나눔</button>
         <button class="ract-st${st==='done'?' on':''}" onclick="setRoastState('${r.id}','done')">다 마심</button>
       </div>
+      <div class="ract-row lb-row" onclick="event.stopPropagation()">
+        <button class="ract-st" onclick="lbRoastLabel('${r.id}')">🏷 로스팅 라벨 다시 출력</button>
+        ${st==='gift'?'':`<button class="ract-st" onclick="lbVacRoast('${r.id}')">🏷 진공 라벨</button>`}
+      </div>
     </div>`;
   }).join('')||'<div class="empty"><div class="empty-icon">🔥</div><div class="empty-text">로스팅 기록이 없습니다</div></div>';
 }
@@ -517,6 +521,7 @@ function saveRoast(){
   else db.roasts.push(data);
   saveDB();closeMo('moRoastForm');renderRoasts();
   if(typeof planAfterSave==='function')planAfterSave();
+  if(!id&&typeof lbAfterRoastSave==='function'){try{lbAfterRoastSave(data.id);}catch(e){}}   // 새 기록이면 로스팅 라벨 자동 출력 (저장과 별개로 따로 돌아감)
   const tb=document.querySelector('.tb[onclick*="roasts"]');
   if(tb) showTab('roasts',tb);
 }

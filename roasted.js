@@ -55,7 +55,8 @@ function rbCard(b){
     <div class="bsub">${rbEsc(sub)||'&nbsp;'}</div>
     ${b.cup_notes?`<div class="bnote">${rbEsc(b.cup_notes)}</div>`:''}
     <div class="bstock">${rbEsc(meta)}${cups.length?` · 마신 기록 ${cups.length}회 ★${avg}`:''}</div>
-    ${done?'':`<button class="dc-open" onclick="event.stopPropagation();openDailyCupRb('${b.id}')">☕ 한 잔 기록</button>`}
+    ${done?'':`<button class="dc-open" onclick="event.stopPropagation();openDailyCupRb('${b.id}')">☕ 한 잔 기록</button>
+      <button class="lb-btn" onclick="event.stopPropagation();lbVacRb('${b.id}')">🏷 진공 라벨</button>`}
     <div class="bfoot"><span class="bfmeta">${b.buy_date?'구매 '+rbEsc(b.buy_date.slice(2).replace(/-/g,'.')):''}</span>${done?'<span class="sogin-bdg">다 마심</span>':''}</div>
   </div>`;
 }
