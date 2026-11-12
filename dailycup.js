@@ -303,7 +303,7 @@ function dcEntryHtml(){
   }).join('');
   const selNotes=e.sel?dcBeanNotes(e.sel).join(', '):'';
   const selBox=e.sel?`<div class="dc-sel"><div class="dc-sel-name">${dcEsc(e.sel.bean)}</div>${selNotes?`<div class="dc-notes">🍑 ${dcEsc(selNotes)}</div>`:''}
-      <div class="dc-sel-meta">${dcEsc([e.sel.roast_date?dcMD(e.sel.roast_date)+' 로스팅':'',dcProfile(e.sel),e.sel.batch_no?`그날 ${e.sel.batch_no}번째`:'',e.sel.manual?'직접 입력':'',e.sel.rb_id?'산 원두':'',e.sel.frozen?'🧊 냉동 '+dcMD(e.sel.frozen):''].filter(Boolean).join(' · '))}</div>
+      <div class="dc-sel-meta">${dcEsc([e.sel.roast_date?dcMD(e.sel.roast_date)+' 로스팅':'',dcProfile(e.sel),e.sel.batch_no?`그날 ${e.sel.batch_no}번째`:'',e.sel.manual?'직접 입력':'',e.sel.rb_id?'산 원두':'',e.sel.frozen?'🧊 냉동':''].filter(Boolean).join(' · '))}</div>
       <div class="dc-sel-deg" id="dcDegText">${dcDegHtml(e.sel,deg)}</div>${dcRecentHtml(e.sel,e.editId)}</div>`:'';
   const stars=[1,2,3,4,5].map(n=>`<button class="dc-star${e.stars>=n?' on':''}" onclick="dcSetStars(${n})" aria-label="별 ${n}개">★</button>`).join('');
   return `<div class="sh"><div class="stl">${e.editId?'기록 수정':'오늘의 한 잔'}</div>${e.editId?'<button class="btn2" onclick="dcCancelEdit()">수정 취소</button>':''}</div>
@@ -398,7 +398,7 @@ function dcRestOf(sel){
 }
 function dcDegHtml(sel,deg){
   if(deg==null)return '로스팅 날짜 없음';
-  const fz=sel&&sel.frozen?`🧊 냉동 중 (${dcEsc(dcMD(sel.frozen))}부터, 숙성 멈춤) · 냉동한 날 기준 `:'';
+  const fz=sel&&sel.frozen?`🧊 냉동 중 (숙성 멈춤) · 냉동한 날 기준 `:'';
   const w=dcRestOf(sel);if(!w)return `${fz}디개싱 <b>${deg}일차</b>`;
   const st=restStage(deg,w);
   return `${fz}디개싱 <b>${deg}일차</b> · <span style="color:${st.c}">${st.l}</span> <small style="color:var(--muted)">(최적 ${w.min}~${w.max}일)</small>`;
@@ -531,7 +531,7 @@ function dcSave(){
   const e=_dc;
   if(!e.sel){alert('원두를 골라 주세요.');return;}
   if(!e.stars){alert('만족도(별)를 눌러 주세요.');return;}
-  const list=dcList();
+  const list=dcList(),selSnap=e.sel;
   const old=e.editId?list.find(x=>x.id===e.editId):null;
   const rec=dcClean({
     id:e.editId||('dc_'+genId()),
@@ -550,6 +550,7 @@ function dcSave(){
   const wasEdit=!!old;
   dcNew();renderDailyCup();
   if(!wasEdit)window.scrollTo(0,0);
+  if(!wasEdit&&typeof frozenAfterCup==='function')frozenAfterCup(selSnap);   // 냉동 봉지 수 안내 · 0봉이면 냉동 표시 해제
   document.getElementById('saveInd').textContent=wasEdit?'☕ 수정됨':'☕ 저장됨';
 }
 function dcCancelEdit(){dcNew();renderDailyCup();}

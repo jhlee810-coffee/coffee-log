@@ -18,9 +18,13 @@ function setRoastState(id,v){
   try{if(document.getElementById('tab-roasted').classList.contains('on'))renderRoastedBeans();}catch(e){}
   try{renderDash();}catch(e){}
 }
-/* ── 냉동 소포장 (2026-11-12) ──
-   배치(로스팅 기록·산 원두)에 frozen('YYYY-MM-DD' = 냉동한 날)을 따로 적음. 보유 상태(stock_state)는 그대로라 "다 마심"이 아님.
-   냉동한 동안은 숙성이 멈춘 것으로 계산 → frozenAgeDays. frozen_g·frozen_qty = 소분 g·장수(진공 라벨에서 넘어옴) */
+/* ── 냉동 소포장 (2026-11-12, 같은 날 개편) ──
+   진공·냉동은 "남은 양 전체"를 g씩 소분해 봉지로 얼림. 배치(로스팅 기록·산 원두)에 아래를 적음:
+   frozen = 냉동한 날(화면엔 안 보임. 숙성이 멈춘 걸로 계산하고, 한 잔 기록에 표시를 남기는 데만 씀)
+   frozen_g = 한 봉지 g, frozen_qty = 처음 봉지 수, frozen_last = 마지막 봉지 g(자투리를 합친 경우만)
+   꺼내서 마신 봉지 수는 "그 배치로 저장한 커피 한 잔 기록 중 냉동 표시가 붙은 것"을 세서 계산(frozenLeft) → 기록을 고치거나 지우면 같이 맞춰짐.
+   0봉이 되면 냉동 표시가 자동으로 풀림. 수량이 안 맞으면 openFrozenEdit 에서 직접 고침.
+   보유 상태(stock_state)는 그대로라 "다 마심"이 아님. */
 function frozenAgeDays(roastDate,frozen,onDate){
   if(!roastDate||!onDate)return null;
   const end=(frozen&&frozen<onDate)?frozen:onDate;
@@ -28,23 +32,80 @@ function frozenAgeDays(roastDate,frozen,onDate){
   const v=Math.round((p(end)-p(roastDate))/86400000);return isNaN(v)?null:v;
 }
 function frozenRec(kind,id){return kind==='rb'?(db.roasted_beans||[]).find(x=>x.id===id):(db.roasts||[]).find(x=>x.id===id);}
-function setFrozen(kind,id,on,info){
-  const rec=frozenRec(kind,id);if(!rec)return false;
-  if(on===undefined)on=!rec.frozen;
-  if(on){rec.frozen=today();if(info&&info.g)rec.frozen_g=String(info.g);if(info&&info.qty)rec.frozen_qty=String(info.qty);}
-  else{delete rec.frozen;delete rec.frozen_g;delete rec.frozen_qty;}
-  saveDB();
+function frozenKind(rec){return rec&&rec.bean_name!=null?'roast':'rb';}
+function frozenDrunk(rec){   // 냉동 뒤 이 배치로 저장한 한 잔 수
+  if(!rec||!rec.frozen)return 0;const k=frozenKind(rec);
+  return (db.dailycups||[]).filter(c=>{const b=c.bean_info||{};return b.frozen===rec.frozen&&(k==='rb'?b.rb_id===rec.id:b.roast_id===rec.id);}).length;
+}
+function frozenLeft(rec){   // 남은 냉동 봉지 수 (옛 방식으로 수량 없이 얼린 기록은 null)
+  if(!rec||!rec.frozen||!(+rec.frozen_qty>0))return null;
+  return Math.max(0,(+rec.frozen_qty)-frozenDrunk(rec));
+}
+function frozenRefresh(){
   try{if(document.getElementById('tab-roasts').classList.contains('on'))renderRoasts();}catch(e){}
   try{if(document.getElementById('tab-roasted').classList.contains('on'))renderRoastedBeans();}catch(e){}
   try{renderDash();}catch(e){}
   try{if(typeof renderDailyCup==='function'&&document.getElementById('tab-dailycup').classList.contains('on'))dcRerender();}catch(e){}
+}
+function setFrozen(kind,id,on,info){
+  const rec=frozenRec(kind,id);if(!rec)return false;
+  if(on===undefined)on=!rec.frozen;
+  if(on){rec.frozen=today();if(info&&info.g)rec.frozen_g=String(info.g);if(info&&info.qty)rec.frozen_qty=String(info.qty);
+    if(info&&info.last&&+info.last!==+info.g)rec.frozen_last=String(info.last);else delete rec.frozen_last;}
+  else{delete rec.frozen;delete rec.frozen_g;delete rec.frozen_qty;delete rec.frozen_last;}
+  saveDB();frozenRefresh();
   return true;
 }
-function frozenText(rec){   // "🧊 냉동 11/12 · 15g×6"
+function frozenText(rec){   // "🧊 냉동 3봉 · 20g" / 처음 상태면 "20g×2 + 32g"
   if(!rec||!rec.frozen)return '';
-  const p=rec.frozen.split('-');
-  return '🧊 냉동 '+(+p[1])+'/'+(+p[2])+(rec.frozen_g?` · ${rec.frozen_g}g${rec.frozen_qty?'×'+rec.frozen_qty:''}`:'');
+  const left=frozenLeft(rec),g=rec.frozen_g,last=rec.frozen_last,n=+rec.frozen_qty||0;
+  if(left==null)return '🧊 냉동 중';
+  const comp=(left===n&&last&&n>1)?` · ${g}g×${n-1} + ${last}g`:(left===n&&last?` · ${last}g`:(g?` · ${g}g`:''));
+  return `🧊 냉동 ${left}봉${comp}`;
 }
+/* 커피 한 잔을 새로 저장한 뒤 부름: 냉동 배치의 봉지가 다 떨어졌으면 냉동 표시를 자동으로 풀어 줌 */
+function frozenAfterCup(sel){
+  try{
+    if(!sel||!sel.frozen)return;
+    const rec=sel.rb_id?frozenRec('rb',sel.rb_id):frozenRec('roast',sel.roast_id);
+    if(!rec||!rec.frozen)return;
+    const left=frozenLeft(rec);
+    if(left===0){setFrozen(frozenKind(rec),rec.id,false);if(typeof lbToast==='function')lbToast('🧊 냉동해 둔 봉지를 다 마셨어요 — 냉동 표시를 풀었어요');}
+    else if(left>0&&typeof lbToast==='function')lbToast(`🧊 냉동 ${left}봉 남았어요`);
+  }catch(e){}
+}
+/* 냉동 수량 고치기 (기록과 안 맞을 때) */
+function openFrozenEdit(kind,id){
+  const rec=frozenRec(kind,id);if(!rec||!rec.frozen)return;
+  let mo=document.getElementById('moFrz');
+  if(!mo){mo=document.createElement('div');mo.className='mo';mo.id='moFrz';mo.innerHTML='<div class="mbox" id="frzBody"></div>';document.body.appendChild(mo);}
+  const left=frozenLeft(rec),name=rec.bean_name||rec.name||'';
+  const esc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  document.getElementById('frzBody').innerHTML=`<div class="mtitle">🧊 냉동 수정 · ${esc(name)}</div>
+    <div class="lb-opts"><div><div class="lb-l">남은 봉지</div><div class="lb-step"><button onclick="fzStep(-1)">−</button><input id="fzLeft" type="number" inputmode="numeric" min="0" value="${left==null?'':left}" placeholder="수"><button onclick="fzStep(1)">+</button></div></div>
+      <div><div class="lb-l">한 봉지 g</div><div class="lb-step" style="grid-template-columns:1fr"><input id="fzG" type="number" inputmode="decimal" value="${esc(rec.frozen_g||'')}" placeholder="g"></div></div></div>
+    <div class="lb-frz" style="margin-bottom:10px">한 잔 기록을 저장하면 남은 봉지가 자동으로 1씩 줄어요. 숫자가 안 맞으면 여기서 고치세요. 0으로 저장하면 냉동이 풀려요.</div>
+    <div class="fa" style="flex-wrap:wrap"><button class="btn2" onclick="closeMo('moFrz')">닫기</button>
+      <button class="btn2" onclick="fzReprint('${kind}','${id}')">🏷 라벨 다시</button>
+      <button class="btn2" onclick="fzRelease('${kind}','${id}')">냉동 해제</button>
+      <button class="btn btn-sm" onclick="fzSave('${kind}','${id}')">저장</button></div>`;
+  if(typeof lbOpenMo==='function')lbOpenMo('moFrz');else openMo('moFrz');
+}
+function fzStep(d){const i=document.getElementById('fzLeft');if(i)i.value=Math.max(0,(parseInt(i.value)||0)+d);}
+function fzSave(kind,id){
+  const rec=frozenRec(kind,id);if(!rec)return;
+  const L=parseInt(document.getElementById('fzLeft').value),g=parseFloat(document.getElementById('fzG').value);
+  if(isNaN(L)||L<0){alert('남은 봉지 수를 넣어 주세요.');return;}
+  if(g>0)rec.frozen_g=String(g);
+  if(L===0){closeMo('moFrz');setFrozen(kind,id,false);return;}
+  rec.frozen_qty=String(frozenDrunk(rec)+L);delete rec.frozen_last;   // 마신 만큼 더해 저장 → 남은 수가 입력값이 됨
+  saveDB();closeMo('moFrz');frozenRefresh();
+}
+function fzRelease(kind,id){closeMo('moFrz');setFrozen(kind,id,false);}
+function fzReprint(kind,id){closeMo('moFrz');if(typeof lbVacOpen==='function')lbVacOpen(kind,id,'frz',true);}
+/* 나눔(일부) — 잔량에서 빼기 위한 기록. rec.gifts=[{d:날짜,g:총 g}] */
+function giftedG(rec){return ((rec&&rec.gifts)||[]).reduce((s,x)=>s+(parseFloat(x.g)||0),0);}
+function giftText(rec){const g=giftedG(rec);return g?`🎁 나눔 ${Math.round(g)}g`:'';}
 /* 로스팅 기록 → 커피 한 잔 (이 배치가 골라진 상태로) */
 function roastToCup(id){
   const r=(db.roasts||[]).find(x=>x.id===id);if(!r)return;

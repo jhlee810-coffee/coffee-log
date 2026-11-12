@@ -1019,3 +1019,14 @@ html,body,button,.tb,.fc,.chip,.btn,.btn2,[onclick]{touch-action:manipulation;}
 
 /* 필터 칩 줄 (생두·원두 공통: 원산지 줄 / 구매처 줄) — 2026-11-12 */
 .filters .frow{display:flex;flex-wrap:wrap;gap:6px;width:100%;align-items:center;}
+
+/* 소분(진공·냉동 / 나눔) 미리보기 옵션 — 2026-11-12 */
+.lb-chips{display:flex;flex-wrap:wrap;gap:6px;}
+.lb-chips button{min-height:40px;min-width:52px;padding:0 12px;background:var(--bg2);border:1px solid var(--b2);border-radius:8px;color:var(--text2);font-size:14px;font-family:inherit;cursor:pointer;}
+.lb-chips button.on{background:var(--amber);border-color:var(--amber);color:#222;font-weight:800;}
+.lb-step.lb-one{grid-template-columns:1fr;}
+.lb-step input:disabled,.lb-step button:disabled,.lb-chips button:disabled{opacity:.4;}
+.lb-sum{margin-top:10px;margin-bottom:8px;font-size:14px;font-weight:700;color:var(--text);line-height:1.5;background:var(--bg3);border:1px solid var(--b1);border-radius:8px;padding:8px 10px;}
+.lb-sum span{font-weight:400;font-size:12px;color:var(--muted);}
+.lb-sum b{color:#9fd3ff;}
+.lb-sum .lb-bad{color:#ff8a7a;font-weight:700;}

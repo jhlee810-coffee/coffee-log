@@ -447,9 +447,7 @@ function lbPaint(){
   const el=document.getElementById('lbBody');if(!el)return;
   const v=_lb.vac;
   el.innerHTML=`<div class="mtitle">🏷 ${lbEsc(_lb.title)}</div>
-    ${v?`<div class="lb-opts"><div><div class="lb-l">한 봉지 g</div><div class="lb-seg">${[15,20].map(g=>`<button class="${v.g===g?'on':''}" onclick="lbVacSet('g',${g})">${g}g</button>`).join('')}</div></div>
-      <div><div class="lb-l">장수</div><div class="lb-step"><button onclick="lbVacSet('qty',${v.qty-1})">−</button><input id="lbQty" type="number" inputmode="numeric" min="1" max="99" value="${v.qty}" onchange="lbVacSet('qty',this.value)"><button onclick="lbVacSet('qty',${v.qty+1})">+</button></div></div></div>`:''}
-    ${_lb.frz?`<label class="lb-frz"><input type="checkbox" ${_lb.frz.on?'checked':''} onchange="_lb.frz.on=this.checked"> 🧊 출력하면 이 배치를 <b>냉동</b>으로 표시 <span>(g·장수도 같이 기록)</span></label>`:''}
+    ${v?`<div id="lbVacBox">${lbVacOptsHtml(v)}</div>`:''}
     <div id="lbPrev" class="lb-prev"><div class="lb-wait">라벨 만드는 중…</div></div>
     <div id="lbState" class="lb-state"></div>
     <div class="fa" id="lbAct"></div>`;
@@ -473,16 +471,54 @@ async function lbRenderAll(){
   // 끼운 롤 확인 (연결돼 있으면)
   if(lbConnected()&&_lb.res.length){_lb.roll=await lbRollCheck([...new Set(_lb.jobs.map(j=>j.type))]);lbPreviewState();}
 }
-function lbVacSet(k,v){
-  const o=_lb.vac;if(!o)return;
-  if(k==='qty'){o.qty=Math.max(1,Math.min(99,parseInt(v)||1));const q=document.getElementById('lbQty');if(q)q.value=o.qty;_lb.jobs.forEach(j=>j.qty=o.qty);lbPaintQty();lbPreviewState();return;}
-  o.g=+v;lbCfgSet({vacG:o.g});
-  const bar=document.querySelector('#lbBody .lb-opts .lb-seg');if(bar)bar.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.textContent===o.g+'g'));
-  lbRenderAll();
+/* ── 소분 (진공·냉동 / 나눔) — 2026-11-12 ──
+   _lb.vac = {mode:'frz'|'gift', kind:'roast'|'rb', id, total(냉동할 총 g), g(한 봉지 g), qty(나눔 장수), all(나눔 전량), remain, norec(다시 출력만, 기록 안 함)} */
+const LB_FRZ_G=[10,12,15,17,18,20,25], LB_GIFT_G=[20,50,100,150,200];
+function lbVacRec(kind,id){return kind==='rb'?(typeof rbList==='function'?rbList():[]).find(x=>x.id===id):(db.roasts||[]).find(x=>x.id===id);}
+function lbVacPlan(v){   // 봉지 계획: 냉동은 floor(총량/g)봉, 자투리는 마지막 봉지에 합침 (예: 72g, 20g → 20g×2 + 32g×1)
+  if(v.mode==='frz'){
+    const t=Math.max(0,Math.round(+v.total||0)),g=+v.g||15;
+    if(!t)return {bags:[],n:0,total:0,g};
+    const n=Math.max(1,Math.floor(t/g)),last=t-g*(n-1);
+    const bags=last===g?[{g,qty:n}]:(n>1?[{g,qty:n-1},{g:last,qty:1}]:[{g:last,qty:1}]);
+    return {bags,n,total:t,g,last};
+  }
+  if(v.all){const g=Math.round(v.remain)||0;return {bags:g?[{g,qty:1}]:[],n:g?1:0,total:g,g};}
+  const g=Math.round(+v.g)||0,q=Math.max(1,+v.qty||1);
+  return {bags:g?[{g,qty:q}]:[],n:g?q:0,total:g*q,g};
 }
-function lbPaintQty(){   // 장수만 바뀌면 그림은 그대로, 캡션만 갱신
-  document.querySelectorAll('#lbPrev .lb-card').forEach((c,i)=>{const cap=c.querySelector('.lb-cap');const j=_lb.jobs[i],r=_lb.res[i];if(!cap||!j||!r)return;
-    cap.innerHTML=`${_lb.res.length>1?`${i+1}/${_lb.res.length} · `:''}${LB_TYPES[r.type].name} ${LB_TYPES[r.type].rollW}×${LB_TYPES[r.type].rollH}${j.qty>1?` · <b>${j.qty}장</b>`:''}`;});
+function lbVacJobs(v){
+  const rec=lbVacRec(v.kind,v.id);if(!rec)return [];
+  return lbVacPlan(v).bags.map(x=>({type:v.kind==='rb'?'vacb':'vac',d:v.kind==='rb'?lbVacRbData(rec,x.g):lbVacRoastData(rec,x.g),qty:x.qty}));
+}
+function lbVacSumText(v){
+  const pl=lbVacPlan(v),rem=Math.round(v.remain);
+  const desc=pl.bags.map(b=>`${b.g}g × ${b.qty}봉`).join(' + ');
+  if(v.mode==='frz')return pl.n?`${desc} → 총 ${pl.n}봉 · ${pl.total}g<br><span>출력하면 이 배치를 <b>🧊 냉동 ${pl.n}봉</b>으로 기록해요${pl.bags.length>1?' (자투리는 마지막 봉지에 합침)':''}</span>`:'냉동할 양을 넣어 주세요';
+  const left=rem-pl.total;
+  return pl.n?`나눔 ${pl.total}g (${desc}) → 남는 양 ≈ ${Math.max(0,left)}g${pl.total>rem?`<br><span class="lb-bad">⚠ 남은 양(${rem}g)보다 많아요</span>`:''}<br><span>출력하면 ${v.all?(v.kind==='roast'?'이 배치를 <b>🎁 나눔</b>으로 정리해요':'이 원두를 <b>다 마심</b>으로 정리해요'):'나눔 기록이 남고 남은 양에서 빠져요'}</span>`:'나눔 g를 골라 주세요';
+}
+function lbVacOptsHtml(v){
+  const chips=(list,sel,fn)=>list.map(g=>`<button class="${sel===g?'on':''}" onclick="${fn}(${g})">${g}g</button>`).join('');
+  if(v.mode==='frz')return `<div class="lb-l">냉동할 양 (g) <span>— 기본은 남은 양 전체 (≈${Math.round(v.remain)}g)</span></div>
+    <div class="lb-step lb-one"><input id="lbTot" type="number" inputmode="decimal" value="${v.total}" onchange="lbVacSet('total',this.value)"></div>
+    <div class="lb-l" style="margin-top:8px">한 봉지 g</div><div class="lb-chips">${chips(LB_FRZ_G,v.g,"lbVacG")}</div>
+    <div class="lb-sum">${lbVacSumText(v)}</div>`;
+  return `<div class="lb-l">나눌 g <span>— 한 봉지</span></div>
+    <div class="lb-chips"><button class="${v.all?'on':''}" onclick="lbVacSet('all',1)">전량 (≈${Math.round(v.remain)}g)</button>${chips(LB_GIFT_G,v.all?0:v.g,"lbVacG")}</div>
+    <div class="lb-opts" style="margin-top:8px"><div><div class="lb-l">직접 입력 g</div><div class="lb-step lb-one"><input type="number" inputmode="decimal" value="${v.all?Math.round(v.remain):v.g}" ${v.all?'disabled':''} onchange="lbVacSet('g',this.value)"></div></div>
+      <div><div class="lb-l">장수</div><div class="lb-step"><button ${v.all?'disabled':''} onclick="lbVacSet('qty',${v.qty-1})">−</button><input id="lbQty" type="number" inputmode="numeric" min="1" max="99" value="${v.all?1:v.qty}" ${v.all?'disabled':''} onchange="lbVacSet('qty',this.value)"><button ${v.all?'disabled':''} onclick="lbVacSet('qty',${v.qty+1})">+</button></div></div></div>
+    <div class="lb-sum">${lbVacSumText(v)}</div>`;
+}
+function lbVacG(g){lbVacSet('g',g);}
+function lbVacSet(k,val){
+  const v=_lb.vac;if(!v)return;
+  if(k==='total')v.total=Math.max(0,Math.round(+val)||0);
+  else if(k==='g'){const g=parseFloat(val);if(!(g>0))return;v.g=g;v.all=false;lbCfgSet(v.mode==='frz'?{vacG:g}:{giftG:g});}
+  else if(k==='qty')v.qty=Math.max(1,Math.min(99,parseInt(val)||1));
+  else if(k==='all')v.all=!v.all;
+  const box=document.getElementById('lbVacBox');if(box)box.innerHTML=lbVacOptsHtml(v);
+  lbRenderAll();
 }
 /* 프린터 상태 줄 + 버튼 (연결·끊김·출력 중에 다시 그림) */
 function lbPreviewState(){
@@ -509,15 +545,23 @@ async function lbDoPrint(){
     const roll=await lbRollCheck([...new Set(_lb.jobs.map(j=>j.type))]);_lb.roll=roll;
     if(roll.level==='bad'&&!_lb.force){_lb.force=true;lbPreviewState();return;}   // 알려 주고, 한 번 더 누르면 "그래도 출력"
     await lbPrintItems(_lb.res.map((res,i)=>({res,qty:_lb.jobs[i].qty})));
-    const fz=lbApplyFreeze();closeMo('moLabel');lbToast(`🏷 라벨 ${lbSum()}장 출력했어요${fz?' · 🧊 냉동으로 표시했어요':''}`);
+    const fz=lbApplyVac();closeMo('moLabel');lbToast(`🏷 라벨 ${lbSum()}장 출력했어요${fz?' · '+fz:''}`);
   }catch(e){_lb.err='출력 실패: '+(e&&e.message||e);lbPreviewState();}
 }
 /* 라벨 이미지 저장 (프린터를 못 쓰는 브라우저용) — 설계 방향(가로) 그대로, 여러 장이면 세로로 이어 한 장 */
-/* 진공 라벨을 뽑았으면(냉동 소포장) 그 배치에 냉동 표시 — 체크박스가 켜져 있을 때 */
-function lbApplyFreeze(){
-  const f=_lb.frz;if(!f||!f.on||typeof setFrozen!=='function')return false;
-  const v=_lb.vac||{};
-  return !!setFrozen(f.kind,f.id,true,{g:v.g,qty:v.qty});
+/* 소분 라벨을 뽑았으면 기록: 냉동 → 배치에 냉동 N봉, 나눔 → 나눔 g 기록(전량이면 배치 정리). 다시 출력(norec)은 기록 안 함 */
+function lbApplyVac(){
+  const v=_lb.vac;if(!v||!v.mode||v.norec)return '';
+  const pl=lbVacPlan(v);if(!pl.n)return '';
+  const rec=lbVacRec(v.kind,v.id);if(!rec)return '';
+  if(v.mode==='frz')return setFrozen(v.kind,v.id,true,{g:pl.g,qty:pl.n,last:pl.last})?`🧊 냉동 ${pl.n}봉으로 기록했어요`:'';
+  if(v.all){
+    if(v.kind==='roast'){if(!rec.stock_state)setRoastState(v.id,'gift');}
+    else{(rec.gifts=rec.gifts||[]).push({d:today(),g:String(pl.total)});rec.status=typeof RB_STATUS_DONE!=='undefined'?RB_STATUS_DONE:'다 마심';saveDB();frozenRefresh();}
+    return '🎁 나눔으로 정리했어요';
+  }
+  (rec.gifts=rec.gifts||[]).push({d:today(),g:String(pl.total)});saveDB();frozenRefresh();
+  return `🎁 나눔 ${pl.total}g 기록했어요`;
 }
 function lbSaveImage(){
   if(!_lb.res.length)return;
@@ -526,7 +570,7 @@ function lbSaveImage(){
   let y=0;rs.forEach(r=>{x.drawImage(r.canvas,0,y);y+=r.h+gap;});
   const a=document.createElement('a');a.download=`라벨_${rs.length>1?rs.length+'장_':''}${(typeof today==='function'?today():'').replace(/-/g,'')}.png`;
   a.href=c.toDataURL('image/png');document.body.appendChild(a);a.click();a.remove();
-  if(lbApplyFreeze())lbToast('🧊 냉동으로 표시했어요');
+  const fz=lbApplyVac();if(fz)lbToast(fz);
 }
 
 /* ── 버튼에서 부르는 진입점 ── */
@@ -553,17 +597,17 @@ function lbRoastLabel(id){
   const r=(db.roasts||[]).find(x=>x.id===id);if(!r)return;
   lbOpenPreview(`로스팅 라벨 · ${r.date}${r.batch_no?' #'+r.batch_no:''}`,()=>[{type:'roast',d:lbRoastData(r),qty:1}]);
 }
-function lbVacOpts(){return {g:+lbCfg().vacG===15?15:20,qty:1};}   // g는 마지막에 쓴 값을 기억, 장수는 매번 1부터 (실수로 많이 뽑는 것 방지)
-function lbVacRoast(id){
-  const r=(db.roasts||[]).find(x=>x.id===id);if(!r)return;
-  if(r.stock_state==='gift'){alert('지인에게 나눈 배치라 진공 라벨은 필요 없어요.');return;}
-  lbOpenPreview(`진공 라벨 · ${r.bean_name||''}`,v=>[{type:'vac',d:lbVacRoastData(r,v.g),qty:v.qty}],lbVacOpts(),r.frozen?null:{kind:'roast',id:r.id,on:true});
+/* 진입점: [🧊 진공·냉동] (이미 냉동이면 수량 수정 창) / [🎁 나눔] */
+function lbVacFrz(kind,id){const r=lbVacRec(kind,id);if(!r)return;if(r.frozen)openFrozenEdit(kind,id);else lbVacOpen(kind,id,'frz');}
+function lbVacOpen(kind,id,mode,norec){
+  const r=lbVacRec(kind,id);if(!r)return;
+  if(kind==='roast'&&r.stock_state==='gift'){alert('지인에게 나눈 배치라 소분 라벨은 필요 없어요.');return;}
+  const remain=kind==='rb'?boughtRemainG(r):ownRemainG(r),cfg=lbCfg();
+  const g=mode==='frz'?(LB_FRZ_G.includes(+cfg.vacG)?+cfg.vacG:15):(+cfg.giftG>0?+cfg.giftG:50);
+  const v={mode,kind,id,remain,norec:!!norec,g,total:remain,qty:1,all:false};
+  const name=kind==='rb'?r.name:(r.bean_name||'');
+  lbOpenPreview(`${mode==='frz'?'진공·냉동':'나눔'} 라벨 · ${name}`,lbVacJobs,v);
 }
-function lbVacRb(id){
-  const b=(typeof rbList==='function'?rbList():[]).find(x=>x.id===id);if(!b)return;
-  lbOpenPreview(`진공 라벨 · ${b.name}`,v=>[{type:'vacb',d:lbVacRbData(b,v.g),qty:v.qty}],lbVacOpts(),b.frozen?null:{kind:'rb',id:b.id,on:true});
-}
-
 /* ── 로스팅 저장하면 자동 출력 (roasts.js saveRoast 에서 부름) ── */
 const lbAutoOn=()=>lbCfg().auto!==false;
 function lbSetAuto(on){lbCfgSet({auto:!!on});const c=document.getElementById('lbAuto');if(c)c.checked=!!on;}

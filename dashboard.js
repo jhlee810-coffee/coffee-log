@@ -134,8 +134,8 @@ function renderDash(){
   rows.sort((a,b)=>a.st.o-b.st.o||(a.st.wait??0)-(b.st.wait??0)||(a.d??99)-(b.d??99));  // 최적기 → 곧 최적기 → 지남
   // 🧊 냉동 중인 배치 (잊지 않게 따로 표시, 누르면 바로 기록)
   const frz=[];
-  roasts.forEach(r=>{if(r.frozen&&roastHeld(r)){const bean=beanOfRoast(r);frz.push({label:dashFullName(r.bean_name,bean),rd:r.date,click:bean?`openDailyCupFor('${bean.id}')`:"dashGoTab('dailycup')",g:r.frozen_g,q:r.frozen_qty});}});
-  (db.roasted_beans||[]).forEach(b=>{if(b.frozen&&b.status!=='다 마심')frz.push({label:b.name,rd:b.roast_date,click:`openDailyCupRb('${b.id}')`,g:b.frozen_g,q:b.frozen_qty});});
+  roasts.forEach(r=>{if(r.frozen&&roastHeld(r)){const bean=beanOfRoast(r);frz.push({label:dashFullName(r.bean_name,bean),rd:r.date,click:bean?`openDailyCupFor('${bean.id}')`:"dashGoTab('dailycup')",g:r.frozen_g,q:frozenLeft(r)});}});
+  (db.roasted_beans||[]).forEach(b=>{if(b.frozen&&b.status!=='다 마심')frz.push({label:b.name,rd:b.roast_date,click:`openDailyCupRb('${b.id}')`,g:b.frozen_g,q:frozenLeft(b)});});
   // 같은 생두의 냉동 배치는 한 칩으로 묶음: "에티오피아 합타무 · 11/4~11/10분 · 6배치 · 15g×24"
   const frzG={};
   frz.forEach(x=>{const k=x.label;const g=frzG[k]=frzG[k]||{label:x.label,n:0,from:x.rd||'',to:x.rd||'',bags:0,gs:new Set(),click:x.click};

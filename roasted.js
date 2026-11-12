@@ -39,9 +39,9 @@ let _rbKind='all';   // 'all' | 'own' | 'bought' | 'frozen'
 function rbUsedG(match){return (db.dailycups||[]).filter(c=>match(c.bean_info||{})).reduce((s,c)=>s+(parseFloat((c.brew||{}).coffee_g)||15),0);}
 function ownRemainG(r){
   const out=parseFloat(r.output_g)||(parseFloat(r.input_g)?parseFloat(r.input_g)*0.85:0);
-  return Math.max(0,Math.round(out-rbUsedG(s=>s.roast_id===r.id)));
+  return Math.max(0,Math.round(out-rbUsedG(s=>s.roast_id===r.id)-giftedG(r)));
 }
-function boughtRemainG(b){return Math.max(0,Math.round((parseFloat(b.weight_g)||0)-rbUsedG(s=>s.rb_id===b.id)));}
+function boughtRemainG(b){return Math.max(0,Math.round((parseFloat(b.weight_g)||0)-rbUsedG(s=>s.rb_id===b.id)-giftedG(b)));}
 function fmtWeight(g){g=Math.round(g||0);return g>=1000?(g/1000).toFixed(1)+'kg':g+'g';}
 
 /* 홈 요약·원두 탭 머리에 쓰는 재고 요약 (무게는 대략) */
@@ -138,16 +138,18 @@ function rbItemHtml(it){
   const prof=own?[r.mode?`${r.mode}-${r.dtr_pct?Math.round(parseFloat(r.dtr_pct)):'?'}`:'',r.batch_no?'#'+r.batch_no:''].filter(Boolean).join(' '):'';
   const remain=it.held?(own?ownRemainG(r):boughtRemainG(r)):0;
   const meta=own
-    ?[r.input_g&&r.output_g?`${r.input_g}→${r.output_g}g`:'',r.roast_level||'',cups.length?`${cups.length}잔 ★${avg}`:'',it.held?`잔량 ≈ ${remain}g`:''].filter(Boolean).join(' · ')
-    :[r.weight_g?r.weight_g+'g':'',r.price?Number(r.price).toLocaleString()+'원':'',r.buy_date?'구매 '+md(r.buy_date):'',cups.length?`${cups.length}잔 ★${avg}`:'',it.held?`잔량 ≈ ${remain}g`:''].filter(Boolean).join(' · ');
+    ?[r.input_g&&r.output_g?`${r.input_g}→${r.output_g}g`:'',r.roast_level||'',cups.length?`${cups.length}잔 ★${avg}`:'',giftText(r),it.held?`잔량 ≈ ${remain}g`:''].filter(Boolean).join(' · ')
+    :[r.weight_g?r.weight_g+'g':'',r.price?Number(r.price).toLocaleString()+'원':'',r.buy_date?'구매 '+md(r.buy_date):'',cups.length?`${cups.length}잔 ★${avg}`:'',giftText(r),it.held?`잔량 ≈ ${remain}g`:''].filter(Boolean).join(' · ');
   const stBadge=!it.held?`<span class="rbi-st off">${own&&it.state==='gift'?'🎁 나눔':'다 마심'}</span>`
-    :it.frozen?`<span class="rbi-st frz">🧊 ${s.age!=null?s.age+'일차에 멈춤':'냉동'}</span>`
+    :it.frozen?`<span class="rbi-st frz">${rbEsc(frozenText(r).replace(/ · .*$/,'')||'🧊 냉동')}</span>`
     :`<span class="rbi-st" style="color:${s.st.c};border-color:${s.st.c}">${s.age!=null?s.age+'일차 · ':''}${s.st.l||''}</span>`;
   const btn=(on,fn,l)=>`<button class="${on?'on':''}" onclick="${fn}">${l}</button>`;
+  const kd=own?'roast':'rb';
+  const frzBtn=btn(it.frozen,`lbVacFrz('${kd}','${r.id}')`,it.frozen?'🧊 '+(frozenLeft(r)==null?'냉동 중':frozenLeft(r)+'봉')+' · 수정':'🧊 진공·냉동');
   const acts=own
-    ?btn(0,`roastToCup('${r.id}')`,'☕ 한 잔 기록')+(it.state?'':btn(it.frozen,`setFrozen('roast','${r.id}')`,'🧊 '+(it.frozen?'냉동 중':'냉동')))+btn(0,`lbRoastLabel('${r.id}')`,'🏷 로스팅 라벨')+(it.state==='gift'?'':btn(0,`lbVacRoast('${r.id}')`,'🏷 진공'))
-      +btn(it.state==='gift',`setRoastState('${r.id}','gift')`,'🎁 나눔')+btn(it.state==='done',`setRoastState('${r.id}','done')`,'다 마심')
-    :btn(0,`openDailyCupRb('${r.id}')`,'☕ 한 잔 기록')+btn(it.frozen,`setFrozen('rb','${r.id}')`,'🧊 '+(it.frozen?'냉동 중':'냉동'))+btn(0,`lbVacRb('${r.id}')`,'🏷 진공')
+    ?btn(0,`roastToCup('${r.id}')`,'☕ 한 잔 기록')+(it.state?'':frzBtn)+btn(0,`lbRoastLabel('${r.id}')`,'🏷 로스팅 라벨')
+      +btn(it.state==='gift',it.state?`setRoastState('${r.id}','gift')`:`lbVacOpen('roast','${r.id}','gift')`,'🎁 나눔')+btn(it.state==='done',`setRoastState('${r.id}','done')`,'다 마심')
+    :btn(0,`openDailyCupRb('${r.id}')`,'☕ 한 잔 기록')+(it.held?frzBtn:'')+(it.held?btn(0,`lbVacOpen('rb','${r.id}','gift')`,'🎁 나눔'):'')
       +btn(!it.held,`rbToggleDone('${r.id}')`,'다 마심');
   return `<div class="rbi ${own?'own':'bought'}${it.held?'':' off'}" onclick="${own?`openRoastDetail('${r.id}')`:`openRbForm('${r.id}')`}">
     <div class="rbi-top"><span class="rbi-tag">${own?'🔥 직접 로스팅':'🛒 산 원두'}</span><b>${rbEsc(md(it.date)||'날짜 없음')} 로스팅${prof?' · '+rbEsc(prof):''}${own?'':r.roastery?' · '+rbEsc(r.roastery):''}</b>${stBadge}</div>

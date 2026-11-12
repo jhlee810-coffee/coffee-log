@@ -202,15 +202,14 @@ function renderRoasts(){
       ${bean.cup_notes?`<div class="rcupnotes">${bean.cup_notes}</div>`:''}
       ${r.notes?`<div class="rmemo">${r.notes}</div>`:''}
       ${brewHTML}
-      <div class="ract-row${st?'':' r4'}" onclick="event.stopPropagation()">
+      <div class="ract-row" onclick="event.stopPropagation()">
         <button class="ract-cup" onclick="roastToCup('${r.id}')">☕ 한 잔 기록</button>
         <button class="ract-st${st==='gift'?' on':''}" onclick="setRoastState('${r.id}','gift')">🎁 나눔</button>
         <button class="ract-st${st==='done'?' on':''}" onclick="setRoastState('${r.id}','done')">다 마심</button>
-        ${st?'':`<button class="ract-st${r.frozen?' on':''}" onclick="setFrozen('roast','${r.id}')">🧊 ${r.frozen?'냉동 중':'냉동'}</button>`}
       </div>
       <div class="ract-row lb-row" onclick="event.stopPropagation()">
         <button class="ract-st" onclick="lbRoastLabel('${r.id}')">🏷 로스팅 라벨 다시 출력</button>
-        ${st==='gift'?'':`<button class="ract-st" onclick="lbVacRoast('${r.id}')">🏷 진공 라벨</button>`}
+        ${st?'':`<button class="ract-st${r.frozen?' on':''}" onclick="lbVacFrz('roast','${r.id}')">🧊 ${r.frozen?(frozenLeft(r)==null?'냉동 중':frozenLeft(r)+'봉')+' · 수정':'진공·냉동'}</button>`}
       </div>
     </div>`;
   }).join('')||'<div class="empty"><div class="empty-icon">🔥</div><div class="empty-text">로스팅 기록이 없습니다</div></div>';
