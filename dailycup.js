@@ -14,6 +14,12 @@ const DC_BLOOM=['30초','45초','1분','1분 30초'];
 const DC_DILUTE=['0','10','20','30','40'];
 const DC_TIMES=['2:30','3:00','3:30','4:00','4:30'];
 const DC_WATERS=['백산수10+딥스골드1'];
+// 물 온도: 직접 쓰지 않고 고르기 (2026-11-12). 92도가 가장 많이 씀 → 처음 값(지난 기록이 없을 때)
+const DC_TEMPS=['84','85','86','87','88','89','90','91','92','93','94','95','96','97','98'];   // 일반 추출
+const DC_TEMP_COLD=['상온','45','50','75'];                                                      // 저온 추출
+const DC_TEMP_DEFAULT='92';
+// 화면·목록에 보일 때: 숫자면 92°C, 상온처럼 글자면 그대로
+function dcTempLabel(t){t=String(t==null?'':t).trim();if(!t)return '';return /^\d+(\.\d+)?$/.test(t)?t+'°C':t;}
 // 레시피 프리셋: 고르면 아래 값이 한 번에 채워짐 (decafOf/decafTwin: 디카페인 원두를 고르면 자동으로 짝 프리셋)
 const DC_PRESETS=[
   {name:'펄사 미니 15',dripper:'펄사 미니',grinder:'ZP6',clicks:'75',coffee_g:'15',water_g:'250',dilute_g:'10',temp:'94',bloom:'1분',water:'백산수10+딥스골드1',
@@ -22,7 +28,9 @@ const DC_PRESETS=[
    steps:'스위치 닫고 블룸 50g → 1분 오픈 50g → 1:30 50g → 2:00 50g → 2:30 50g (총 250g) · 가수 10g',decaf:true,regularTwin:'펄사 미니 15'},
   {name:'펄사 미니 20',dripper:'펄사 미니',grinder:'ZP6',clicks:'75',coffee_g:'20',water_g:'300',dilute_g:'50',temp:'94',bloom:'1분',water:'백산수10+딥스골드1',
    steps:'스위치 닫고 블룸 50g → 1분 오픈 50g → 1:30 50g → 2:00 50g → 2:30 50g → 3:00 50g (총 300g) · 가수 50g'},
-  {name:'10푸어',dripper:'하리오 네오',grinder:'코만단테 C40',clicks:'40',coffee_g:'20',water_g:'310',dilute_g:'30',temp:'90',bloom:'30초',time:'3:15~3:30',water:'백산수10+딥스골드1',
+  {name:'10푸어 코만',dripper:'하리오 네오',grinder:'코만단테 C40',clicks:'40',coffee_g:'20',water_g:'310',dilute_g:'30',temp:'90',bloom:'30초',time:'3:15~3:30',water:'백산수10+딥스골드1',
+   steps:'필터 카펙 TH-2 (하리오 V60도 가능) · 블룸 40g → 0:30 60g → 1:00부터 약 15초 간격 센터 푸어 30g×7 (총 310g) → 3:15~3:30 다 떨어질 때까지 · 가수 30g'},
+  {name:'10푸어 ZP6',dripper:'하리오 네오',grinder:'ZP6',clicks:'80',coffee_g:'20',water_g:'310',dilute_g:'30',temp:'92',bloom:'30초',time:'3:15~3:30',water:'백산수10+딥스골드1',   // ZP6 분쇄도 8.0 (저장값 80 = 화면 8.0)
    steps:'필터 카펙 TH-2 (하리오 V60도 가능) · 블룸 40g → 0:30 60g → 1:00부터 약 15초 간격 센터 푸어 30g×7 (총 310g) → 3:15~3:30 다 떨어질 때까지 · 가수 30g'},
   {name:'세이 더블블룸',dripper:'하리오 V60',grinder:'ZP6',clicks:'60',coffee_g:'15',water_g:'250',dilute_g:'20',temp:'92',bloom:'30초',time:'2:30 이내',water:'백산수10+딥스골드1',
    steps:'필터 TH-3 · 1차 50g 원 그리며 → 0:30 2차 50g → 1:30 3차 150g 강하게 푸어링 (총 250g) → 2:30 안에 끝 · 가수 20g'},
@@ -180,7 +188,7 @@ function dcNew(){
   _dc={editId:null,date:today(),sel:null,stars:0,balance:'',strength:'',good:[],bad:[],
        sweet:0,acidity:'',aroma:'',notes_felt:[],cool:[],memo_hot:'',memo_cool:'',
        brew:{recipe:lb.recipe||'',dripper:lb.dripper||'',grinder:lb.grinder||'',clicks:lb.clicks||'',
-             coffee_g:lb.coffee_g||'',water_g:lb.water_g||'',temp:lb.temp||'',time:lb.time||'',
+             coffee_g:lb.coffee_g||'',water_g:lb.water_g||'',temp:lb.temp||DC_TEMP_DEFAULT,time:lb.time||'',
              bloom:lb.bloom||'',dilute_g:lb.dilute_g||'',water:lb.water||DC_WATERS[0]},
        memo:'',more:false};
 }
@@ -262,6 +270,11 @@ function dcMoreHtml(){
   const bloom=DC_BLOOM.map(v=>chip(b.bloom===v,v,`dcSetBrew('bloom','${v}')`)).join('')+chip(b.bloom&&!DC_BLOOM.includes(b.bloom),b.bloom&&!DC_BLOOM.includes(b.bloom)?b.bloom:'직접',`dcAskBrew('bloom','불림 시간 (예: 40초)')`);
   const dil=DC_DILUTE.map(v=>chip(String(b.dilute_g)===v,v+'g',`dcSetBrew('dilute_g','${v}')`)).join('')+chip(b.dilute_g!==''&&b.dilute_g!=null&&!DC_DILUTE.includes(String(b.dilute_g)),b.dilute_g!==''&&b.dilute_g!=null&&!DC_DILUTE.includes(String(b.dilute_g))?b.dilute_g+'g':'직접',`dcAskBrew('dilute_g','가수 (g)')`);
   const times=DC_TIMES.map(v=>chip(b.time===v,v,`dcSetBrew('time','${v}')`)).join('');
+  const tcur=String(b.temp==null?'':b.temp);
+  const tchip=v=>chip(tcur===v,v,`dcSetBrew('temp','${v}')`);
+  // 목록에 없는 예전 값(예: 93.5)은 선택된 칩으로 하나 더 보여서 잃어버리지 않게
+  const tempChips=DC_TEMPS.map(tchip).join('')+(tcur&&![...DC_TEMPS,...DC_TEMP_COLD].includes(tcur)?chip(true,tcur,`dcSetBrew('temp','${q(tcur)}')`):'');
+  const tempCold=DC_TEMP_COLD.map(tchip).join('');
   const waters=[...new Set([...DC_WATERS,...dcList().map(r=>r.brew&&r.brew.water).filter(Boolean),b.water].filter(Boolean))].map(w=>chip(b.water===w,w,`dcSetBrew('water','${q(w)}')`)).join('')+`<button class="dc-chip add" onclick="dcAskBrew('water','물 이름 (예: 에비앙)')">+ 직접 추가</button>`;
   const drs=dcDrippers().map(d=>chip(b.dripper===d,d,`dcSetBrew('dripper','${q(d)}')`)).join('')+`<button class="dc-chip add" onclick="dcAddDripper()">+ 직접 추가</button>`;
   const grs=DC_GRINDERS.map(g=>chip(b.grinder===g.name,g.name,`dcSetGrinder('${q(g.name)}')`)).join('');
@@ -292,9 +305,12 @@ function dcMoreHtml(){
     <div class="dc-grid4">
       <div><div class="dc-mini">원두 g</div>${inp('coffee_g','15','decimal')}</div>
       <div><div class="dc-mini">물 g</div>${inp('water_g','240','decimal')}</div>
-      <div><div class="dc-mini">물 온도</div>${inp('temp','93','decimal')}</div>
       <div><div class="dc-mini">디카페인</div><div class="dc-dec">${e.sel&&e.sel.decaf?'☕ 디카페인 원두':'아님'}</div></div>
     </div>
+    <div class="dc-mini">물 온도 ${b.temp!==''&&b.temp!=null?`<b class="dc-tval">${dcEsc(dcTempLabel(b.temp))}</b>`:''}</div>
+    <div class="dc-chips">${tempChips}</div>
+    <div class="dc-mini dc-opt" style="margin-top:6px">저온 추출</div>
+    <div class="dc-chips">${tempCold}</div>
     <div class="dc-mini">불림</div><div class="dc-chips">${bloom}</div>
     <div class="dc-mini">가수</div><div class="dc-chips">${dil}</div>
     <div class="dc-mini">총 추출 시간 ${b.time?`<b class="dc-tval">${dcEsc(b.time)}</b>`:''}</div><div class="dc-chips">${times}<button class="dc-chip" onclick="dcTimeAdj(-10)">−10초</button><button class="dc-chip" onclick="dcTimeAdj(10)">+10초</button></div>
@@ -478,7 +494,7 @@ function dcListHtml(){
     list.map(r=>{const bi=r.bean_info||{},nt=dcBeanNotes(bi).join(', ');return `<div class="dc-row"><div class="dc-row-bean">${dcEsc(bi.bean||'')}</div>${nt?`<div class="dc-notes">🍑 ${dcEsc(nt)}</div>`:''}<div class="dc-row-sum">${dcEsc(dcSummary(r))}</div>
       ${r.memo?`<div class="dc-row-memo">“${dcEsc(r.memo)}”</div>`:''}
       ${r.memo_hot||r.memo_cool?`<div class="dc-row-memo">${r.memo_hot?'따뜻: '+dcEsc(r.memo_hot):''}${r.memo_hot&&r.memo_cool?' / ':''}${r.memo_cool?'식음: '+dcEsc(r.memo_cool):''}</div>`:''}
-      ${r.brew?`<div class="dc-row-brew">${dcEsc([r.brew.recipe,r.brew.dripper,r.brew.grinder?r.brew.grinder+(r.brew.clicks?' '+dcClickLabel(r.brew.grinder,r.brew.clicks):''):'',r.brew.coffee_g?r.brew.coffee_g+'g':'',r.brew.water_g?r.brew.water_g+'g':'',r.brew.temp?r.brew.temp+'°C':'',r.brew.bloom?'불림 '+r.brew.bloom:'',r.brew.dilute_g!=null&&r.brew.dilute_g!==''?'가수 '+r.brew.dilute_g+'g':'',r.brew.time,r.brew.water].filter(Boolean).join(' · '))}</div>`:''}
+      ${r.brew?`<div class="dc-row-brew">${dcEsc([r.brew.recipe,r.brew.dripper,r.brew.grinder?r.brew.grinder+(r.brew.clicks?' '+dcClickLabel(r.brew.grinder,r.brew.clicks):''):'',r.brew.coffee_g?r.brew.coffee_g+'g':'',r.brew.water_g?r.brew.water_g+'g':'',dcTempLabel(r.brew.temp),r.brew.bloom?'불림 '+r.brew.bloom:'',r.brew.dilute_g!=null&&r.brew.dilute_g!==''?'가수 '+r.brew.dilute_g+'g':'',r.brew.time,r.brew.water].filter(Boolean).join(' · '))}</div>`:''}
       <div class="dc-row-btns"><button class="btn2" onclick="dcEdit('${r.id}')">수정</button><button class="btnd" onclick="dcDelete('${r.id}')">삭제</button></div></div>`;}).join('');
 }
 function dcEdit(id){

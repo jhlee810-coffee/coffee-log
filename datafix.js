@@ -272,6 +272,18 @@ function migrate20261110b(){
   return true;
 }
 
+/* ── 2026-11-12 한 번만: 커피 한잔 레시피 이름 "10푸어" → "10푸어 코만" (사용자: 10푸어를 코만/ZP6 두 가지로 나눔) ──
+   예전 기록의 레시피 이름만 바꿈 (그라인더가 코만단테였던 기존 10푸어와 같은 레시피) */
+const MIGRATION_20261112='fix-20261112';
+function migrate20261112(){
+  if(!db)return false;
+  db.migrations=db.migrations||[];
+  if(db.migrations.includes(MIGRATION_20261112))return false;
+  (db.dailycups||[]).forEach(r=>{if(r&&r.brew&&r.brew.recipe==='10푸어')r.brew.recipe='10푸어 코만';});
+  db.migrations.push(MIGRATION_20261112);
+  return true;
+}
+
 /* 앱 열 때(동기화 뒤) 한 번 실행 — 바뀐 게 있으면 한 번만 저장 */
 function runDataFixes(){
   let changed=false;
@@ -285,6 +297,7 @@ function runDataFixes(){
   try{changed=migrate20261107g()||changed;}catch(e){console.warn('무게 표시 실패',e);}
   try{changed=migrate20261110()||changed;}catch(e){console.warn('원두 6개 등록 실패',e);}
   try{changed=migrate20261110b()||changed;}catch(e){console.warn('합타무 이름 정리 실패',e);}
+  try{changed=migrate20261112()||changed;}catch(e){console.warn('10푸어 이름 정리 실패',e);}
   try{changed=backfillRoastTimes()||changed;}catch(e){console.warn('로스팅 계산값 채우기 실패',e);}
   try{changed=reapplyRoastLevels()||changed;}catch(e){console.warn('로스팅 단계 다시 지정 실패',e);}
   try{changed=fixStockStatus()||changed;}catch(e){console.warn('재고 상태 정리 실패',e);}
