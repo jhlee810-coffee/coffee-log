@@ -9,7 +9,11 @@ const RB_STATUS_ON='마시는 중', RB_STATUS_DONE='다 마심';
 
 let _rbFilter='on';   // 'on' | 'done' | 'all'
 let _rbSearch='';
+let _rbOS='';   // 원산지/구매처 칩 선택: '' | 'origin:에티오피아' | 'shop:모모스'
 let _rbForm=null;
+// 항목의 원산지·구매처 (내 로스팅은 생두 정보, 산 원두는 직접 입력한 값 · 로스터리). 구매처 이름은 별칭을 하나로 합침
+function rbOriginOf(it){return (it.kind==='own'?(it.bean&&it.bean.origin):it.rec.origin)||'';}
+function rbShopOf(it){const s=it.kind==='own'?(it.bean&&it.bean.shop):it.rec.roastery;return (typeof canonShop==='function'?canonShop(s):s)||'';}
 
 function rbList(){if(!Array.isArray(db.roasted_beans))db.roasted_beans=[];return db.roasted_beans;}
 function rbEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -79,7 +83,13 @@ function renderRoastedBeans(){
   const text=it=>it.kind==='own'
     ?[it.rec.bean_name,it.bean.origin,it.bean.process,it.bean.cup_notes,it.bean.shop].join('')
     :[it.rec.name,it.rec.roastery,it.rec.origin,it.rec.process,it.rec.cup_notes].join('');
-  const list=all.filter(it=>inKind(it)&&inState(it)&&(!q||text(it).toLowerCase().replace(/\s+/g,'').includes(q)));
+  // 원산지·구매처 칩 (생두 탭과 같은 모양): 지금 보이는 종류·상태 안에서만, 각각 가나다순
+  const base=all.filter(it=>inKind(it)&&inState(it));
+  const srt=a=>[...new Set(a.filter(Boolean))].sort((x,y)=>String(x).localeCompare(String(y),'ko'));
+  const origins=srt(base.map(rbOriginOf)),shops=srt(base.map(rbShopOf));
+  if(_rbOS&&!(_rbOS.startsWith('origin:')?origins.includes(_rbOS.slice(7)):shops.includes(_rbOS.slice(5))))_rbOS='';
+  const inOS=it=>!_rbOS||(_rbOS.startsWith('origin:')?rbOriginOf(it)===_rbOS.slice(7):rbShopOf(it)===_rbOS.slice(5));
+  const list=base.filter(it=>inOS(it)&&(!q||text(it).toLowerCase().replace(/\s+/g,'').includes(q)));
   // 생두별로 묶기
   const groups=[],gi={};
   list.forEach(it=>{
@@ -102,12 +112,14 @@ function renderRoastedBeans(){
   const S=stockSummary();
   const fc=(k,l)=>`<div class="fc ${_rbFilter===k?'on':''}" onclick="_rbFilter='${k}';renderRoastedBeans()">${l}</div>`;
   const kc=(k,l)=>`<div class="fc ${_rbKind===k?'on':''}" onclick="_rbKind='${k}';renderRoastedBeans()">${l}</div>`;
+  const oc=(k,l)=>`<div class="fc ${_rbOS===k?'on':''}" data-k="${rbEsc(k)}" onclick="_rbOS=this.dataset.k;renderRoastedBeans()">${rbEsc(l)}</div>`;
   const nHeld=all.filter(i=>i.held).length;
   el.innerHTML=`<div class="sh"><div class="stl">원두 목록</div><div class="sh-btns"><button class="btn2 ps-open" onclick="openPasteReg('roasted')">📥 붙여넣기로 등록</button><button class="btn btn-sm" onclick="openRbForm()">+ 원두 등록</button></div></div>
     <div class="rb-sum">마시는 중 <b>${nHeld}개</b> · 🔥 내 로스팅 ${S.ownKinds}종 ≈ ${fmtWeight(S.ownG)} · 🛒 산 원두 ${S.boughtKinds}종 ≈ ${fmtWeight(S.boughtG)}${S.frozenG?` · 🧊 냉동 ≈ ${fmtWeight(S.frozenG)}`:''}</div>
     <input class="search" placeholder="원두 · 로스터리 · 원산지 · 컵노트 검색..." value="${rbEsc(_rbSearch)}" oninput="_rbSearch=this.value;renderRoastedBeans();const i=document.querySelector('#rbRoot .search');i.focus();i.setSelectionRange(i.value.length,i.value.length)">
     <div class="filters">${fc('on','마시는 중')}${fc('done','다 마심·나눔')}${fc('all','전체')}</div>
     <div class="filters">${kc('all','모두')}${kc('own','🔥 내 로스팅')}${kc('bought','🛒 산 원두')}${kc('frozen','🧊 냉동')}</div>
+    <div class="filters">${(origins.length||shops.length)?`<div class="frow">${oc('','전체')}${origins.map(o=>oc('origin:'+o,o)).join('')}</div>${shops.length?`<div class="frow">${shops.map(s=>oc('shop:'+s,s)).join('')}</div>`:''}`:''}</div>
     <div class="rbg-list">${groups.map(rbGroupHtml).join('')||
       `<div class="empty"><div class="empty-icon">🫘</div><div class="empty-text">${all.length?'맞는 원두가 없어요':'산 원두를 등록하거나 로스팅을 저장해 보세요'}</div></div>`}</div>`;
 }
@@ -133,7 +145,7 @@ function rbItemHtml(it){
     :`<span class="rbi-st" style="color:${s.st.c};border-color:${s.st.c}">${s.age!=null?s.age+'일차 · ':''}${s.st.l||''}</span>`;
   const btn=(on,fn,l)=>`<button class="${on?'on':''}" onclick="${fn}">${l}</button>`;
   const acts=own
-    ?btn(0,`roastToCup('${r.id}')`,'☕ 한 잔 기록')+(it.state?'':btn(it.frozen,`setFrozen('roast','${r.id}')`,'🧊 '+(it.frozen?'냉동 중':'냉동')))+(it.state==='gift'?'':btn(0,`lbVacRoast('${r.id}')`,'🏷 진공'))
+    ?btn(0,`roastToCup('${r.id}')`,'☕ 한 잔 기록')+(it.state?'':btn(it.frozen,`setFrozen('roast','${r.id}')`,'🧊 '+(it.frozen?'냉동 중':'냉동')))+btn(0,`lbRoastLabel('${r.id}')`,'🏷 로스팅 라벨')+(it.state==='gift'?'':btn(0,`lbVacRoast('${r.id}')`,'🏷 진공'))
       +btn(it.state==='gift',`setRoastState('${r.id}','gift')`,'🎁 나눔')+btn(it.state==='done',`setRoastState('${r.id}','done')`,'다 마심')
     :btn(0,`openDailyCupRb('${r.id}')`,'☕ 한 잔 기록')+btn(it.frozen,`setFrozen('rb','${r.id}')`,'🧊 '+(it.frozen?'냉동 중':'냉동'))+btn(0,`lbVacRb('${r.id}')`,'🏷 진공')
       +btn(!it.held,`rbToggleDone('${r.id}')`,'다 마심');

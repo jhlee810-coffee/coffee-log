@@ -1,17 +1,17 @@
 function renderBeans(){
-  const origins=[...new Set(db.beans.map(b=>b.origin).filter(Boolean))];
-  const shops=[...new Set(db.beans.map(b=>b.shop).filter(Boolean))];
-  const varieties=[...new Set(db.beans.map(b=>b.variety).filter(Boolean))];
-  const fc=(key,lbl)=>`<div class="fc ${cf===key?'on':''}" onclick="setF('${key}')">${lbl}</div>`;
+  // 필터 칩: 라벨·품종 없이 원산지 줄 / 구매처 줄 두 줄, 각각 가나다순 (2026-11-12)
+  const cs_=(n)=>typeof canonShop==='function'?canonShop(n):n;
+  const srt=a=>[...new Set(a.filter(Boolean))].sort((x,y)=>String(x).localeCompare(String(y),'ko'));
+  const origins=srt(db.beans.map(b=>b.origin));
+  const shops=srt(db.beans.map(b=>cs_(b.shop)));
+  const fc=(key,lbl)=>`<div class="fc ${cf===key?'on':''}" onclick="setF('${key.replace(/'/g,"\\'")}')">${lbl}</div>`;
   document.getElementById('originFilters').innerHTML=
-    fc('all','전체')+
-    (origins.length?`<span class="flabel">원산지</span>`+origins.map(o=>fc(`origin:${o}`,o)).join(''):'')+
-    (shops.length?`<span class="flabel">구매처</span>`+shops.map(s=>fc(`shop:${s}`,s)).join(''):'')+
-    (varieties.length?`<span class="flabel">품종</span>`+varieties.map(v=>fc(`variety:${v}`,v)).join(''):'');
+    `<div class="frow">${fc('all','전체')}${origins.map(o=>fc(`origin:${o}`,o)).join('')}</div>`+
+    (shops.length?`<div class="frow">${shops.map(s=>fc(`shop:${s}`,s)).join('')}</div>`:'');
   let beans=db.beans;
   if(cf!=='all'){
     if(cf.startsWith('origin:')){const val=cf.slice(7);beans=beans.filter(b=>b.origin===val);}
-    else if(cf.startsWith('shop:')){const val=cf.slice(5);beans=beans.filter(b=>b.shop===val);}
+    else if(cf.startsWith('shop:')){const val=cf.slice(5);beans=beans.filter(b=>cs_(b.shop)===val);}
     else if(cf.startsWith('variety:')){const val=cf.slice(8);beans=beans.filter(b=>b.variety===val);}
     else beans=beans.filter(b=>b.origin===cf);
   }

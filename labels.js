@@ -570,17 +570,20 @@ function lbSetAuto(on){lbCfgSet({auto:!!on});const c=document.getElementById('lb
 async function lbAutoPrintRoast(id,manual){
   const r=(db.roasts||[]).find(x=>x.id===id);if(!r)return;
   if(!manual){
-    if(!lbAutoOn()||!lbCan().any)return;                     // 꺼져 있거나 이 브라우저는 출력 불가 → 조용히 넘어감
-    if(!lbConnected()){lbToast('🏷 프린터가 연결돼 있지 않아 라벨을 못 뽑았어요',{label:'연결하고 출력',fn:()=>{lbConnectThenPrint(id);}},12000);return;}
+    if(!lbAutoOn())return;                                   // 자동 출력을 꺼 둔 경우만 조용히 넘어감
+    if(!lbCan().any){lbToast('🏷 이 브라우저는 라벨 출력이 안 돼요 (Bluefy나 PC 크롬에서 열어 주세요)',{label:'라벨 보기',fn:()=>lbRoastLabel(id)},15000);return;}
+    if(!lbConnected()){lbToast('🏷 프린터가 연결돼 있지 않아 라벨을 못 뽑았어요',{label:'연결하고 출력',fn:()=>{lbConnectThenPrint(id);}},20000);return;}
   }
   try{
+    lbToast('🏷 라벨 출력 중…',null,60000);
     const res=await lbRender('roast',lbRoastData(r));
     const roll=await lbRollCheck(['roast']);
     if(roll.level==='bad')throw new Error(roll.msg);
     await lbPrintItems([{res,qty:1}]);
-    lbToast('🏷 로스팅 라벨 출력했어요');
+    lbToast('✅ 로스팅 라벨 출력했어요');
   }catch(e){
-    lbToast('라벨 출력 실패 — '+(e&&e.message||e),{label:'다시 출력',fn:()=>lbAutoPrintRoast(id,true)},20000);
+    const lost=!lbConnected();
+    lbToast('❌ 라벨 출력 실패 — '+(e&&e.message||e),lost?{label:'연결하고 출력',fn:()=>{lbConnectThenPrint(id);}}:{label:'다시 출력',fn:()=>lbAutoPrintRoast(id,true)},20000);
   }
 }
 async function lbConnectThenPrint(id){const can=lbCan();if(can.ble&&can.serial){lbOpenPr();return;}await lbConnect(can.ble?lbBleKind():'serial');if(lbConnected())lbAutoPrintRoast(id,true);}
