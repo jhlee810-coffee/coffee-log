@@ -13,6 +13,25 @@ function dashShort(n){ // 산지 뺀 이름에서 앞 1~2단어 (한 글자짜�
   if(w.length>1&&origins.has(w[0]))w.shift();
   return w.slice(0,(w[0]||'').length<=2||/^(AA|AB|PB|G1|G2)$/i.test(w[1]||'')?2:1).join(' ');
 }
+/* 가공 이름 (한글, 짧게). 보통 워시드(Washed·Fully Washed)는 빈 글자 → 워시드가 아닌 것만 표시 (2026-11-12) */
+const DASH_PROC_WORDS={natural:'내추럴',honey:'허니',washed:'워시드',anaerobic:'무산소',fermentation:'발효',double:'더블',cascada:'카스카다',
+  carbonic:'카보닉',maceration:'매서레이션',thermal:'서멀',shock:'쇼크',classic:'클래식',red:'레드',yellow:'옐로',white:'화이트',black:'블랙',
+  pulped:'펄프드',semi:'세미',wet:'웻',hulled:'헐드',fully:'풀리'};
+function dashProc(b){
+  const p=String((b&&b.process)||'').trim();if(!p)return '';
+  const k=p.toLowerCase().replace(/\s+/g,' ');
+  if(/^(fully )?washed$/.test(k)||/^(풀리 ?)?워시드$/.test(p))return '';
+  return k.split(' ').map(w=>DASH_PROC_WORDS[w]||w).join(' ');
+}
+/* 홈 "지금 마실 원두" 이름: 원산지 + 짧은 이름 + (워시드가 아닌 가공) — 예: 케냐 카구모 AA / 에티오피아 시다모 내추럴 */
+function dashFullName(name,b){
+  const s=dashShort(name),origin=(b&&b.origin)||'',proc=dashProc(b);
+  const parts=[];
+  if(origin&&!s.startsWith(origin))parts.push(origin);
+  parts.push(s);
+  if(proc&&!s.replace(/\s/g,'').includes(proc.replace(/\s/g,'')))parts.push(proc);   // 줄인 이름에 이미 들어 있으면 중복해서 안 붙임
+  return parts.join(' ');
+}
 let _dashMore=false;
 function dashStage(days){ // 디개싱 단계 (브루잉 탭과 같은 기준)
   if(days==null)return {l:'',c:'var(--muted)',o:9};
@@ -79,7 +98,7 @@ function renderDash(){
     const cs=cups.filter(c=>c.bean_info&&g.ids.includes(c.bean_info.roast_id));
     const av=cs.length?(cs.reduce((s,c)=>s+(+c.stars||0),0)/cs.length).toFixed(1):'';
     return {d,st,html:`<div class="dash-bean" onclick="${g.beanId?`openDailyCupFor('${g.beanId}')`:`dashGoTab('dailycup')`}">
-      <div class="dash-bean-top"><b>${dashEsc(dashShort(g.bean))}</b><span class="dash-badge" style="color:${st.c};border-color:${st.c}">${d}일차 · ${st.l}</span></div>
+      <div class="dash-bean-top"><b>${dashEsc(dashFullName(g.bean,bn))}</b><span class="dash-badge" style="color:${st.c};border-color:${st.c}">${d}일차 · ${st.l}</span></div>
       <div class="dash-bean-sub">${dashMD(g.date)} 로스팅 · 최적 ${w.min}~${w.max}일 · ${g.items.length}배치${profs.length?' ('+profs.join(', ')+')':''}${cs.length?` · ${cs.length}잔 ★${av}`:''}
         <button class="dash-done" onclick="event.stopPropagation();dashMarkDone('${g.ids.join(',')}')">다 마심</button></div></div>`};
   });
