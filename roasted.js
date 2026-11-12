@@ -55,8 +55,10 @@ function rbCard(b){
     <div class="bsub">${rbEsc(sub)||'&nbsp;'}</div>
     ${b.cup_notes?`<div class="bnote">${rbEsc(b.cup_notes)}</div>`:''}
     <div class="bstock">${rbEsc(meta)}${cups.length?` · 마신 기록 ${cups.length}회 ★${avg}`:''}</div>
+    ${b.frozen?`<div class="rb-frz">${rbEsc(frozenText(b))}</div>`:''}
     ${done?'':`<button class="dc-open" onclick="event.stopPropagation();openDailyCupRb('${b.id}')">☕ 한 잔 기록</button>
-      <button class="lb-btn" onclick="event.stopPropagation();lbVacRb('${b.id}')">🏷 진공 라벨</button>`}
+      <div class="lb-2col"><button class="lb-btn" onclick="event.stopPropagation();lbVacRb('${b.id}')">🏷 진공 라벨</button>
+      <button class="lb-btn${b.frozen?' on':''}" onclick="event.stopPropagation();setFrozen('rb','${b.id}')">🧊 ${b.frozen?'냉동 중 · 해제':'냉동 표시'}</button></div>`}
     <div class="bfoot"><span class="bfmeta">${b.buy_date?'구매 '+rbEsc(b.buy_date.slice(2).replace(/-/g,'.')):''}</span>${done?'<span class="sogin-bdg">다 마심</span>':''}</div>
   </div>`;
 }
@@ -134,7 +136,7 @@ function rbDelete(){
 }
 
 /* 원두 카드 → 오늘의 한 잔 (이 원두가 골라진 상태로) */
-function rbSnap(b){return {roast_id:'',rb_id:b.id,bean:b.name,roastery:b.roastery||'',roast_date:b.roast_date||'',mode:'',dtr:'',loss:'',batch_no:'',decaf:!!b.decaf};}
+function rbSnap(b){return {roast_id:'',rb_id:b.id,bean:b.name,roastery:b.roastery||'',roast_date:b.roast_date||'',mode:'',dtr:'',loss:'',batch_no:'',decaf:!!b.decaf,frozen:b.frozen||''};}
 function openDailyCupRb(id){
   const b=rbList().find(x=>x.id===id);if(!b)return;
   const tb=[...document.querySelectorAll('.tb')].find(t=>(t.getAttribute('onclick')||'').includes("'dailycup'"));

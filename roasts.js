@@ -195,16 +195,18 @@ function renderRoasts(){
         <div style="margin-left:auto"><button class="btn2" onclick="event.stopPropagation();editRoast('${r.id}')">수정</button></div>
       </div>
       <div class="rbean-name">${r.bean_name}</div>
+      ${r.frozen?`<div class="rb-frz">${frozenText(r)}</div>`:''}
       ${(()=>{const bl=batchLine(r);return bl?`<div class="rbatch-line">${bl}</div>`:'';})()}
       ${metaParts?`<div class="rbean-meta">${metaParts}</div>`:''}
       ${statsLine?`<div class="rstats-line"><span class="${dtr?'rdtr-inline':''}">모드${r.mode||'?'}</span>${dtr?`<span class="rdtr-inline">DTR ${dtr}%</span>`:''}${loss?`<span class="rloss-inline">손실율 ${loss}%</span>`:''}${r.input_g?`<span>투입 ${r.input_g}g</span>`:''}</div>`:''}
       ${bean.cup_notes?`<div class="rcupnotes">${bean.cup_notes}</div>`:''}
       ${r.notes?`<div class="rmemo">${r.notes}</div>`:''}
       ${brewHTML}
-      <div class="ract-row" onclick="event.stopPropagation()">
+      <div class="ract-row${st?'':' r4'}" onclick="event.stopPropagation()">
         <button class="ract-cup" onclick="roastToCup('${r.id}')">☕ 한 잔 기록</button>
         <button class="ract-st${st==='gift'?' on':''}" onclick="setRoastState('${r.id}','gift')">🎁 나눔</button>
         <button class="ract-st${st==='done'?' on':''}" onclick="setRoastState('${r.id}','done')">다 마심</button>
+        ${st?'':`<button class="ract-st${r.frozen?' on':''}" onclick="setFrozen('roast','${r.id}')">🧊 ${r.frozen?'냉동 중':'냉동'}</button>`}
       </div>
       <div class="ract-row lb-row" onclick="event.stopPropagation()">
         <button class="ract-st" onclick="lbRoastLabel('${r.id}')">🏷 로스팅 라벨 다시 출력</button>

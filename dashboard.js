@@ -90,6 +90,7 @@ function renderDash(){
   const groups={};
   roasts.forEach(r=>{
     if(!roastHeld(r))return;   // 지인 나눔·다 마심 배치는 빼기
+    if(r.frozen)return;        // 냉동 중인 건 아래 "냉동 중" 줄에서
     const d=dashDays(r.date,t);if(d==null||d<0||d>45)return;
     const bean=beanOfRoast(r);
     const k=r.date+'|'+r.bean_name;
@@ -110,7 +111,7 @@ function renderDash(){
       <div class="dash-bean-sub">${dashMD(g.date)} 로스팅 · 최적 ${w.min}~${w.max}일 · ${g.items.length}배치${profs.length?' ('+profs.join(', ')+')':''}${cs.length?` · ${cs.length}잔 ★${av}`:''}
         <button class="dash-done" onclick="event.stopPropagation();dashMarkDone('${g.ids.join(',')}')">다 마심</button></div>${ev}</div>`};
   });
-  (db.roasted_beans||[]).filter(b=>b.status!=='다 마심').forEach(b=>{
+  (db.roasted_beans||[]).filter(b=>b.status!=='다 마심'&&!b.frozen).forEach(b=>{
     const w=restWindow(b);
     const d=dashDays(b.roast_date,t),st=restStage(d,w);
     const cs=cups.filter(c=>c.bean_info&&c.bean_info.rb_id===b.id);
@@ -120,10 +121,20 @@ function renderDash(){
       <div class="dash-bean-sub"><span class="dc-rbtag">산 원두</span> ${dashEsc(b.roastery||'')} · ${dashMD(b.roast_date)} 로스팅 · 최적 ${w.min}~${w.max}일${w.own?'(권장)':''}${cs.length?` · ${cs.length}잔 ★${av}`:''}</div>${dashLastCup(cs)}</div>`});
   });
   rows.sort((a,b)=>a.st.o-b.st.o||(a.st.wait??0)-(b.st.wait??0)||(a.d??99)-(b.d??99));  // 최적기 → 곧 최적기 → 지남
+  // 🧊 냉동 중인 배치 (잊지 않게 따로 표시, 누르면 바로 기록)
+  const frz=[];
+  roasts.forEach(r=>{if(r.frozen&&roastHeld(r)){const bean=beanOfRoast(r);frz.push({label:dashFullName(r.bean_name,bean),rd:r.date,click:bean?`openDailyCupFor('${bean.id}')`:"dashGoTab('dailycup')",g:r.frozen_g,q:r.frozen_qty});}});
+  (db.roasted_beans||[]).forEach(b=>{if(b.frozen&&b.status!=='다 마심')frz.push({label:b.name,rd:b.roast_date,click:`openDailyCupRb('${b.id}')`,g:b.frozen_g,q:b.frozen_qty});});
+  // 같은 생두의 냉동 배치는 한 칩으로 묶음: "에티오피아 합타무 · 11/4~11/10분 · 6배치 · 15g×24"
+  const frzG={};
+  frz.forEach(x=>{const k=x.label;const g=frzG[k]=frzG[k]||{label:x.label,n:0,from:x.rd||'',to:x.rd||'',bags:0,gs:new Set(),click:x.click};
+    g.n++;if((x.rd||'')<g.from)g.from=x.rd||'';if((x.rd||'')>g.to)g.to=x.rd||'';if(+x.q)g.bags+=+x.q;if(x.g)g.gs.add(x.g);});
+  const frzList=Object.values(frzG).sort((a,b)=>(a.from||'').localeCompare(b.from||''));
+  const frzHtml=frzList.length?`<div class="dash-sub">🧊 냉동 중 ${frzList.length}종 <span style="font-weight:400">· 누르면 바로 기록</span></div><div class="dash-chips">${frzList.map(g=>`<span style="cursor:pointer" onclick="${g.click}">${dashEsc(g.label)} · ${g.from===g.to?dashMD(g.from):dashMD(g.from)+'~'+dashMD(g.to)}분${g.n>1?' · '+g.n+'배치':''}${g.bags?' · '+(g.gs.size===1?[...g.gs][0]+'g':'')+'×'+g.bags:''}</span>`).join('')}</div>`:'';
   const LIM=6,shown=_dashMore?rows:rows.slice(0,LIM);
   const beanCard=`<div class="dash-card"><div class="dash-t">🫘 지금 마실 원두 <span>원두별 최적기 먼저 · 누르면 바로 기록</span></div>
     ${shown.map(r=>r.html).join('')||'<div class="dash-empty">최근 45일 안에 볶은 원두가 없어요</div>'}
-    ${rows.length>LIM?`<button class="dash-btn ghost" onclick="_dashMore=!_dashMore;renderDash()">${_dashMore?'접기':`더 보기 (${rows.length-LIM}개)`}</button>`:''}</div>`;
+    ${rows.length>LIM?`<button class="dash-btn ghost" onclick="_dashMore=!_dashMore;renderDash()">${_dashMore?'접기':`더 보기 (${rows.length-LIM}개)`}</button>`:''}${frzHtml}</div>`;
 
   // ── 로스팅 ──
   const dates=[...new Set(roasts.map(r=>r.date))].sort();

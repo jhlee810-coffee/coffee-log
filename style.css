@@ -954,3 +954,24 @@ html.roasting,html.roasting body{overscroll-behavior-y:none;}
 .dc-rc-r button{flex:none;min-height:30px;background:transparent;border:1px solid var(--amber3);border-radius:7px;color:var(--amber);font-size:12px;font-weight:700;padding:0 9px;cursor:pointer;font-family:inherit;}
 .dash-bean-ev{font-size:12px;color:var(--amber);margin-top:3px;line-height:1.4;}
 .dash-bean-ev{clear:both;}
+/* 추천 원두 8개 + 냉동 표시 (2026-11-12) */
+.dc-qtitle{font-size:13px;font-weight:800;color:var(--amber);margin:0 0 6px;}
+.dc-qtitle span{font-size:11px;font-weight:400;color:var(--muted);margin-left:4px;}
+.dc-qbatches.q8{grid-template-columns:repeat(4,1fr);gap:5px;}
+.dc-qbatches.q8 .dc-qbatch{min-height:76px;padding:6px 3px;justify-content:flex-start;gap:1px;}
+.dc-qbatches.q8 .dc-qname{font-size:12px;line-height:1.25;text-align:center;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;}
+.dc-qbatches.q8 .dc-qbatch span{font-size:10.5px;}
+.dc-qbatches.q8 .dc-q-ev{font-size:10.5px;margin-top:auto;}
+.dc-qbatch.frz{border-color:#7fb8ff;}
+.dc-qbatch.frz .dc-q-ev{color:#9fd3ff;}
+.dc-qbatch.frz.on .dc-q-ev{color:#222;}
+.dc-pb.frz{border-color:#7fb8ff;}
+.rst-bdg.frz{color:#9fd3ff;border-color:#7fb8ff;}
+.rb-frz{font-size:12px;color:#9fd3ff;margin-top:3px;}
+.ract-row.r4{grid-template-columns:1.5fr 1fr 1fr 1fr;}
+.lb-2col{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.lb-btn.on{color:#9fd3ff;border-color:#7fb8ff;}
+.lb-frz{display:block;font-size:13px;color:var(--text2);background:var(--bg3);border:1px solid var(--b1);border-radius:8px;padding:8px 10px;margin-bottom:8px;line-height:1.5;}
+.lb-frz input{accent-color:#7fb8ff;margin-right:4px;}
+.lb-frz b{color:#9fd3ff;}
+.lb-frz span{color:var(--muted);font-size:12px;}

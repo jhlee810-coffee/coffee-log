@@ -17,6 +17,33 @@ function setRoastState(id,v){
   try{if(document.getElementById('tab-roasts').classList.contains('on'))renderRoasts();}catch(e){}
   try{renderDash();}catch(e){}
 }
+/* ── 냉동 소포장 (2026-11-12) ──
+   배치(로스팅 기록·산 원두)에 frozen('YYYY-MM-DD' = 냉동한 날)을 따로 적음. 보유 상태(stock_state)는 그대로라 "다 마심"이 아님.
+   냉동한 동안은 숙성이 멈춘 것으로 계산 → frozenAgeDays. frozen_g·frozen_qty = 소분 g·장수(진공 라벨에서 넘어옴) */
+function frozenAgeDays(roastDate,frozen,onDate){
+  if(!roastDate||!onDate)return null;
+  const end=(frozen&&frozen<onDate)?frozen:onDate;
+  const p=s=>{const [y,m,d]=String(s).split('-').map(Number);return Date.UTC(y,m-1,d);};
+  const v=Math.round((p(end)-p(roastDate))/86400000);return isNaN(v)?null:v;
+}
+function frozenRec(kind,id){return kind==='rb'?(db.roasted_beans||[]).find(x=>x.id===id):(db.roasts||[]).find(x=>x.id===id);}
+function setFrozen(kind,id,on,info){
+  const rec=frozenRec(kind,id);if(!rec)return false;
+  if(on===undefined)on=!rec.frozen;
+  if(on){rec.frozen=today();if(info&&info.g)rec.frozen_g=String(info.g);if(info&&info.qty)rec.frozen_qty=String(info.qty);}
+  else{delete rec.frozen;delete rec.frozen_g;delete rec.frozen_qty;}
+  saveDB();
+  try{if(document.getElementById('tab-roasts').classList.contains('on'))renderRoasts();}catch(e){}
+  try{if(document.getElementById('tab-roasted').classList.contains('on'))renderRoastedBeans();}catch(e){}
+  try{renderDash();}catch(e){}
+  try{if(typeof renderDailyCup==='function'&&document.getElementById('tab-dailycup').classList.contains('on'))dcRerender();}catch(e){}
+  return true;
+}
+function frozenText(rec){   // "🧊 냉동 11/12 · 15g×6"
+  if(!rec||!rec.frozen)return '';
+  const p=rec.frozen.split('-');
+  return '🧊 냉동 '+(+p[1])+'/'+(+p[2])+(rec.frozen_g?` · ${rec.frozen_g}g${rec.frozen_qty?'×'+rec.frozen_qty:''}`:'');
+}
 /* 로스팅 기록 → 커피 한 잔 (이 배치가 골라진 상태로) */
 function roastToCup(id){
   const r=(db.roasts||[]).find(x=>x.id===id);if(!r)return;

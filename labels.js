@@ -434,10 +434,10 @@ function lbToastHide(){const t=document.getElementById('lbToast');if(t)t.classLi
 function lbToastDo(){const f=_lbToastAct;lbToastHide();if(f)f();}
 
 /* ── 미리보기 (출력 전) ── */
-let _lb={title:'',mk:null,vac:null,res:[],jobs:[],roll:null,force:false,token:0,rendering:false};
+let _lb={title:'',mk:null,vac:null,frz:null,res:[],jobs:[],roll:null,force:false,token:0,rendering:false};
 function lbSum(){return _lb.jobs.reduce((s,j)=>s+j.qty,0);}
-async function lbOpenPreview(title,mk,vac){
-  _lb={title,mk,vac:vac||null,res:[],jobs:[],roll:null,force:false,token:0,rendering:false};
+async function lbOpenPreview(title,mk,vac,frz){
+  _lb={title,mk,vac:vac||null,frz:frz||null,res:[],jobs:[],roll:null,force:false,token:0,rendering:false};
   let mo=document.getElementById('moLabel');
   if(!mo){mo=document.createElement('div');mo.className='mo';mo.id='moLabel';mo.innerHTML='<div class="mbox" id="lbBody"></div>';document.body.appendChild(mo);}
   lbPaint();lbOpenMo('moLabel');
@@ -449,6 +449,7 @@ function lbPaint(){
   el.innerHTML=`<div class="mtitle">🏷 ${lbEsc(_lb.title)}</div>
     ${v?`<div class="lb-opts"><div><div class="lb-l">한 봉지 g</div><div class="lb-seg">${[15,20].map(g=>`<button class="${v.g===g?'on':''}" onclick="lbVacSet('g',${g})">${g}g</button>`).join('')}</div></div>
       <div><div class="lb-l">장수</div><div class="lb-step"><button onclick="lbVacSet('qty',${v.qty-1})">−</button><input id="lbQty" type="number" inputmode="numeric" min="1" max="99" value="${v.qty}" onchange="lbVacSet('qty',this.value)"><button onclick="lbVacSet('qty',${v.qty+1})">+</button></div></div></div>`:''}
+    ${_lb.frz?`<label class="lb-frz"><input type="checkbox" ${_lb.frz.on?'checked':''} onchange="_lb.frz.on=this.checked"> 🧊 출력하면 이 배치를 <b>냉동</b>으로 표시 <span>(g·장수도 같이 기록)</span></label>`:''}
     <div id="lbPrev" class="lb-prev"><div class="lb-wait">라벨 만드는 중…</div></div>
     <div id="lbState" class="lb-state"></div>
     <div class="fa" id="lbAct"></div>`;
@@ -508,10 +509,16 @@ async function lbDoPrint(){
     const roll=await lbRollCheck([...new Set(_lb.jobs.map(j=>j.type))]);_lb.roll=roll;
     if(roll.level==='bad'&&!_lb.force){_lb.force=true;lbPreviewState();return;}   // 알려 주고, 한 번 더 누르면 "그래도 출력"
     await lbPrintItems(_lb.res.map((res,i)=>({res,qty:_lb.jobs[i].qty})));
-    closeMo('moLabel');lbToast(`🏷 라벨 ${lbSum()}장 출력했어요`);
+    const fz=lbApplyFreeze();closeMo('moLabel');lbToast(`🏷 라벨 ${lbSum()}장 출력했어요${fz?' · 🧊 냉동으로 표시했어요':''}`);
   }catch(e){_lb.err='출력 실패: '+(e&&e.message||e);lbPreviewState();}
 }
 /* 라벨 이미지 저장 (프린터를 못 쓰는 브라우저용) — 설계 방향(가로) 그대로, 여러 장이면 세로로 이어 한 장 */
+/* 진공 라벨을 뽑았으면(냉동 소포장) 그 배치에 냉동 표시 — 체크박스가 켜져 있을 때 */
+function lbApplyFreeze(){
+  const f=_lb.frz;if(!f||!f.on||typeof setFrozen!=='function')return false;
+  const v=_lb.vac||{};
+  return !!setFrozen(f.kind,f.id,true,{g:v.g,qty:v.qty});
+}
 function lbSaveImage(){
   if(!_lb.res.length)return;
   const rs=_lb.res,gap=24,W=Math.max(...rs.map(r=>r.w)),H=rs.reduce((s,r)=>s+r.h,0)+gap*(rs.length-1);
@@ -519,6 +526,7 @@ function lbSaveImage(){
   let y=0;rs.forEach(r=>{x.drawImage(r.canvas,0,y);y+=r.h+gap;});
   const a=document.createElement('a');a.download=`라벨_${rs.length>1?rs.length+'장_':''}${(typeof today==='function'?today():'').replace(/-/g,'')}.png`;
   a.href=c.toDataURL('image/png');document.body.appendChild(a);a.click();a.remove();
+  if(lbApplyFreeze())lbToast('🧊 냉동으로 표시했어요');
 }
 
 /* ── 버튼에서 부르는 진입점 ── */
@@ -549,11 +557,11 @@ function lbVacOpts(){return {g:+lbCfg().vacG===15?15:20,qty:1};}   // g는 마�
 function lbVacRoast(id){
   const r=(db.roasts||[]).find(x=>x.id===id);if(!r)return;
   if(r.stock_state==='gift'){alert('지인에게 나눈 배치라 진공 라벨은 필요 없어요.');return;}
-  lbOpenPreview(`진공 라벨 · ${r.bean_name||''}`,v=>[{type:'vac',d:lbVacRoastData(r,v.g),qty:v.qty}],lbVacOpts());
+  lbOpenPreview(`진공 라벨 · ${r.bean_name||''}`,v=>[{type:'vac',d:lbVacRoastData(r,v.g),qty:v.qty}],lbVacOpts(),r.frozen?null:{kind:'roast',id:r.id,on:true});
 }
 function lbVacRb(id){
   const b=(typeof rbList==='function'?rbList():[]).find(x=>x.id===id);if(!b)return;
-  lbOpenPreview(`진공 라벨 · ${b.name}`,v=>[{type:'vacb',d:lbVacRbData(b,v.g),qty:v.qty}],lbVacOpts());
+  lbOpenPreview(`진공 라벨 · ${b.name}`,v=>[{type:'vacb',d:lbVacRbData(b,v.g),qty:v.qty}],lbVacOpts(),b.frozen?null:{kind:'rb',id:b.id,on:true});
 }
 
 /* ── 로스팅 저장하면 자동 출력 (roasts.js saveRoast 에서 부름) ── */
