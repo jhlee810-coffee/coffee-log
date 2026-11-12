@@ -581,6 +581,13 @@ function lbAfterRoastSave(id){
   setTimeout(()=>{try{lbAutoPrintRoast(id,false).catch(()=>{});}catch(e){}},0);
 }
 
+/* 빈본 타이머(iframe) 시작 화면의 [🏷 라벨] 버튼 → 선택한 생두의 생두 정보 라벨 미리보기 */
+window.addEventListener('message',e=>{
+  if(e.origin!==location.origin||!e.data||e.data.type!=='label_bean')return;
+  const b=(db.beans||[]).find(x=>x.name===e.data.bean_name);
+  if(b)lbBeanLabel(b.id);
+});
+
 /* ── 시작 ── */
 function lbInit(){
   lbChip();

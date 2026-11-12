@@ -358,6 +358,11 @@ function postSetup(){
   const k=[S.beanName,S.modeKey,S.dtr,S.inputG,ej].join('|');if(k===_setupKey)return;_setupKey=k;
   window.parent.postMessage({type:'timer_setup',bean_name:S.beanName,mode:S.modeKey,dtr:S.dtr,input_g:S.inputG,ej},'*');
 }
+// 선택한 생두의 생두 정보 라벨 → 부모창(커피 로그)의 라벨 미리보기·출력 (labels.js)
+function askBeanLabel(){
+  if(!S.beanName||window.parent===window)return;
+  window.parent.postMessage({type:'label_bean',bean_name:S.beanName},'*');
+}
 function shortBean(n){const w=String(n||'').trim().split(/\s+/);if(w.length>1&&/^(케냐|에티오피아|콜롬비아|파나마|과테말라|코스타리카|페루|온두라스|에콰도르|르완다|브라질|엘살바도르|니카라과|부룬디|인도네시아|예멘)$/.test(w[0]))w.shift();return w.slice(0,(w[0]||'').length<=2||/^(AA|AB|PB|G1)$/i.test(w[1]||'')?2:1).join(' ');}
 function postTimerState(){
   if(window.parent===window)return;
@@ -707,7 +712,8 @@ function render(){
       ${beansList.length?`
       <div class="sec">
         <div class="lbl">생두</div>
-        <select style="width:100%;padding:9px 10px;border-radius:8px;border:2px solid #ddd;font-size:13px;font-weight:600;color:#333;background:#fff;font-family:inherit" onchange="selectBean(this)">
+        <div style="display:flex;gap:6px;align-items:stretch">
+        <select style="flex:1;min-width:0;padding:9px 10px;border-radius:8px;border:2px solid #ddd;font-size:13px;font-weight:600;color:#333;background:#fff;font-family:inherit" onchange="selectBean(this)">
           <option value="">선택 안 함</option>
           ${(()=>{
             // 재고 있는 생두: 원산지별 그룹 / 소진 생두: 맨 아래 별도 그룹 (2026-11-04)
@@ -727,6 +733,8 @@ function render(){
             return inStock+(soldOut.length?`<optgroup label="── 재고 없음 (소진) ──">${soldOut.map(b=>opt(b,' (소진)')).join('')}</optgroup>`:'');
           })()}
         </select>
+        <button onclick="askBeanLabel()" style="flex:none;padding:0 11px;border-radius:8px;border:2px solid #ddd;background:#fff;color:#333;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer${S.beanName?'':';opacity:.4'}" title="이 생두의 생두 정보 라벨 출력(미리보기)">🏷 라벨</button>
+        </div>
         ${selectedSoldOut()?`<div style="margin-top:6px;padding:7px 10px;border-radius:8px;background:#fff3e0;color:#c05000;font-size:12px;font-weight:600">⚠ 재고가 소진된 생두예요.</div>`:''}
         ${(()=>{const ej=ejSetupHtml();return `<div class="set-sum">${mode.label} · ${ejOn()?'배출 '+fmt(S.ejRem):'DTR '+S.dtr+'%'} · ${S.inputG||120}g <span>(자동배출 ${fmt(mode.autoEject)})</span></div>${ej}`;})()}
         ${predHtml()}

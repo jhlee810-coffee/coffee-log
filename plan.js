@@ -154,14 +154,17 @@ function renderPlanEditor(){
       <div class="pl-top"><span class="pl-no">${st}</span>
         <select class="sel" onchange="_planEdit.items[${i}].bean_id=this.value;renderPlanEditor()">${planBeanOptions(it.bean_id)}</select></div>
       ${(()=>{if(!it.bean_id)return '';const h=planHist(it,3),tm=window._planTastes||{};
-        return h.length?`<div class="pl-hist">${h.map(r=>`<div>${planEsc((r.date||'').slice(5).replace('-','/'))} 1팝 ${planEsc(r.pop_time||'-')} · 배출 ${planEsc(r.eject_time||'-')} · DTR ${planEsc(r.dtr_pct||'-')} · 손실 ${r.loss_pct?planEsc(r.loss_pct)+'%':'-'} <span>${planEsc(tm[r.id]||'')}</span></div>`).join('')}</div>`:`<div class="pl-hist none">${it.mode}번 모드로 처음 — DTR 방식</div>`;})()}
+        return h.length?`<div class="pl-hist">${h.map(r=>`<div>${planEsc((r.date||'').slice(5).replace('-','/'))} 1팝 ${planEsc(r.pop_time||'-')} · 배출 ${planEsc(r.eject_time||'-')} · DTR ${planEsc(r.dtr_pct||'-')} · 손실 ${r.loss_pct?planEsc(r.loss_pct)+'%':'-'} <span>${planEsc(tm[r.id]||'')}</span></div>`).join('')}</div>`:`<div class="pl-hist none">${it.mode}번 모드로 처음 — ${planHasEj(it)?'배출 시간 기본값 0:30':'DTR 방식'}</div>`;})()}
       ${!it.bean_id&&it.bean_name?`<div class="pl-warn">⚠ "${planEsc(it.bean_name)}" — 생두 목록에서 찾지 못했어요. 골라 주세요</div>`:''}
       ${warn?`<div class="pl-warn">⚠ 남은 양 ≈ ${Math.max(0,Math.round(left))}g — 계획량보다 적어요</div>`:''}
+      <div class="pl-way"><span class="pl-l">정하는 방식</span><div class="lb-seg">
+        <button class="${planHasEj(it)?'':'on'}" onclick="_planEdit.items[${i}].ej=null;renderPlanEditor()">DTR %</button>
+        <button class="${planHasEj(it)?'on':''}" onclick="${planHasEj(it)?'':`_planEdit.items[${i}].ej=planEjDefault(_planEdit.items[${i}]);renderPlanEditor()`}">배출 시간</button></div></div>
       <div class="pl-grid">
         <div><div class="pl-l">모드</div><select class="sel" onchange="_planEdit.items[${i}].mode=+this.value;renderPlanEditor()">${[1,2,3,4,5,6,7,8].map(m=>`<option${+it.mode===m?' selected':''}>${m}</option>`).join('')}</select></div>
         ${planHasEj(it)
-          ?`<div><div class="pl-l">배출 잔여 <a class="pl-sw" onclick="_planEdit.items[${i}].ej=null;renderPlanEditor()">DTR로</a></div><div class="pl-step"><button onclick="planAdj(${i},'ej',5)">−</button><b>${planFmtS(it.ej)}</b><button onclick="planAdj(${i},'ej',-5)">+</button></div></div>`
-          :`<div><div class="pl-l">DTR % <a class="pl-sw" onclick="_planEdit.items[${i}].ej=planEjDefault(_planEdit.items[${i}]);renderPlanEditor()">배출로</a></div><div class="pl-step"><button onclick="planAdj(${i},'dtr',-1)">−</button><b>${it.dtr}</b><button onclick="planAdj(${i},'dtr',1)">+</button></div></div>`}
+          ?`<div><div class="pl-l">배출 잔여</div><div class="pl-step"><button onclick="planAdj(${i},'ej',5)">−</button><b>${planFmtS(it.ej)}</b><button onclick="planAdj(${i},'ej',-5)">+</button></div></div>`
+          :`<div><div class="pl-l">DTR %</div><div class="pl-step"><button onclick="planAdj(${i},'dtr',-1)">−</button><b>${it.dtr}</b><button onclick="planAdj(${i},'dtr',1)">+</button></div></div>`}
         <div><div class="pl-l">투입 g</div><div class="pl-step"><button onclick="planAdj(${i},'input_g',-10)">−</button><b>${it.input_g||120}</b><button onclick="planAdj(${i},'input_g',10)">+</button></div></div>
       </div>
       <div class="pl-act"><button class="${it.gift?'on':''}" onclick="_planEdit.items[${i}].gift=!_planEdit.items[${i}].gift;renderPlanEditor()">🎁 나눔</button>
