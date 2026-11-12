@@ -15,6 +15,7 @@ function setRoastState(id,v){
   r.stock_state=r.stock_state===v?'':v;
   saveDB();
   try{if(document.getElementById('tab-roasts').classList.contains('on'))renderRoasts();}catch(e){}
+  try{if(document.getElementById('tab-roasted').classList.contains('on'))renderRoastedBeans();}catch(e){}
   try{renderDash();}catch(e){}
 }
 /* ── 냉동 소포장 (2026-11-12) ──

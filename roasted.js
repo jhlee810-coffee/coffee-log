@@ -26,41 +26,127 @@ function rbRoasteries(){ // 예전에 쓴 로스터리 — 최근 산 곳 먼저
 }
 function rbCups(b){return (db.dailycups||[]).filter(r=>r.bean_info&&r.bean_info.rb_id===b.id);}
 
-/* ── 목록 ── */
+/* ── 원두 목록 (2026-11-12 개편) ──
+   산 원두 + 내가 로스팅한 원두(1배치 = 1항목)를 생두별로 묶어서 보여 줌.
+   내 로스팅은 로스팅 기록(db.roasts)을 그대로 보여 주기만 함 (데이터를 따로 만들지 않음). 산 원두는 db.roasted_beans */
+let _rbKind='all';   // 'all' | 'own' | 'bought' | 'frozen'
+
+/* 잔량(대략): 로스팅 배출 g(없으면 투입×0.85) − 그 배치로 마신 커피 원두 g 합(커피 한 잔 기록의 원두 g, 없으면 15g) */
+function rbUsedG(match){return (db.dailycups||[]).filter(c=>match(c.bean_info||{})).reduce((s,c)=>s+(parseFloat((c.brew||{}).coffee_g)||15),0);}
+function ownRemainG(r){
+  const out=parseFloat(r.output_g)||(parseFloat(r.input_g)?parseFloat(r.input_g)*0.85:0);
+  return Math.max(0,Math.round(out-rbUsedG(s=>s.roast_id===r.id)));
+}
+function boughtRemainG(b){return Math.max(0,Math.round((parseFloat(b.weight_g)||0)-rbUsedG(s=>s.rb_id===b.id)));}
+function fmtWeight(g){g=Math.round(g||0);return g>=1000?(g/1000).toFixed(1)+'kg':g+'g';}
+
+/* 홈 요약·원두 탭 머리에 쓰는 재고 요약 (무게는 대략) */
+function stockSummary(){
+  const inStock=(db.beans||[]).filter(b=>b.status!=='소진'&&b.status!=='샘플');
+  let green=0,unknown=0;
+  inStock.forEach(b=>{const u=beanUsage(b);if(u.remaining==null)unknown++;else green+=Math.max(0,u.remaining);});
+  const own=(db.roasts||[]).filter(roastHeld).map(r=>({r,g:ownRemainG(r),bean:beanOfRoast(r)}));
+  const bought=rbList().filter(b=>b.status!==RB_STATUS_DONE).map(b=>({b,g:boughtRemainG(b)}));
+  const sum=a=>a.reduce((s,x)=>s+x.g,0);
+  const ownKinds=new Set(own.map(x=>x.bean?x.bean.id:x.r.bean_name));
+  const boughtKinds=new Set(bought.map(x=>String(x.b.name).replace(/\s+/g,'')));
+  return {greenG:green,greenKinds:inStock.length,greenUnknown:unknown,
+    ownKinds:ownKinds.size,ownBatches:own.length,ownG:sum(own),
+    boughtKinds:boughtKinds.size,boughtItems:bought.length,boughtG:sum(bought),
+    frozenG:sum(own.filter(x=>x.r.frozen))+sum(bought.filter(x=>x.b.frozen)),
+    roastCount:(db.roasts||[]).length,
+    inputG:(db.roasts||[]).reduce((s,r)=>s+(parseFloat(r.input_g)||DEFAULT_INPUT_G),0)};
+}
+
+function rbItems(){
+  const items=[];
+  (db.roasts||[]).forEach(r=>{const bean=beanOfRoast(r)||{};items.push({kind:'own',id:r.id,rec:r,bean,date:r.date||'',state:r.stock_state||'',held:roastHeld(r),frozen:r.frozen||''});});
+  rbList().forEach(b=>items.push({kind:'bought',id:b.id,rec:b,bean:b,date:b.roast_date||'',state:b.status===RB_STATUS_DONE?'done':'',held:b.status!==RB_STATUS_DONE,frozen:b.frozen||''}));
+  return items;
+}
+function rbItemStage(it,t){
+  const age=it.frozen?frozenAgeDays(it.date,it.frozen,t):rbDays(it.date);
+  const w=restWindow(it.kind==='own'?(it.bean&&it.bean.id?it.bean:{name:it.rec.bean_name}):it.rec);
+  return {age,w,st:restStage(age,w)};
+}
+
 function renderRoastedBeans(){
   const el=document.getElementById('rbRoot');if(!el)return;
-  const all=rbList();
-  const q=_rbSearch.toLowerCase().replace(/\s+/g,'');
-  let list=all.filter(b=>_rbFilter==='all'||(_rbFilter==='done'?b.status===RB_STATUS_DONE:b.status!==RB_STATUS_DONE));
-  if(q)list=list.filter(b=>[b.name,b.roastery,b.origin,b.process,b.cup_notes].join('').toLowerCase().replace(/\s+/g,'').includes(q));
-  list=list.slice().sort((a,b)=>(b.roast_date||'')>(a.roast_date||'')?1:-1);
+  const t=today(),q=_rbSearch.toLowerCase().replace(/\s+/g,'');
+  const all=rbItems();
+  const inKind=it=>_rbKind==='all'||(_rbKind==='own'?it.kind==='own':_rbKind==='bought'?it.kind==='bought':!!it.frozen);
+  const inState=it=>_rbFilter==='all'||(_rbFilter==='done'?!it.held:it.held);
+  const text=it=>it.kind==='own'
+    ?[it.rec.bean_name,it.bean.origin,it.bean.process,it.bean.cup_notes,it.bean.shop].join('')
+    :[it.rec.name,it.rec.roastery,it.rec.origin,it.rec.process,it.rec.cup_notes].join('');
+  const list=all.filter(it=>inKind(it)&&inState(it)&&(!q||text(it).toLowerCase().replace(/\s+/g,'').includes(q)));
+  // 생두별로 묶기
+  const groups=[],gi={};
+  list.forEach(it=>{
+    const own=it.kind==='own';
+    const k=own?'b:'+(it.bean.id||it.rec.bean_name):'rb:'+String(it.rec.name).replace(/\s+/g,'');
+    if(!(k in gi)){gi[k]=groups.length;groups.push({k,own,
+      title:own?(it.bean.group_name||it.bean.name||it.rec.bean_name):it.rec.name,
+      sub:own?[it.bean.origin,it.bean.shop].filter(Boolean).join(' · '):(it.rec.roastery||''),
+      notes:own?(it.bean.cup_notes||''):(it.rec.cup_notes||''),items:[]});}
+    groups[gi[k]].items.push(it);
+  });
+  groups.forEach(g=>{
+    g.items.sort((a,b)=>((a.held?0:1)-(b.held?0:1))||(a.date||'').localeCompare(b.date||'')||(+a.rec.batch_no||0)-(+b.rec.batch_no||0));   // 먼저 볶은 것부터
+    g.items.forEach(it=>{it.s=rbItemStage(it,t);});
+    g.o=Math.min(...g.items.map(it=>it.held?(it.frozen?1.5:it.s.st.o):9));
+    g.g=g.items.filter(it=>it.held).reduce((s,it)=>s+(it.kind==='own'?ownRemainG(it.rec):boughtRemainG(it.rec)),0);
+    g.nh=g.items.filter(it=>it.held).length;
+  });
+  groups.sort((a,b)=>a.o-b.o||a.title.localeCompare(b.title,'ko'));
+  const S=stockSummary();
   const fc=(k,l)=>`<div class="fc ${_rbFilter===k?'on':''}" onclick="_rbFilter='${k}';renderRoastedBeans()">${l}</div>`;
-  const nOn=all.filter(b=>b.status!==RB_STATUS_DONE).length;
+  const kc=(k,l)=>`<div class="fc ${_rbKind===k?'on':''}" onclick="_rbKind='${k}';renderRoastedBeans()">${l}</div>`;
+  const nHeld=all.filter(i=>i.held).length;
   el.innerHTML=`<div class="sh"><div class="stl">원두 목록</div><div class="sh-btns"><button class="btn2 ps-open" onclick="openPasteReg('roasted')">📥 붙여넣기로 등록</button><button class="btn btn-sm" onclick="openRbForm()">+ 원두 등록</button></div></div>
+    <div class="rb-sum">마시는 중 <b>${nHeld}개</b> · 🔥 내 로스팅 ${S.ownKinds}종 ≈ ${fmtWeight(S.ownG)} · 🛒 산 원두 ${S.boughtKinds}종 ≈ ${fmtWeight(S.boughtG)}${S.frozenG?` · 🧊 냉동 ≈ ${fmtWeight(S.frozenG)}`:''}</div>
     <input class="search" placeholder="원두 · 로스터리 · 원산지 · 컵노트 검색..." value="${rbEsc(_rbSearch)}" oninput="_rbSearch=this.value;renderRoastedBeans();const i=document.querySelector('#rbRoot .search');i.focus();i.setSelectionRange(i.value.length,i.value.length)">
-    <div class="filters">${fc('on',`${RB_STATUS_ON} ${nOn}`)}${fc('done',RB_STATUS_DONE)}${fc('all','전체')}</div>
-    <div class="grid">${list.map(rbCard).join('')||
-      `<div class="empty"><div class="empty-icon">🫘</div><div class="empty-text">${all.length?'맞는 원두가 없어요':'산 원두를 등록해 보세요'}</div></div>`}</div>`;
+    <div class="filters">${fc('on','마시는 중')}${fc('done','다 마심·나눔')}${fc('all','전체')}</div>
+    <div class="filters">${kc('all','모두')}${kc('own','🔥 내 로스팅')}${kc('bought','🛒 산 원두')}${kc('frozen','🧊 냉동')}</div>
+    <div class="rbg-list">${groups.map(rbGroupHtml).join('')||
+      `<div class="empty"><div class="empty-icon">🫘</div><div class="empty-text">${all.length?'맞는 원두가 없어요':'산 원두를 등록하거나 로스팅을 저장해 보세요'}</div></div>`}</div>`;
 }
-function rbCard(b){
-  const done=b.status===RB_STATUS_DONE;
-  const d=rbDays(b.roast_date);
-  const cups=rbCups(b);
-  const avg=cups.length?(cups.reduce((s,r)=>s+(+r.stars||0),0)/cups.length).toFixed(1):'';
-  const sub=[b.origin,b.process,b.level].filter(Boolean).join(' · ');
-  const meta=[b.roast_date?`${b.roast_date.slice(5).replace('-','/')} 로스팅`:'',d!=null&&!done?`${d}일차`:'',b.weight_g?b.weight_g+'g':'',b.price?Number(b.price).toLocaleString()+'원':''].filter(Boolean).join(' · ');
-  return `<div class="bcard rb-card${done?' sogin':''}" onclick="openRbForm('${b.id}')">
-    <div class="bog">${rbEsc(b.roastery||'—')}</div>
-    <div class="bnm">${rbEsc(b.name)}</div>
-    <div class="bsub">${rbEsc(sub)||'&nbsp;'}</div>
-    ${b.cup_notes?`<div class="bnote">${rbEsc(b.cup_notes)}</div>`:''}
-    <div class="bstock">${rbEsc(meta)}${cups.length?` · 마신 기록 ${cups.length}회 ★${avg}`:''}</div>
-    ${b.frozen?`<div class="rb-frz">${rbEsc(frozenText(b))}</div>`:''}
-    ${done?'':`<button class="dc-open" onclick="event.stopPropagation();openDailyCupRb('${b.id}')">☕ 한 잔 기록</button>
-      <div class="lb-2col"><button class="lb-btn" onclick="event.stopPropagation();lbVacRb('${b.id}')">🏷 진공 라벨</button>
-      <button class="lb-btn${b.frozen?' on':''}" onclick="event.stopPropagation();setFrozen('rb','${b.id}')">🧊 ${b.frozen?'냉동 중 · 해제':'냉동 표시'}</button></div>`}
-    <div class="bfoot"><span class="bfmeta">${b.buy_date?'구매 '+rbEsc(b.buy_date.slice(2).replace(/-/g,'.')):''}</span>${done?'<span class="sogin-bdg">다 마심</span>':''}</div>
-  </div>`;
+function rbGroupHtml(g){
+  return `<div class="rbg ${g.own?'own':'bought'}">
+    <div class="rbg-h"><div class="rbg-t">${g.own?'🔥':'🛒'} ${rbEsc(g.title)}</div>
+      <div class="rbg-s">${rbEsc(g.sub)}${g.sub?' · ':''}${g.nh?`${g.nh}배치 · 잔량 ≈ ${fmtWeight(g.g)}`:'모두 정리됨'}</div>
+      ${g.notes?`<div class="rbg-n">🍑 ${rbEsc(g.notes)}</div>`:''}</div>
+    ${g.items.map(rbItemHtml).join('')}</div>`;
+}
+function rbItemHtml(it){
+  const own=it.kind==='own',r=it.rec,s=it.s;
+  const cups=(db.dailycups||[]).filter(c=>c.bean_info&&(own?c.bean_info.roast_id===r.id:c.bean_info.rb_id===r.id));
+  const avg=cups.length?(cups.reduce((a,c)=>a+(+c.stars||0),0)/cups.length).toFixed(1):'';
+  const md=d=>d?(+d.slice(5,7))+'/'+(+d.slice(8,10)):'';
+  const prof=own?[r.mode?`${r.mode}-${r.dtr_pct?Math.round(parseFloat(r.dtr_pct)):'?'}`:'',r.batch_no?'#'+r.batch_no:''].filter(Boolean).join(' '):'';
+  const remain=it.held?(own?ownRemainG(r):boughtRemainG(r)):0;
+  const meta=own
+    ?[r.input_g&&r.output_g?`${r.input_g}→${r.output_g}g`:'',r.roast_level||'',cups.length?`${cups.length}잔 ★${avg}`:'',it.held?`잔량 ≈ ${remain}g`:''].filter(Boolean).join(' · ')
+    :[r.weight_g?r.weight_g+'g':'',r.price?Number(r.price).toLocaleString()+'원':'',r.buy_date?'구매 '+md(r.buy_date):'',cups.length?`${cups.length}잔 ★${avg}`:'',it.held?`잔량 ≈ ${remain}g`:''].filter(Boolean).join(' · ');
+  const stBadge=!it.held?`<span class="rbi-st off">${own&&it.state==='gift'?'🎁 나눔':'다 마심'}</span>`
+    :it.frozen?`<span class="rbi-st frz">🧊 ${s.age!=null?s.age+'일차에 멈춤':'냉동'}</span>`
+    :`<span class="rbi-st" style="color:${s.st.c};border-color:${s.st.c}">${s.age!=null?s.age+'일차 · ':''}${s.st.l||''}</span>`;
+  const btn=(on,fn,l)=>`<button class="${on?'on':''}" onclick="${fn}">${l}</button>`;
+  const acts=own
+    ?btn(0,`roastToCup('${r.id}')`,'☕ 한 잔 기록')+(it.state?'':btn(it.frozen,`setFrozen('roast','${r.id}')`,'🧊 '+(it.frozen?'냉동 중':'냉동')))+(it.state==='gift'?'':btn(0,`lbVacRoast('${r.id}')`,'🏷 진공'))
+      +btn(it.state==='gift',`setRoastState('${r.id}','gift')`,'🎁 나눔')+btn(it.state==='done',`setRoastState('${r.id}','done')`,'다 마심')
+    :btn(0,`openDailyCupRb('${r.id}')`,'☕ 한 잔 기록')+btn(it.frozen,`setFrozen('rb','${r.id}')`,'🧊 '+(it.frozen?'냉동 중':'냉동'))+btn(0,`lbVacRb('${r.id}')`,'🏷 진공')
+      +btn(!it.held,`rbToggleDone('${r.id}')`,'다 마심');
+  return `<div class="rbi ${own?'own':'bought'}${it.held?'':' off'}" onclick="${own?`openRoastDetail('${r.id}')`:`openRbForm('${r.id}')`}">
+    <div class="rbi-top"><span class="rbi-tag">${own?'🔥 직접 로스팅':'🛒 산 원두'}</span><b>${rbEsc(md(it.date)||'날짜 없음')} 로스팅${prof?' · '+rbEsc(prof):''}${own?'':r.roastery?' · '+rbEsc(r.roastery):''}</b>${stBadge}</div>
+    ${meta?`<div class="rbi-meta">${rbEsc(meta)}</div>`:''}
+    ${it.frozen?`<div class="rb-frz">${rbEsc(frozenText(r))}</div>`:''}
+    <div class="rbi-act" onclick="event.stopPropagation()">${acts}</div></div>`;
+}
+function rbToggleDone(id){
+  const b=rbList().find(x=>x.id===id);if(!b)return;
+  b.status=b.status===RB_STATUS_DONE?RB_STATUS_ON:RB_STATUS_DONE;
+  saveDB();renderRoastedBeans();try{renderDash();}catch(e){}
 }
 
 /* ── 등록 / 수정 폼 ── */

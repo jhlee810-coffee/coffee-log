@@ -74,6 +74,17 @@ function renderDash(){
     [roasts.filter(r=>wk(r.date)).length,'이번 주 로스팅'],[cups.filter(c=>wk(c.date)).length,'이번 주 한 잔'],
   ].map(([n,l])=>`<div class="stat-card"><div class="stat-n">${n}</div><div class="stat-l">${l}</div></div>`).join('');
 
+  // ── 한눈에 보기: 생두 재고·원두·총 로스팅 (무게는 대략) ──
+  const SS=typeof stockSummary==='function'?stockSummary():null;
+  const sumCard=SS?`<div class="dash-card"><div class="dash-t">📊 한눈에 보기 <span>무게는 대략이에요</span></div>
+    <div class="sum-grid">
+      <div class="sum-i"><div class="sum-l">🫘 생두 재고</div><div class="sum-v">${fmtWeight(SS.greenG)}</div><div class="sum-s">${SS.greenKinds}종${SS.greenUnknown?` · 구매량 없는 ${SS.greenUnknown}종 제외`:''}</div></div>
+      <div class="sum-i"><div class="sum-l">☕ 마시는 원두</div><div class="sum-v">${fmtWeight(SS.ownG+SS.boughtG)}</div><div class="sum-s">${SS.ownKinds+SS.boughtKinds}종${SS.frozenG?` · 🧊 ${fmtWeight(SS.frozenG)}`:''}</div></div>
+      <div class="sum-i"><div class="sum-l">🔥 총 로스팅</div><div class="sum-v">${SS.roastCount}회</div><div class="sum-s">생두 ${fmtWeight(SS.inputG)} 투입</div></div>
+    </div>
+    <div class="dash-line">🔥 내가 로스팅한 원두 <b>${SS.ownKinds}종</b> · ${SS.ownBatches}배치 · ≈ ${fmtWeight(SS.ownG)}</div>
+    <div class="dash-line">🛒 산 원두 <b>${SS.boughtKinds}종</b>${SS.boughtItems!==SS.boughtKinds?` · ${SS.boughtItems}봉지`:''} · ≈ ${fmtWeight(SS.boughtG)}</div></div>`:'';
+
   // ── 오늘의 한 잔 ──
   const todayCups=cups.filter(c=>c.date===t);
   const recent7=cups.filter(c=>wk(c.date));
@@ -150,7 +161,7 @@ function renderDash(){
     ${low.length?`<div class="dash-sub">얼마 안 남은 생두</div><div class="dash-chips">${low.map(x=>`<span class="${x.u.remaining<120?'warn':''}">${dashEsc(dashShort(x.b.name))} ≈${Math.max(0,Math.round(x.u.remaining))}g</span>`).join('')}</div>`:''}
     <div class="dash-btn-row"><button class="dash-btn" onclick="dashGoTab('timer')">🔥 빈본 타이머</button><button class="dash-btn ghost" onclick="dashGoTab('roasts')">로스팅 기록</button></div></div>`;
 
-  el.innerHTML=`<div class="stat-row">${stats}</div>${cupCard}${beanCard}${roastCard}`;
+  el.innerHTML=`<div class="stat-row">${stats}</div>${sumCard}${cupCard}${beanCard}${roastCard}`;
   try{renderAIPanel();}catch(e){}
 }
 

@@ -171,12 +171,18 @@ function importData(input){
   input.value='';
 }
 
+/* 상단 [기타] 메뉴 열기/닫기 (2026-11-12) */
+function toggleMore(ev){if(ev)ev.stopPropagation();const p=document.getElementById('morePanel');if(p)p.classList.toggle('open');}
+function closeMore(){const p=document.getElementById('morePanel');if(p)p.classList.remove('open');}
+document.addEventListener('click',e=>{if(!e.target.closest('#morePanel,#tbMore'))closeMore();});
 function showTab(name,el){
   window.curTab=name;
   document.querySelectorAll('.sec').forEach(s=>s.classList.remove('on'));
   document.querySelectorAll('.tb').forEach(t=>t.classList.remove('on'));
   document.getElementById('tab-'+name).classList.add('on');
   el.classList.add('on');
+  const mb=document.getElementById('tbMore');if(mb)mb.classList.toggle('on',el.classList.contains('more-item'));   // 기타 안의 화면이면 [기타]도 켜짐
+  closeMore();
   if(name==='timer'){
     const fr=document.getElementById('timerFrame');
     if(!fr.getAttribute('src')){
