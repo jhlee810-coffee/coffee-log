@@ -9,6 +9,11 @@
 <title>빈본 로스팅 타이머</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+/* 터치 반응 (2026-11-12): 두 번 탭 확대 대기 없애기 + 누르는 순간 눈에 보이는 반응 */
+html,body,button,.chip,select,[onclick]{touch-action:manipulation;}
+button,.chip,.modal-close{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
+button:active,.chip:active{transform:scale(.96);opacity:.85;}
+.chipL{min-height:48px;padding:10px 6px;font-size:15px;line-height:1.1;}
 html,body { overflow-x:hidden; width:100%; overscroll-behavior-y:none; }
 .pop-hist { margin-top:8px; padding:8px 10px; border-radius:8px; background:#f7f3ec; font-size:12px; color:#555; line-height:1.6; }
 .pop-hist .ph-title { font-size:11px; color:#999; font-weight:700; margin-bottom:2px; }
@@ -422,7 +427,7 @@ const POP_ROWS = {
 };
 let S={screen:"setup",modeKey:3,dtr:MODE_DTRS[3].list[0],
   elapsed:0,popElapsed:null,result:null,countdown:null,countdownDone:false,showTable:false,
-  beanName:'',inputG:'',outputG:'100',ejMode:'dtr',ejRem:null};
+  beanName:'',inputG:'',outputG:'',outInit:false,outTouched:false,ejMode:'dtr',ejRem:null};
 let timerIv=null,cdIv=null,startTime=null,audioCtx=null,wakeLock=null;
 
 async function requestWakeLock(){
@@ -501,7 +506,7 @@ function selectBean(sel){
 }
 function doStart(){
   clearInterval(timerIv);clearInterval(cdIv);
-  Object.assign(S,{elapsed:0,popElapsed:null,result:null,countdown:null,countdownDone:false,showTable:false,screen:"running",
+  Object.assign(S,{outputG:'',outInit:false,outTouched:false,elapsed:0,popElapsed:null,result:null,countdown:null,countdownDone:false,showTable:false,screen:"running",
     falsePops:[],popAt:0,zoneAlerted:false,earlyWarn:false,predRun:_predVal&&_predVal.has?_predVal:null,
     avgPopRun:avgPopEl(),popRange:(a=>a.length?[Math.min(...a),Math.max(...a)]:null)(sameHistPops())});
   startTime=Date.now();
@@ -551,7 +556,7 @@ function startEjectCountdown(){
 function handleReset(){
   clearInterval(timerIv);clearInterval(cdIv);stopSilentAudio();
   releaseWakeLock();
-  Object.assign(S,{screen:"setup",elapsed:0,popElapsed:null,result:null,countdown:null,countdownDone:false,showTable:false,outputG:'100'});
+  Object.assign(S,{screen:"setup",elapsed:0,popElapsed:null,result:null,countdown:null,countdownDone:false,showTable:false,outputG:'',outInit:false,outTouched:false});
   render();
   window.scrollTo(0,0);
 }
@@ -559,9 +564,22 @@ function handleReset(){
 function adjOutput(delta){
   const cur=parseFloat(S.outputG)||0;
   S.outputG=String(Math.max(0.1,Math.round((cur+delta)*10)/10));
-  render();
+  S.outTouched=true;render();
 }
-function setOutput(v){S.outputG=String(v);render();}
+function setOutput(v){S.outputG=String(v);S.outTouched=true;render();}
+/* 배출량 기본값: 실제 로스팅 로그의 평균 (2026-11-12)
+   무게가 믿을 만한 기록(weight_unreliable 아닌 것)만, 같은 모드가 3건 이상이면 같은 모드로, 아니면 전체에서 최근 20건.
+   투입이 다른 기록은 비율로 환산해서 지금 투입량에 맞춤. 기록이 없으면 투입×0.88 */
+function defaultOutputG(){
+  const ig=parseFloat(S.inputG)||120;
+  const ok=(roastsList||[]).filter(r=>parseFloat(r.output_g)>0&&parseFloat(r.input_g)>0&&!r.weight_unreliable)
+    .sort((a,b)=>(a.date||'').localeCompare(b.date||'')||(+a.batch_no||0)-(+b.batch_no||0));
+  const sm=ok.filter(r=>+r.mode===+S.modeKey);
+  const pool=(sm.length>=3?sm:ok).slice(-20);
+  if(!pool.length)return {v:Math.round(ig*0.88*10)/10,n:0,basis:''};
+  const mean=pool.reduce((s,r)=>s+parseFloat(r.output_g)*ig/parseFloat(r.input_g),0)/pool.length;
+  return {v:Math.round(mean*10)/10,n:pool.length,basis:sm.length>=3?MODES[S.modeKey].label+' 모드':'전체'};
+}
 
 function calcTimerDtrLoss(){
   const ae=MODES[S.modeKey].autoEject;
@@ -674,6 +692,40 @@ function buildTableHtml(hitRemain,displayDtrs){
     <div class="tbl-warn">+표시 → 자동배출(${fmt(ae)}) 초과 · 강제배출 불가</div>
   `;
 }
+
+/* ── 화면 갱신: 통째로 갈아엎지 않고 바뀐 곳만 고침 (2026-11-12) ──
+   예전엔 로스팅 중 0.2초마다 #app 전체를 innerHTML 로 새로 만들어서, 누르던 버튼이 눌리는 도중에 사라져 터치가 씹히고
+   (특히 배출량 칩·±버튼) 숫자 입력칸은 포커스가 계속 날아갔음. 이제 같은 자리·같은 종류의 칸은 그대로 두고 글자·속성만 바꿈 */
+function patchAttrs(x,y){
+  for(const a of [...x.attributes]){if(!y.hasAttribute(a.name))x.removeAttribute(a.name);}
+  for(const a of [...y.attributes]){
+    if(a.name==='value'&&(x.tagName==='INPUT'||x.tagName==='TEXTAREA'))continue;   // 입력칸 값은 따로 (타이핑 중이면 건드리지 않음)
+    if(x.getAttribute(a.name)!==a.value)x.setAttribute(a.name,a.value);
+  }
+}
+function patchNode(parent,x,y){
+  if(x.nodeType!==y.nodeType||(x.nodeType===1&&x.tagName!==y.tagName)){parent.replaceChild(y.cloneNode(true),x);return;}
+  if(x.nodeType!==1){if(x.nodeValue!==y.nodeValue)x.nodeValue=y.nodeValue;return;}
+  patchAttrs(x,y);
+  if(x.tagName==='INPUT'){const v=y.getAttribute('value')||'';if(document.activeElement!==x&&x.value!==v)x.value=v;}
+  patchKids(x,y);
+  if(x.tagName==='SELECT'){const o=[...y.options].find(op=>op.hasAttribute('selected'));const v=o?o.value:'';if(document.activeElement!==x&&x.value!==v)x.value=v;}
+}
+function patchKids(a,b){
+  const an=[...a.childNodes],bn=[...b.childNodes],n=Math.max(an.length,bn.length);
+  for(let i=0;i<n;i++){
+    if(!bn[i])a.removeChild(an[i]);
+    else if(!an[i])a.appendChild(bn[i].cloneNode(true));
+    else patchNode(a,an[i],bn[i]);
+  }
+}
+function patchHtml(el,html){const t=document.createElement('template');t.innerHTML=html;patchKids(el,t.content);}
+// render() 안의 app.innerHTML=… / modalArea.innerHTML=… 대입을 전부 위 방식으로 (render 코드는 그대로)
+['app','modal-area'].forEach(id=>{
+  const el=document.getElementById(id),d=Object.getOwnPropertyDescriptor(Element.prototype,'innerHTML');
+  // 안전장치: 새 방식이 오류를 내면 예전처럼 통째로 그려서 화면이 비는 일이 없게
+  if(el)Object.defineProperty(el,'innerHTML',{configurable:true,get(){return d.get.call(this);},set(v){try{patchHtml(this,String(v));}catch(err){console.warn('patchHtml 실패 → 통째로 그림',err);d.set.call(this,String(v));}}});
+});
 
 function render(){
   const app=document.getElementById("app");
@@ -813,7 +865,7 @@ function render(){
         ${S.popElapsed===null&&S.predRun?`<div class="zone-note" style="color:${zone?'#1565c0':'#999'}">${zone?'🔔 ':''}1팝 예상 잔여 ${S.predRun.point!=null?fmt(mode.autoEject-S.predRun.point)+' 쯤':fmt(mode.autoEject-S.predRun.min)+'~'+fmt(mode.autoEject-S.predRun.max)}</div>`:''}
       </div>
       ${S.popElapsed===null
-        ?`<button class="pop-btn" style="background:${color};box-shadow:0 4px 16px ${color}55" onclick="handlePop()">🔊 1차 팝!</button>`
+        ?`<button class="pop-btn" style="background:${color};box-shadow:0 4px 16px ${color}55" onpointerdown="handlePop()" onclick="handlePop()">🔊 1차 팝!</button>`
         :`<div class="big2"><div><div class="b2-l">1팝 잔여</div><div class="b2-n">${fmt(mode.autoEject-S.popElapsed)}</div></div>
            <div class="${S.result&&S.result.over?'over':''}"><div class="b2-l">${S.result&&S.result.over?'자동배출 초과':'배출 잔여'}</div><div class="b2-n">${S.result?(S.result.over?'0:00':fmt(S.result.rem)):'…'}</div></div></div>`}
       ${S.popElapsed===null&&ejOn()?ejRowHtml(S.avgPopRun,true):''}
@@ -831,27 +883,25 @@ function render(){
         <div style="font-size:11px;font-weight:700;color:#888;margin-bottom:10px;letter-spacing:0.5px">📋 로스트 로그 등록</div>
         ${(()=>{
           const ig=parseFloat(S.inputG)||0;
-          const og=parseFloat(S.outputG)||(ig?Math.round(ig*0.9):0);
-          if(!S.outputG&&ig) S.outputG=String(Math.round(ig*0.9));
+          // 처음 이 패널이 뜰 때 한 번: 기본값 = 실제 로스팅 로그 평균 (그 뒤로는 손으로 바꾼 값을 유지)
+          if(!S.outInit){const df=defaultOutputG();S.outputG=String(df.v);S.outDef=df;S.outInit=true;S.outTouched=false;}
+          const df=S.outDef||defaultOutputG();
           const {dtr,loss}=calcTimerDtrLoss();
-          const presets=ig>0?[-4,-2,0,2,4].map(d=>Math.max(1,Math.round(ig*0.9+d))):[];
+          const cur=parseFloat(S.outputG),bs=Math.round(df.v);
+          const presets=[bs-2,bs-1,df.v,bs+1,bs+2];   // 평균 근처 한 번에 고르기 (가운데가 평균 그대로)
           return`
-          <div style="font-size:11px;color:#666;margin-bottom:6px">배출량(g)</div>
-          ${presets.length?`<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">
-            ${presets.map(v=>`<button class="chip" style="${S.outputG==v?`background:${color};border-color:${color};color:#fff`:''}" onclick="setOutput('${v}')">${v}</button>`).join('')}
-          </div>`:''}
-          <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
-            <button class="chip" onclick="adjOutput(-5)">−5</button>
-            <button class="chip" onclick="adjOutput(-1)">−1</button>
-            <input type="number" step="0.1" value="${S.outputG}" placeholder="${ig?Math.round(ig*0.9):''}"
-              style="flex:1;min-width:0;padding:9px 10px;border-radius:8px;border:2px solid #ddd;font-size:15px;font-weight:700;text-align:center;font-family:inherit"
-              oninput="S.outputG=this.value;render()">
-            <button class="chip" onclick="adjOutput(1)">+1</button>
-            <button class="chip" onclick="adjOutput(5)">+5</button>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px">
+            <div style="font-size:12px;font-weight:700;color:#666">배출량(g)</div>
+            <div style="font-size:11px;color:${S.outTouched?'#999':'#c05000'};text-align:right">${df.n?`최근 ${df.n}회 평균 ${df.v}g${df.basis?` (${df.basis})`:''}`:'기본값'}${S.outTouched?'':' · 아직 안 바꿨어요'}</div>
           </div>
-          <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px">
-            <button class="chip" style="flex:1" onclick="adjOutput(-0.1)">−0.1g</button>
-            <button class="chip" style="flex:1" onclick="adjOutput(0.1)">+0.1g</button>
+          <div style="display:flex;gap:5px;margin-bottom:8px">
+            ${presets.map(v=>`<button class="chip chipL" style="flex:1 1 0;min-width:0;padding:10px 2px;${Math.abs(cur-v)<0.05?`background:${color};border-color:${color};color:#fff`:''}" onclick="setOutput('${v}')">${v}</button>`).join('')}
+          </div>
+          <input type="number" step="0.1" inputmode="decimal" value="${S.outputG}" placeholder="${df.v}"
+            style="display:block;width:100%;padding:12px 8px;margin-bottom:8px;border-radius:12px;border:2px solid #ddd;font-size:26px;font-weight:800;text-align:center;font-family:inherit"
+            oninput="S.outputG=this.value;S.outTouched=true;render()">
+          <div style="display:flex;gap:5px;margin-bottom:12px">
+            ${[[-1,'−1'],[-0.1,'−0.1'],[0.1,'+0.1'],[1,'+1']].map(([d,l])=>`<button class="chip chipL" style="flex:1 1 0;min-width:0;font-size:17px" onclick="adjOutput(${d})">${l}</button>`).join('')}
           </div>
           <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px">
             ${dtr?`<span style="background:#7A3B1012;border:1px solid #7A3B1044;color:#7A3B10;padding:5px 12px;border-radius:6px;font-size:13px;font-weight:700">DTR ${dtr}%</span>`:'<span style="background:#f0f0f0;padding:5px 12px;border-radius:6px;font-size:12px;color:#aaa">DTR — (1차팝 필요)</span>'}

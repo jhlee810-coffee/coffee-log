@@ -1014,3 +1014,5 @@ html.roasting,html.roasting body{overscroll-behavior-y:none;}
 .rbi-act button:first-child{background:var(--amber);border-color:var(--amber);color:#222;}
 .rbi-act button.on{color:var(--amber);border-color:var(--amber);}
 @media(max-width:380px){.tabs .tb{padding:8px 4px;font-size:13.5px;}.tabs .lb-chip{padding:7px 5px;font-size:11px;}}
+/* 터치 반응 (2026-11-12): 두 번 탭 확대를 기다리지 않고 바로 누른 것으로 처리 */
+html,body,button,.tb,.fc,.chip,.btn,.btn2,[onclick]{touch-action:manipulation;}
