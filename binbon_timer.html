@@ -58,6 +58,9 @@ body { font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-seri
 .cd-box { border-radius:14px; padding:12px 16px; margin-bottom:12px; text-align:center; border:2px solid; }
 .cd-num { font-size:40px; font-weight:900; letter-spacing:-2px; }
 .cd-lbl { font-size:13px; color:#666; margin-top:4px; }
+.cd-box.ejpre { padding:6px 12px; margin-bottom:8px; }
+.cd-box.ejpre .cd-num { font-size:34px; line-height:1.1; }
+.cd-box.ejpre .cd-lbl { margin-top:2px; font-size:12px; }
 .reset-btn { width:100%; padding:14px; border-radius:14px; background:#eee; color:#444; font-size:17px; font-weight:700; border:none; cursor:pointer; font-family:inherit; margin-top:4px; }
 /* 인라인 표 — 다열 공용 (설정 모달 / 로스팅 인라인) */
 .inline-table-wrap { overflow-x:auto; margin:0 -2px; }
@@ -376,7 +379,7 @@ function postTimerState(){
     active:S.screen!=='setup',mode:MODES[S.modeKey].label,dtr:S.dtr,ejt:ejOn()?fmt(S.ejRem):'',
     remain:Math.max(0,ae-S.elapsed),popped:S.popElapsed!==null,
     over:!!(S.result&&S.result.over),countdown:S.countdown,countdownDone:S.countdownDone,
-    zone:inPopZone(),realLock:S.popElapsed!==null?realPopLockLeft():0},'*');
+    zone:inPopZone(),ejpre:ejPreOn()?ejPreLeft():null,realLock:S.popElapsed!==null?realPopLockLeft():0},'*');
 }
 
 // 로스팅 중 아래로 당겨 새로고침 차단 (타이머가 날아가면 안 됨)
@@ -507,7 +510,7 @@ function selectBean(sel){
 function doStart(){
   clearInterval(timerIv);clearInterval(cdIv);
   Object.assign(S,{outputG:'',outInit:false,outTouched:false,elapsed:0,popElapsed:null,result:null,countdown:null,countdownDone:false,showTable:false,screen:"running",
-    falsePops:[],popAt:0,zoneAlerted:false,earlyWarn:false,predRun:_predVal&&_predVal.has?_predVal:null,
+    falsePops:[],popAt:0,zoneAlerted:false,ejPreAlerted:false,ejPreDone:false,earlyWarn:false,predRun:_predVal&&_predVal.has?_predVal:null,
     avgPopRun:avgPopEl(),popRange:(a=>a.length?[Math.min(...a),Math.max(...a)]:null)(sameHistPops())});
   startTime=Date.now();
   unlockAudio();   // 무음 모드에서도 알림 소리 (버튼 누른 순간에만 켤 수 있음)
@@ -518,7 +521,19 @@ function doStart(){
 }
 /* 1팝 예상 구간: 예상 최소 30초 전부터 (소리 1번) */
 function inPopZone(){const p=S.predRun;return !!(p&&S.popElapsed===null&&S.elapsed>=p.min-30);}
-function zoneTick(){if(inPopZone()&&!S.zoneAlerted){S.zoneAlerted=true;beep(1000,0.25,0.8);}}
+function zoneTick(){if(inPopZone()&&!S.zoneAlerted){S.zoneAlerted=true;beep(1000,0.25,0.8);}ejPreTick();}
+/* 배출시간 방식: 1팝을 아직 못 눌렀어도 배출 예정 30초 전부터 카운트다운 (1팝 누르면 기존 흐름으로) */
+function ejPreLeft(){if(S.screen!=='running'||S.popElapsed!==null||!ejOn())return null;return (MODES[S.modeKey].autoEject-S.ejRem)-S.elapsed;}
+function ejPreOn(){const l=ejPreLeft();return l!=null&&l<=30;}
+let _ejPreB=null;
+function ejPreTick(){
+  const l=ejPreLeft();if(l==null)return;
+  if(l>30){S.ejPreAlerted=false;S.ejPreDone=false;return;}
+  if(!S.ejPreAlerted){S.ejPreAlerted=true;beep(1000,0.25,0.8);}
+  if(l>0)S.ejPreDone=false;
+  if(l<=10&&l>0&&_ejPreB!==l){_ejPreB=l;beep(880,0.12,0.6);}
+  if(l<=0&&!S.ejPreDone){S.ejPreDone=true;[0,500,1000,1500,2000,2500].forEach(t=>setTimeout(()=>beep(1200,0.4,1),t));}
+}
 function handlePop(){
   if(S.popElapsed!==null)return;
   S.popElapsed=S.elapsed;S.popAt=Date.now();beep(660,0.2);
@@ -546,7 +561,7 @@ function startEjectCountdown(){
       if(left<=10&&left>0)beep(880,0.12,0.6);
       if(left<=0){
         clearInterval(cdIv);S.countdownDone=true;
-        [0,500,1000,1500,2000,2500].forEach(t=>setTimeout(()=>beep(1200,0.4,1),t));
+        if(!S.ejPreDone)[0,500,1000,1500,2000,2500].forEach(t=>setTimeout(()=>beep(1200,0.4,1),t));
       }
       render();
     },500);
@@ -830,10 +845,11 @@ function render(){
   } else {
     // ── 로스팅 화면 ──
     const zone=inPopZone();
-    const hdrBg=S.popElapsed!==null?(S.result?.over?"#e05c00":color):(zone?"#1565c0":"#333");
+    const epl=ejPreOn()?ejPreLeft():null;
+    const hdrBg=S.popElapsed!==null?(S.result?.over?"#e05c00":color):(epl!=null?"#e65100":zone?"#1565c0":"#333");
     hdr.style.background=hdrBg;hdr.style.display='';
     hdrT.textContent=`🔥 ${shortBean(S.beanName)||'로스팅'} · ${S.modeKey}-${ejOn()?'배출'+fmt(S.ejRem):S.dtr}`;
-    hdrS.textContent=S.popElapsed===null?(zone?"🔔 1팝 예상 구간":"로스팅 중"):(S.result?.over?"⚠ 자동배출 초과":"✅ 1팝 → 배출 대기");
+    hdrS.textContent=S.popElapsed===null?(epl!=null?(epl>0?"⏰ 배출 "+epl+"초 전 · 1팝 대기":"🔔 배출 시간!"):zone?"🔔 1팝 예상 구간":"로스팅 중"):(S.result?.over?"⚠ 자동배출 초과":"✅ 1팝 → 배출 대기");
     const remDisplay=Math.max(0,mode.autoEject-S.elapsed);
 
     // 1차팝 하이라이트 행
@@ -868,6 +884,9 @@ function render(){
         ?`<button class="pop-btn" style="background:${color};box-shadow:0 4px 16px ${color}55" onpointerdown="handlePop()" onclick="handlePop()">🔊 1차 팝!</button>`
         :`<div class="big2"><div><div class="b2-l">1팝 잔여</div><div class="b2-n">${fmt(mode.autoEject-S.popElapsed)}</div></div>
            <div class="${S.result&&S.result.over?'over':''}"><div class="b2-l">${S.result&&S.result.over?'자동배출 초과':'배출 잔여'}</div><div class="b2-n">${S.result?(S.result.over?'0:00':fmt(S.result.rem)):'…'}</div></div></div>`}
+      ${(()=>{const l=ejPreOn()?ejPreLeft():null;if(l==null)return '';
+        return l<=0?`<div class="cd-box ejpre" style="background:#e8f5e9;border-color:#4caf50"><div class="cd-num" style="color:#4caf50">배출!</div><div class="cd-lbl">배출 시간이에요 🔔 (1팝은 아직 안 눌렀어요)</div></div>`
+          :`<div class="cd-box ejpre" style="background:#fffde7;border-color:#ffc107"><div class="cd-num" style="color:#e65100">${l}초</div><div class="cd-lbl">배출까지 남은 시간 · 배출 ${fmt(S.ejRem)}</div></div>`;})()}
       ${S.popElapsed===null&&ejOn()?ejRowHtml(S.avgPopRun,true):''}
       ${S.earlyWarn?`<div class="early-warn">예상보다 빠름 — 가짜 팝일 수 있음</div>`:''}
       ${popDevNote()}

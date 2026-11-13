@@ -728,7 +728,7 @@
 </div>
 
 <script src="data.js?v=20260528f"></script>
-<script src="app.js?v=20261112j"></script>
+<script src="app.js?v=20261113a"></script>
 <script src="dashboard.js?v=20261112e"></script>
 <script src="beans.js?v=20261112a"></script>
 <script src="roasts.js?v=20261112b"></script>
@@ -772,7 +772,8 @@ function updateRoastBar(){
   document.documentElement.classList.toggle('roasting',active);
   if(!active||window.curTab==='timer'){bar.style.display='none';return;}
   let lbl,time,alert=false;
-  if(!st.popped){const tg=st.ejt?`배출 ${st.ejt}`:`DTR ${st.dtr}%`;lbl=st.zone?`🔔 1팝 예상 구간 · ${st.mode} · ${tg}`:`🔥 ${st.mode} · ${tg} · 빈본 잔여`;time=fmtRB(st.remain);}
+  if(!st.popped&&st.ejpre!=null){lbl='⏰ 배출 예정 · 1팝 대기';time=st.ejpre>0?st.ejpre+'초':'배출!';alert=st.ejpre<=0;}
+  else if(!st.popped){const tg=st.ejt?`배출 ${st.ejt}`:`DTR ${st.dtr}%`;lbl=st.zone?`🔔 1팝 예상 구간 · ${st.mode} · ${tg}`:`🔥 ${st.mode} · ${tg} · 빈본 잔여`;time=fmtRB(st.remain);}
   else if(st.over){lbl='⚠ 자동배출 초과 · 잔여';time=fmtRB(st.remain);alert=true;}
   else if(st.countdownDone){lbl='🔔 지금 배출하세요';time='배출!';alert=true;}
   else{lbl='✅ 1차 팝 · 배출까지';time=st.countdown!=null?Math.max(0,st.countdown)+'초':'…';}
