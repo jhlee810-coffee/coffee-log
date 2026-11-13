@@ -1,0 +1,56 @@
+{
+ "date": "2026-11-13",
+ "version": 1,
+ "items": [
+  {
+   "bean_id": "mv1wir3tnhd",
+   "bean": "케냐 카구모 AA",
+   "mode": 1,
+   "dtr": 12,
+   "ej": 65,
+   "input_g": 120,
+   "gift": false,
+   "note": "가장 라이트 · 손실 약 9.4%"
+  },
+  {
+   "bean_id": "mv1wir3tnhd",
+   "bean": "케냐 카구모 AA",
+   "mode": 1,
+   "dtr": 12,
+   "ej": 32,
+   "input_g": 120,
+   "gift": false,
+   "note": "현재 최상(비교 기준) · 손실 약 10.7%"
+  },
+  {
+   "bean_id": "mw1eyk1z4jo",
+   "bean": "에티오피아 합타무 페카두 아가 고로 워시드",
+   "mode": 1,
+   "dtr": 12,
+   "ej": 52,
+   "input_g": 120,
+   "gift": false,
+   "note": "가장 라이트 · 손실 약 10.2%"
+  },
+  {
+   "bean_id": "mw1eyk1z4jo",
+   "bean": "에티오피아 합타무 페카두 아가 고로 워시드",
+   "mode": 1,
+   "dtr": 12,
+   "ej": 34,
+   "input_g": 120,
+   "gift": false,
+   "note": "현재 최상(비교 기준) · 손실 약 11.3%"
+  },
+  {
+   "bean_id": "mszyic8wko7",
+   "bean": "케냐 이아가즈 AB AFCA 내셔널 TOH 1위",
+   "mode": 7,
+   "dtr": 22,
+   "ej": 20,
+   "input_g": 120,
+   "gift": false,
+   "note": "에스프레소용 강배전 · DTR 22% 목표 · 손실 약 13%"
+  }
+ ]
+}
