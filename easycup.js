@@ -4,14 +4,14 @@
 const EC_KEY='easyCuppingLog';
 // 2026-11-09: 혼자서도 순서대로 따라 하는 커핑 — 단계(시간) 안에 그 단계 평가가 들어 있음
 const EC_DEFAULT_SET={coffee_g:'8.3',water_g:'150',temp:'93',grind:'지피식스 7.5'};
-const EC_STAGES=[
-  {t:null,label:'마른 향',time:'물 붓기 전',guide:'분쇄 직후 두 볼 향을 번갈아 맡아요',qs:[]},
-  {t:0,   label:'물 붓기',time:'0:00',guide:'{temp}°C 물을 {water}g까지, 가루가 다 젖게 빠르게',qs:[],start:true},
-  {t:240, label:'크러스트 깨기',time:'4:00',guide:'스푼으로 3번 밀면서 코를 대고 향 맡기. 스푼은 컵마다 뜨거운 물에 헹궈요',qs:['aroma']},
-  {t:270, label:'걷어내기',time:'4:30',guide:'두 스푼으로 위의 거품과 가루를 걷어내요',qs:[]},
-  {t:600, label:'맛보기',time:'10:00~',guide:'스푼으로 떠서 후루룩 세게. 2~3분마다 다시',qs:['acid','sweet']},
-  {t:900, label:'식었을 때',time:'15~20분',guide:'미지근할 때 차이가 가장 잘 보여요',qs:['after','green']},
-  {t:1200,label:'최종 선택',time:'—',guide:'',qs:['final']},
+const EC_STAGES=[   // 인덱스(0~6)는 저장된 진행체크(steps)와 같아야 해서 바꾸지 말 것. t=시작(초), end=끝(초)
+  {t:null,end:0,   label:'마른 향',        time:'물 붓기 전',   act:'분쇄 직후, 두 볼의 마른 향을 번갈아 맡아요',qs:[]},
+  {t:0,   end:240, label:'물 붓기 → 기다리기',time:'0:00 ~ 4:00',  act:'{temp}°C 물을 {water}g까지, 가루가 다 젖게 빠르게 부어요. 다 부으면 4:00까지 손대지 않고 기다려요',qs:[],start:true},
+  {t:240, end:270, label:'크러스트 깨기',  time:'4:00 ~ 4:30',  act:'스푼으로 3번 밀면서 코를 대고 향을 맡아요. 스푼은 컵마다 뜨거운 물에 헹궈요',qs:['aroma']},
+  {t:270, end:600, label:'걷어내기 → 식히기',time:'4:30 ~ 10:00', act:'4:30~5:00 두 스푼으로 위의 거품과 가루를 걷어내요. 끝나면 10:00까지 기다려요',qs:[]},
+  {t:600, end:900, label:'맛보기',         time:'10:00 ~ 15:00',act:'스푼으로 떠서 후루룩 세게 마셔요. 2~3분마다 다시 맛봐요',qs:['acid','sweet']},
+  {t:900, end:1200,label:'식었을 때',      time:'15:00 ~ 20:00',act:'미지근할 때 차이가 가장 잘 보여요. 다시 맛봐요',qs:['after','green']},
+  {t:1200,end:null,label:'최종 선택',      time:'20:00 ~',      act:'지금까지 느낀 걸 떠올려서 하나만 골라요',qs:['final']},
 ];
 const EC_QS=[
   {key:'aroma', label:'향',   q:'어느 쪽 향이 더 또렷하고 좋아?'},
@@ -136,9 +136,8 @@ function ecSideCard(side){
   const meta=[s.roast_date?ecMD(s.roast_date)+' 로스팅':'',s.mode?s.mode+'번 모드':'',s.dtr?'DTR '+s.dtr+'%':'',
     s.loss?'손실 '+s.loss+'%':'',s.batch?'그날 '+s.batch+'번째':''].filter(Boolean).join(' · ');
   return `<div class="ec-side"><div class="ec-side-hd"><span class="ec-badge">${side}</span><span class="ec-side-name">${ecEsc(s.bean)}</span></div>
-    <div class="ec-side-meta">${ecEsc(meta)}${s.memo?`<br>메모: ${ecEsc(s.memo)}`:''}</div>
-    <div class="ec-side-deg">${deg!=null?`디개싱 <b>${deg}일</b>`:'로스팅 날짜가 없어 디개싱 일수를 계산할 수 없어요'}</div>
-    <div class="ec-side-btns"><button class="btn2" onclick="ecOpenPick('${side}')">다시 고르기</button>
+    <div class="ec-side-meta">${ecEsc(meta)} · ${deg!=null?`디개싱 <b>${deg}일</b>`:'디개싱 일수 알 수 없음(로스팅 날짜 없음)'}${s.memo?`<br>메모: ${ecEsc(s.memo)}`:''}</div>
+    <div class="ec-side-btns sm"><button class="btn2" onclick="ecOpenPick('${side}')">다시 고르기</button>
     <button class="btn2" onclick="ecOpenManual('${side}')">직접 수정</button></div></div>`;
 }
 function ecCupName(i){const m=_ec.blindMode;return m==='self'?(i+1)+'번 자리':m==='app'?(i+1)+'번 컵':_ec.order[i];}
@@ -156,15 +155,26 @@ function ecQHtml(key){
     <div class="ec-q-txt">${q.q}</div>${row}</div>`;
 }
 function ecStagesHtml(){
-  const e=_ec,now=ecStageIdx();
+  const e=_ec,now=ecStageIdx(),el=ecElapsed(),run=el!=null,edit=!!e.editId;
+  const nextI=run?now+1:1;
   return EC_STAGES.map((st,i)=>{
-    const g=st.guide?ecGuide(st.guide):'';
+    const state=edit?'edit':i===now?'now':i<now&&run?'past':i===nextI?'next':'later';
+    const act=ecGuide(st.act||'');
+    const lack=run&&state==='past'&&st.qs.some(k=>!e.picks[k]);
+    let badge='';
+    if(state==='now')badge=run&&st.end!=null?`● 지금 · 남은 <b id="ecBadgeNow">${ecFmt(st.end-el)}</b>`:'● 지금';
+    else if(state==='next')badge=run?`다음 · <b id="ecBadgeNext">${ecFmt(st.t-el)}</b> 후 시작`:'다음';
+    else if(state==='past')badge=lack?'지남 · ⚠ 평가 안 함':'지남 ✓';
+    else if(state==='later')badge='이후';
     const startBtn=st.start?(e.t0
       ?`<div class="ec-hint">타이머 진행 중 · <button class="btn2" onclick="ecStartPour(true)">처음부터 다시</button></div>`
-      :`<button class="ec-save" style="margin:8px 0 0" onclick="ecStartPour()">⏱ 물 붓기 시작</button>`):'';
-    return `<div class="ec-stage${i===now?' now':''}${e.steps[i]?' done':''}" id="ecStage${i}">
-      <button class="ec-step${e.steps[i]?' on':''}" onclick="ecToggleStep(${i})"><span>${e.steps[i]?'✓':i+1}</span><b>${st.label}</b><em>${st.time}</em></button>
-      ${g?`<div class="ec-stage-g">${ecEsc(g)}</div>`:''}${startBtn}${st.qs.map(ecQHtml).join('')}</div>`;
+      :`<button class="ec-save" style="margin:10px 0 0" onclick="ecStartPour()">⏱ 물 붓기 시작</button>`):'';
+    const evl=st.qs.length?st.qs.map(ecQHtml).join(''):'<div class="ec-noeval">평가 없음 — 할 일만 해요</div>';
+    return `<div class="ec-stage st-${state}${e.steps[i]?' done':''}" id="ecStage${i}">
+      <div class="ec-sbar"><span class="ec-sb ${state}">${badge}</span><span class="ec-rng">${st.time}</span></div>
+      <button class="ec-step${e.steps[i]?' on':''}" onclick="ecToggleStep(${i})"><span>${e.steps[i]?'✓':i+1}</span><b>${st.label}</b></button>
+      <div class="ec-blk act"><div class="ec-tag">🖐 할 일</div><div class="ec-blk-t">${ecEsc(act)}</div>${startBtn}</div>
+      <div class="ec-blk evl"><div class="ec-tag">📝 평가</div>${evl}</div></div>`;
   }).join('');
 }
 function ecClockHtml(){
@@ -173,7 +183,7 @@ function ecClockHtml(){
   if(el==null)return q?`<div class="ec-clock qonly">${q}</div>`:'';
   const i=ecStageIdx(),nx=EC_STAGES.slice(i+1).find(x=>x.t!=null);
   return `<div class="ec-clock" onclick="ecScrollStage()"><div class="ec-clock-n" id="ecClock">${ecFmt(el)}</div>
-    <div class="ec-clock-s">지금 <b>${i+1}. ${EC_STAGES[i].label}</b>${nx?`<br><span id="ecClockNext">다음 ${nx.label} ${ecFmt(nx.t)} (${ecFmt(nx.t-el)} 남음)</span>`:''}</div>${q}</div>`;
+    <div class="ec-clock-s">지금 <b>${EC_STAGES[i].label}</b> <span class="ec-clock-r">${EC_STAGES[i].time}</span>${nx?`<br><span id="ecClockNext">다음 ${nx.label} ${ecFmt(nx.t)} (${ecFmt(nx.t-el)} 남음)</span>`:''}</div>${q}</div>`;
 }
 function ecSelfGuide(){
   return `<div class="ec-guide"><b>혼자 섞기 순서</b><ol>
@@ -182,35 +192,45 @@ function ecSelfGuide(){
 }
 function ecRevealHtml(){
   const e=_ec;if(e.blindMode!=='self')return '';
-  if(e.editId)return `<div class="ec-card"><div class="ec-card-t">5. 정답 확인</div><div class="ec-hint">1번 자리 = ${ecEsc(e.seat1||e.order[0])} · 2번 자리 = ${ecEsc(e.order[1])}</div></div>`;
+  if(e.editId)return `<div class="ec-card"><div class="ec-card-t">✅ 정답 확인</div><div class="ec-hint">1번 자리 = ${ecEsc(e.seat1||e.order[0])} · 2번 자리 = ${ecEsc(e.order[1])}</div></div>`;
   const nm=k=>e[k]?ecShort(e[k].bean)+' '+ecVariant(e[k]):'';
-  return `<div class="ec-card" id="ecReveal"><div class="ec-card-t">5. 정답 확인 <span class="ec-req">필수</span></div>
+  return `<div class="ec-card" id="ecReveal"><div class="ec-card-t">✅ 정답 확인 <span class="ec-req">필수</span></div>
     <div class="ec-stage-g">볼을 들어 바닥을 확인하세요</div>
     <div class="ec-q-txt">1번 자리는?</div>
     <div class="ec-pick-row two"><button class="ec-pick${e.seat1==='A'?' on':''}" onclick="_ec.seat1='A';ecRerenderKeep()">A<br><small>${ecEsc(nm('A'))}</small></button>
     <button class="ec-pick${e.seat1==='B'?' on':''}" onclick="_ec.seat1='B';ecRerenderKeep()">B<br><small>${ecEsc(nm('B'))}</small></button></div></div>`;
 }
-function ecFormHtml(){
+function ecRecipeHtml(){
   const e=_ec,st=e.settings||{};
-  const tour=e.tournament_id?`<div class="ec-tour-note">🏆 토너먼트 ${e.round}번째 비교 — 지난 승자가 A 자리에 들어가 있어요</div>`:'';
   const set=(k,label,unit,type)=>`<label class="ec-set"><span>${label}</span><input class="inp" ${type==='num'?'type="number" inputmode="decimal" step="0.1"':''} value="${ecEsc(st[k]||'')}" oninput="_ec.settings.${k}=this.value">${unit?`<em>${unit}</em>`:''}</label>`;
+  const hint=`<div class="ec-hint">커핑볼을 저울에 올리고 물을 ${ecEsc(st.water_g||'150')}g까지 부어요. 모든 컵을 똑같이.</div>`;
+  if(!e.recipeOpen){
+    const sum=[ecMD(e.date),st.coffee_g?'원두 '+st.coffee_g+'g':'',st.water_g?'물 '+st.water_g+'g':'',st.temp?st.temp+'°C':'',st.grind?'분쇄 '+st.grind:''].filter(Boolean).join(' · ');
+    return `<div class="ec-card"><div class="ec-card-t">☕ 레시피</div><div class="ec-recipe-sum">${ecEsc(sum)}</div>${hint}
+      <button class="btn2" style="margin-top:8px" onclick="_ec.recipeOpen=true;ecRerenderKeep()">날짜·레시피 수정</button></div>`;
+  }
+  return `<div class="ec-card"><div class="ec-card-t">☕ 레시피</div>
+    <label class="ec-set"><span>커핑 날짜</span><input class="inp" type="date" value="${e.date}" onchange="_ec.date=this.value||today()" onblur="ecSetDate(this.value)"></label>
+    ${set('coffee_g','원두','g','num')}${set('water_g','물','g','num')}${set('temp','물 온도','°C','num')}${set('grind','분쇄','')}${hint}
+    <button class="btn2" style="margin-top:8px" onclick="_ec.recipeOpen=false;ecRerenderKeep()">접기</button></div>`;
+}
+function ecFormHtml(){
+  const e=_ec;
+  const tour=e.tournament_id?`<div class="ec-tour-note">🏆 토너먼트 ${e.round}번째 비교 — 지난 승자가 A 자리에 들어가 있어요</div>`:'';
   const blindBtn=(m,l)=>`<button class="ec-pick${e.blindMode===m?' on':''}" onclick="ecSetBlind('${m}')">${l}</button>`;
   const blindInfo=e.blindMode==='app'?`<div class="ec-hint">어느 원두가 몇 번 컵인지 무작위로 섞었어요. 저장할 때 정답을 알려 줘요.</div><div class="ec-blind-box">
       <div>컵 바닥 표시용: <b>1번 컵 = ${e.revealed?ecEsc(e.order[0]+' · '+ecShort(e[e.order[0]]?.bean||'')):'?'}</b> / <b>2번 컵 = ${e.revealed?ecEsc(e.order[1]+' · '+ecShort(e[e.order[1]]?.bean||'')):'?'}</b></div>
       ${e.revealed?'':'<button class="btn2" onclick="ecReveal()">정답 보기</button>'}
       <button class="btn2" onclick="ecShuffle()">다시 섞기</button></div>`:e.blindMode==='self'&&!e.editId?ecSelfGuide():'';
   return `<div class="sh"><div class="stl">${e.editId?'쉬운 커핑 수정':'새 비교'}</div><button class="btn2" onclick="ecCancel()">닫기</button></div>
+  <div class="ec-card"><div class="ec-card-t">🆚 비교할 원두 2개</div>${ecSideCard('A')}${ecSideCard('B')}
+    ${e.planRef?`<div class="ec-plan-q">📋 커핑 계획 ${e.planRef.idx+1}/${e.planRef.n}${e.planRef.question?`<b>❓ ${ecEsc(e.planRef.question)}</b>`:''}</div>`:''}</div>
   ${tour}
-  ${e.planRef?`<div class="ec-plan-q">📋 커핑 계획 ${e.planRef.idx+1}/${e.planRef.n}${e.planRef.question?`<b>❓ ${ecEsc(e.planRef.question)}</b>`:''}</div>`:''}
-  <div class="ec-card"><div class="ec-card-t">1. 기본 설정</div>
-    <label class="ec-set"><span>커핑 날짜</span><input class="inp" type="date" value="${e.date}" onchange="_ec.date=this.value||today()" onblur="ecSetDate(this.value)"></label>
-    ${set('coffee_g','원두','g','num')}${set('water_g','물','g','num')}${set('temp','물 온도','°C','num')}${set('grind','분쇄','')}
-    <div class="ec-hint">커핑볼을 저울에 올리고 물을 ${ecEsc(st.water_g||'150')}g까지 부어요. 모든 컵을 똑같이.</div></div>
-  <div class="ec-card"><div class="ec-card-t">2. 비교할 원두 2개</div>${ecSideCard('A')}${ecSideCard('B')}</div>
-  <div class="ec-card"><div class="ec-card-t">3. 블라인드</div>
+  ${ecRecipeHtml()}
+  <div class="ec-card"><div class="ec-card-t">🥣 컵 배치 (블라인드)</div>
     <div class="ec-pick-row">${blindBtn('self','① 혼자 섞기')}${blindBtn('app','② 앱이 섞기')}${blindBtn('none','③ 블라인드 없음')}</div>
     ${blindInfo}</div>
-  <div class="ec-card"><div class="ec-card-t">4. 진행 순서 · 평가</div><div class="ec-steps">${ecStagesHtml()}</div></div>
+  <div class="ec-card"><div class="ec-card-t">⏱ 진행 순서 · 평가</div><div class="ec-steps">${ecStagesHtml()}</div></div>
   ${ecRevealHtml()}
   <div class="ec-card"><div class="ec-q"><div class="ec-q-hd"><b>한 줄 메모</b> <span class="ec-opt">선택</span></div>
     <input class="inp" id="ecMemo" placeholder="예: 2번이 향이 더 또렷" value="${ecEsc(e.memo)}" oninput="_ec.memo=this.value"></div></div>
@@ -221,18 +241,33 @@ function ecRerenderKeep(){const y=window.scrollY;renderEasyCup();window.scrollTo
 function ecToggleStep(i){_ec.steps[i]=!_ec.steps[i];ecRerenderKeep();}
 function ecStartPour(again){
   if(again&&!confirm('타이머를 0:00부터 다시 시작할까요?'))return;
-  _ec.t0=Date.now();_ec.steps[0]=true;_ec.steps[1]=true;_ec.stageNow=1;ecRerenderKeep();
+  _ec.t0=Date.now();_ec.steps[0]=true;_ec.steps[1]=true;_ec.stageNow=1;_ec._bp={};ecAudio();ecRerenderKeep();
 }
 function ecScrollStage(){const el=document.getElementById('ecStage'+ecStageIdx());if(el)el.scrollIntoView({behavior:'smooth',block:'center'});}
+// 단계 알림: 다음 단계 10초 전 삐, 시작할 때 삐삐 (+ 진동) — 화면 색 변화가 기본 신호, 소리는 보조
+let _ecAC=null;
+function ecAudio(){try{if(!_ecAC)_ecAC=new (window.AudioContext||window.webkitAudioContext)();if(_ecAC.state==='suspended')_ecAC.resume();}catch(x){}return _ecAC;}
+function ecBeep(f,d,v){const a=ecAudio();if(!a)return;try{const o=a.createOscillator(),g=a.createGain();o.frequency.value=f;g.gain.value=v||.5;o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+d);}catch(x){}}
+function ecBeepTick(el){
+  const bp=_ec._bp=_ec._bp||{};
+  EC_STAGES.forEach((st,i)=>{if(st.t==null||i<2)return;
+    if(el>=st.t-10&&el<st.t&&!bp['p'+i]){bp['p'+i]=1;ecBeep(880,.15,.5);}
+    if(el>=st.t&&el<st.t+3&&!bp['s'+i]){bp['s'+i]=1;ecBeep(1200,.2,.6);setTimeout(()=>ecBeep(1200,.2,.6),350);try{navigator.vibrate&&navigator.vibrate([200,100,200]);}catch(x){}}
+  });
+}
 // 1초마다 시계만 바꾸고, 단계가 바뀔 때만 화면을 다시 그림 (입력 중인 메모는 그대로)
 setInterval(function(){
   if(!_ec||!_ec.t0||_ecView!=='form')return;
   const c=document.getElementById('ecClock');if(!c)return;
   const el=ecElapsed(),i=ecStageIdx();
+  ecBeepTick(el);
   if(i!==_ec.stageNow){_ec.stageNow=i;const a=document.activeElement;if(a&&a.id==='ecMemo')return;ecRerenderKeep();return;}
   c.textContent=ecFmt(el);
   const nx=EC_STAGES.slice(i+1).find(x=>x.t!=null),n=document.getElementById('ecClockNext');
   if(n&&nx)n.textContent=`다음 ${nx.label} ${ecFmt(nx.t)} (${ecFmt(nx.t-el)} 남음)`;
+  const bn=document.getElementById('ecBadgeNow'),st=EC_STAGES[i];if(bn&&st.end!=null)bn.textContent=ecFmt(st.end-el);
+  const bx=document.getElementById('ecBadgeNext');if(bx&&nx)bx.textContent=ecFmt(nx.t-el);
+  const ck=document.querySelector('.ec-clock');if(ck)ck.classList.toggle('warn',!!(nx&&nx.t-el<=10));
 },1000);
 function ecSetDate(v){const n=v||today();_ec.date=n;ecRerenderKeep();}
 function ecSetPick(k,v){_ec.picks[k]=_ec.picks[k]===v&&k!=='final'?'':v;ecRerenderKeep();}

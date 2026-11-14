@@ -1030,3 +1030,34 @@ html,body,button,.tb,.fc,.chip,.btn,.btn2,[onclick]{touch-action:manipulation;}
 .lb-sum span{font-weight:400;font-size:12px;color:var(--muted);}
 .lb-sum b{color:#9fd3ff;}
 .lb-sum .lb-bad{color:#ff8a7a;font-weight:700;}
+
+/* 쉬운 커핑 2026-11-14: 한 화면 스크롤 유지, 단계마다 지금/다음/지남 + 할 일·평가 분리 */
+.ec-stage{border:1px solid var(--b1);border-radius:12px;padding:10px;margin-bottom:10px;background:var(--bg3)}
+.ec-stage.st-now{border:3px solid var(--amber);background:rgba(232,160,64,.16);padding:12px;box-shadow:0 0 0 3px rgba(232,160,64,.18)}
+.ec-stage.st-next{border:2px dashed var(--amber3)}
+.ec-stage.st-past{opacity:.62}
+.ec-stage.st-past.done{opacity:.5}
+.ec-sbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.ec-sb{font-size:13px;font-weight:800;border-radius:999px;padding:3px 10px;border:1px solid var(--b2);color:var(--muted);white-space:nowrap}
+.ec-sb.now{background:var(--amber);border-color:var(--amber);color:#222}
+.ec-sb.next{border-color:var(--amber);color:var(--amber)}
+.ec-sb.past{color:var(--muted)}
+.ec-rng{font-size:15px;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums}
+.ec-stage .ec-step{width:100%;background:transparent;border:none;padding:4px 0;min-height:40px}
+.ec-stage .ec-step b{font-size:17px;color:var(--text)}
+.ec-blk{margin-top:8px;border-radius:9px;padding:8px 10px;background:rgba(255,255,255,.04)}
+.ec-blk.act{border-left:4px solid var(--amber)}
+.ec-blk.evl{border-left:4px solid #5aa9e6}
+.ec-tag{font-size:12px;font-weight:800;letter-spacing:.04em;margin-bottom:4px;color:var(--muted)}
+.ec-blk-t{font-size:15px;line-height:1.55;color:var(--text2)}
+.ec-stage.st-now .ec-blk-t{font-size:18px;font-weight:700;color:var(--text)}
+.ec-noeval{font-size:14px;color:var(--muted)}
+.ec-blk.evl .ec-q{border-top:none;padding:4px 0 6px;margin-top:0}
+.ec-blk.evl .ec-q+.ec-q{border-top:1px solid var(--b1);padding-top:10px}
+.ec-recipe-sum{font-size:16px;font-weight:700;margin-bottom:6px;line-height:1.5}
+.ec-clock-r{color:var(--muted);font-size:12px}
+.ec-clock.warn{border-color:var(--coral);animation:ecwarn .8s ease-in-out infinite alternate}
+@keyframes ecwarn{from{background:var(--bg2)}to{background:rgba(224,92,0,.35)}}
+.ec-side-meta b{color:var(--amber)}
+.ec-side-btns.sm{margin-top:6px}.ec-side-btns.sm .btn2{padding:4px 10px;font-size:13px}
+.ec-rng{white-space:nowrap}
