@@ -1061,3 +1061,29 @@ html,body,button,.tb,.fc,.chip,.btn,.btn2,[onclick]{touch-action:manipulation;}
 .ec-side-meta b{color:var(--amber)}
 .ec-side-btns.sm{margin-top:6px}.ec-side-btns.sm .btn2{padding:4px 10px;font-size:13px}
 .ec-rng{white-space:nowrap}
+
+/* 오늘의 한 잔 4구역 (2026-11-14): 글자·칩·간격 통일 */
+.dc-zone{background:var(--card);border:1px solid var(--b1);border-radius:var(--r);padding:14px;margin-bottom:12px}
+.dc-zt{font-size:16px;font-weight:800;color:var(--amber);margin-bottom:6px;padding-left:8px;border-left:4px solid var(--amber)}
+.dc-zone .dc-mini{font-size:13px;margin:12px 0 6px}
+.dc-zone .dc-chips{gap:8px}
+.dc-zone .dc-chip.dz{min-height:44px;padding:8px 14px;border-radius:10px;font-size:15px}
+.dc-zone.feat .dc-zt{color:#c9ced6;border-left-color:#9aa1ab}
+.dc-zone.feat .dc-chip.dz{background:var(--bg4);border:1px solid #6b717b;color:#b8bec7}
+.dc-zone.feat .dc-chip.dz.on{background:#d3d8df;border-color:#d3d8df;color:#222;font-weight:800}
+.dc-zone.prob{border:2px solid #e5534b}
+.dc-zone.prob .dc-zt{color:#ff7b72;border-left-color:#e5534b}
+.dc-zone.prob .dc-chip.dz.bad{background:transparent;border:2px solid #e5534b;color:#ff9a93}
+.dc-zone.prob .dc-chip.dz.bad.on{background:#e5534b;color:#fff;font-weight:800}
+.dc-zone.prob .dc-chip.dz.ok{background:transparent;border:2px solid #4fae6b;color:#8fd6a5}
+.dc-zone.prob .dc-chip.dz.ok.on{background:#4fae6b;border-color:#4fae6b;color:#fff;font-weight:800}
+.dc-legacy{font-size:12px;color:var(--muted);margin-top:10px}
+/* 쉬운 커핑: 컵별 칩 · 확신도 */
+.ec-cupx{margin:8px 0}.ec-cupx>b{display:block;font-size:14px;margin-bottom:4px;color:var(--text)}
+.ec-cupx .dc-chips{gap:8px}
+.ec-cupx .ec-chip{min-height:44px;padding:8px 14px;border-radius:10px;border:1px solid #6b717b;background:var(--bg4);color:#b8bec7;font-size:15px;cursor:pointer;font-family:inherit}
+.ec-cupx .ec-chip.on{background:#d3d8df;border-color:#d3d8df;color:#222;font-weight:800}
+.ec-cupx.flaw .ec-chip{background:transparent;border:2px solid #e5534b;color:#ff9a93}
+.ec-cupx.flaw .ec-chip.on{background:#e5534b;color:#fff}
+.ec-cupx.flaw .ec-chip.none{border-color:#4fae6b;color:#8fd6a5}
+.ec-cupx.flaw .ec-chip.none.on{background:#4fae6b;color:#fff}

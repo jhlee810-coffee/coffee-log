@@ -5,7 +5,14 @@
 //  ✏️ 바꾸고 싶으면 여기만 고치면 됨 (태그 · 선택지 · 힌트 문구)
 // ════════════════════════════════════════════════════════════════
 // 좋았던 점: 단맛·산미·향은 따로 고르므로 겹치는 것(향 또렷·꽃향·과일향·달다·상큼한 산미)은 뺌 (2026-11-06)
-const DC_GOOD_TAGS=['초콜릿·견과','깔끔','부드러움','뒷맛 길다','식어도 맛있음'];
+const DC_GOOD_TAGS=['깔끔','부드러움','달다','뒷맛 길다','식어도 맛있음'];   // 질감·인상. '초콜릿·견과'는 향 종류 '고소'로 대체(옛 기록 값은 그대로 보임) 2026-11-14
+const DC_AROMA_LEVEL=['없음','스침','또렷','강함'];     // 향 세기 (하나만) — 기존 '향 남/안 남' 대체
+const DC_AROMA_TYPES=['과일','꽃','고소'];               // 향 종류 (여러 개)
+const DC_ISSUES=['문제 없음','풋내','떫음','목마름','탄향·연기','발효취','향 약함'];   // 문제 (여러 개, '문제 없음'과는 함께 못 고름)
+const DC_ISSUE_OLD={'풋내':'풋내·곡물 냄새','탄향·연기':'탄맛·스모키','발효취':'발효취·술 냄새'};
+/* 옛 bad 태그 + 새 issues를 합쳐 힌트 규칙(DC_HINTS)이 둘 다 보게 함 */
+function dcBadAll(r){return [...(r.bad||[]),...(r.issues||[]).filter(x=>x!=='문제 없음').map(x=>DC_ISSUE_OLD[x]||x)];}
+function dcAromaTxt(r){const a=[r.aroma_level,...(r.aroma_types||[])].filter(Boolean);return a.length?'향 '+a.join('·'):'';}
 const DC_ACIDITY=['밝고 좋은 산미','부드럽고 좋은 산미','무거운 산미','신맛이 강해서 별로','산미 거의 없음'];   // 하나만
 const DC_AROMA=['향 안 남','향 남','좋은 향 또렷','★ 컵노트가 확 느껴짐'];                                  // 하나만
 const DC_AROMA_NOTES='★ 컵노트가 확 느껴짐';   // 이걸 고르면 원두 컵노트 칩이 뜸
@@ -55,21 +62,21 @@ const DC_GRINDERS=[
 //   sameBean:true → 같은 생두 안에서 3번 이상일 때 (문구의 {bean}은 생두 이름으로 바뀜)
 const DC_HINT_WINDOW=7, DC_HINT_MIN=3;
 const DC_HINTS=[
-  {id:'under',  match:r=>r.balance==='sour1'||r.balance==='sour2'||(r.bad||[]).includes('물 같음(얇음)'),
+  {id:'under',  match:r=>r.balance==='sour1'||r.balance==='sour2'||dcBadAll(r).includes('물 같음(얇음)'),
    text:'추출이 덜 된 것 같아요. 분쇄도를 조금 곱게, 또는 물 온도를 올려 보세요.'},
-  {id:'over',   match:r=>r.balance==='bitter1'||r.balance==='bitter2'||(r.bad||[]).includes('떫음'),
+  {id:'over',   match:r=>r.balance==='bitter1'||r.balance==='bitter2'||dcBadAll(r).includes('떫음'),
    text:'추출이 너무 된 것 같아요. 분쇄도를 조금 굵게, 또는 물 온도를 내려 보세요.'},
   {id:'channel',match:r=>r.balance==='both',
    text:'물이 고르게 지나가지 않는 것 같아요. 분쇄도보다 물 붓는 방법과 원두 층을 고르게 펴는 걸 먼저 확인해 보세요.'},
   {id:'weak',   match:r=>r.strength==='weak',   text:'원두 양을 조금 늘리거나 물을 줄여 보세요.'},
   {id:'strong', match:r=>r.strength==='strong', text:'원두 양을 조금 줄이거나 물을 늘려 보세요.'},
-  {id:'underroast',sameBean:true,match:r=>(r.bad||[]).includes('풋내·곡물 냄새'),
+  {id:'underroast',sameBean:true,match:r=>dcBadAll(r).includes('풋내·곡물 냄새'),
    text:'{bean}은(는) 덜 볶였을 수 있어요. DTR을 올리거나 다른 모드를 시도해 보세요.'},
-  {id:'overroast', sameBean:true,match:r=>(r.bad||[]).includes('탄맛·스모키')||(r.bad||[]).includes('텁텁함(구운 빵 맛)'),
+  {id:'overroast', sameBean:true,match:r=>dcBadAll(r).includes('탄맛·스모키')||dcBadAll(r).includes('텁텁함(구운 빵 맛)'),
    text:'{bean}은(는) 너무 볶였을 수 있어요. DTR을 낮춰 보세요.'},
-  {id:'ferment',   sameBean:true,match:r=>(r.bad||[]).includes('발효취·술 냄새'),
+  {id:'ferment',   sameBean:true,match:r=>dcBadAll(r).includes('발효취·술 냄새'),
    text:'{bean}은(는) 숙성을 며칠 더 해 보세요.'},
-  {id:'stale',  match:r=>(r.bad||[]).includes('오래된 맛(종이·눅눅)'),
+  {id:'stale',  match:r=>dcBadAll(r).includes('오래된 맛(종이·눅눅)'),
    text:'원두 보관 상태를 확인해 보세요(밀봉, 소분 냉동).'},
 ];
 // ════════════════════════════════════════════════════════════════
@@ -141,10 +148,12 @@ function dcSummary(r){
   if(r.sweet)parts.push('단맛'+r.sweet);
   if(r.acidity)parts.push(r.acidity);
   if(r.aroma)parts.push(r.aroma.replace('★ ','')+(r.notes_felt&&r.notes_felt.length?`(${r.notes_felt.join(', ')})`:''));
+  if(dcAromaTxt(r))parts.push(dcAromaTxt(r));
   if(r.balance)parts.push(dcBalLabel(r.balance));
   if(r.strength&&r.strength!=='ok')parts.push(dcStrLabel(r.strength));
   if(r.good&&r.good.length)parts.push(r.good.join(', '));
   if(r.bad&&r.bad.length)parts.push('아쉬움: '+r.bad.join(', '));
+  if(r.issues&&r.issues.length)parts.push('문제: '+r.issues.join(', '));
   if(r.cool&&r.cool.length)parts.push('식으면 '+r.cool.join(', '));
   return parts.join(' · ');
 }
@@ -160,9 +169,10 @@ function dcBrief(r,n){
   const p=['★'+(r.stars||0)];
   if(r.sweet)p.push('단맛'+r.sweet);
   if(r.acidity)p.push(DC_ACID_SHORT[r.acidity]||r.acidity);
+  if(dcAromaTxt(r))p.push(dcAromaTxt(r));
   if(r.balance)p.push(dcBalLabel(r.balance));
   if(r.strength&&r.strength!=='ok')p.push(dcStrLabel(r.strength));
-  if(r.bad&&r.bad.length)p.push('⚠ '+r.bad.slice(0,2).join(', '));
+  {const pr=[...(r.bad||[]),...(r.issues||[]).filter(x=>x!=='문제 없음')];if(pr.length)p.push('⚠ '+pr.slice(0,2).join(', '));}
   if(r.cool&&r.cool.length)p.push('식으면 '+r.cool.slice(0,2).join(', '));
   return p.slice(0,n||p.length).join(' · ');
 }
@@ -254,7 +264,7 @@ function dcDrippers(){ // 기본 목록 + 직접 추가했던 드리퍼
 function dcNew(){
   const lb=dcLastBrew();
   _dc={editId:null,date:today(),sel:null,stars:0,balance:'',strength:'',good:[],bad:[],
-       sweet:0,acidity:'',aroma:'',notes_felt:[],cool:[],memo_hot:'',memo_cool:'',
+       sweet:0,acidity:'',aroma:'',notes_felt:[],aroma_level:'',aroma_types:[],issues:[],cool:[],memo_hot:'',memo_cool:'',
        brew:{recipe:lb.recipe||'',dripper:lb.dripper||'',grinder:lb.grinder||'',clicks:lb.clicks||'',
              coffee_g:lb.coffee_g||'',water_g:lb.water_g||'',temp:lb.temp||DC_TEMP_DEFAULT,time:lb.time||'',
              bloom:lb.bloom||'',dilute_g:lb.dilute_g||'',water:lb.water||DC_WATERS[0]},
@@ -312,15 +322,51 @@ function dcEntryHtml(){
     ${quick?`<div class="dc-qtitle">⭐ 추천 원두 <span>최적기에 가깝고 · 최근 안 마셨고 · 평점 좋은 순 (🧊 냉동 포함)</span></div><div class="dc-qbatches q8">${quick}</div>`:''}
     <button class="dc-pickbtn" onclick="dcOpenPick()">${e.sel?'다른 원두 고르기':'원두 고르기'} ▸</button>
     ${selBox}
-    <div class="dc-lbl" style="margin-top:14px">만족도 <span class="dc-req">필수</span></div>
-    <div class="dc-stars">${stars}</div>
     <div class="dc-date">마신 날짜 <input class="inp" type="date" value="${e.date}" onchange="dcDateChanged(this.value)"></div>
-    <button class="dc-more-btn" onclick="_dc.more=!_dc.more;dcRerender()">${e.more?'▴ 접기':'▾ 더 입력하기'}${dcMoreCount()?` (${dcMoreCount()})`:''}</button>
+  </div>
+  ${dcZonesHtml()}
+  <div class="dc-card">
+    <button class="dc-more-btn" style="margin-top:0" onclick="_dc.more=!_dc.more;dcRerender()">${e.more?'▴ 접기':'▾ 추출 정보 · 한 줄 메모'}${dcMoreCount()?` (${dcMoreCount()})`:''}</button>
     ${e.more?dcMoreHtml():''}
-    <button class="dc-save" onclick="dcSave()">${e.editId?'수정 저장':'저장'}</button>
-  </div>`;
+  </div>
+  <button class="dc-save" onclick="dcSave()">${e.editId?'수정 저장':'저장'}</button>`;
 }
-function dcMoreCount(){const e=_dc;return (e.sweet?1:0)+(e.acidity?1:0)+(e.aroma?1:0)+(e.balance?1:0)+(e.strength?1:0)+e.good.length+e.bad.length+e.cool.length+(e.memo?1:0)+(e.memo_hot?1:0)+(e.memo_cool?1:0);}
+function dcMoreCount(){const e=_dc;return (e.memo?1:0)+(e.brew&&e.brew.time?1:0);}
+/* ── 4구역 입력 (2026-11-14): 점수 · 특징 · 문제 · 식었을 때 — 전부 처음부터 한 화면에 펼침 ── */
+function dcZonesHtml(){
+  const e=_dc;
+  const q=t=>dcEsc(t).replace(/'/g,"\\'");
+  const ch=(on,l,fn,cls)=>`<button class="dc-chip dz${cls?' '+cls:''}${on?' on':''}" onclick="${fn}">${dcEsc(l)}</button>`;
+  const stars=[1,2,3,4,5].map(n=>`<button class="dc-star${e.stars>=n?' on':''}" onclick="dcSetStars(${n})" aria-label="별 ${n}개">★</button>`).join('');
+  const sweet=[1,2,3,4,5].map(n=>`<button class="dc-seg${e.sweet===n?' on':''}" onclick="dcSetNum('sweet',${n})">${n}</button>`).join('');
+  const lvl=DC_AROMA_LEVEL.map(v=>ch(e.aroma_level===v,v,`dcSet('aroma_level','${q(v)}')`)).join('');
+  const typ=DC_AROMA_TYPES.map(v=>ch(e.aroma_types.includes(v),v,`dcToggle('aroma_types','${q(v)}')`)).join('');
+  const aci=DC_ACIDITY.map(v=>ch(e.acidity===v,v,`dcSet('acidity','${q(v)}')`)).join('');
+  const good=[...new Set([...DC_GOOD_TAGS,...e.good])].map(v=>ch(e.good.includes(v),v,`dcToggle('good','${q(v)}')`)).join('');
+  const iss=DC_ISSUES.map((v,i)=>ch(e.issues.includes(v),v,`dcIssue('${q(v)}')`,i===0?'ok':'bad')).join('');
+  const cool=DC_COOL.map(v=>ch(e.cool.includes(v),v,`dcToggle('cool','${q(v)}')`)).join('');
+  const bal=DC_BALANCE.map(x=>`<button class="dc-bal${e.balance===x.v?' on':''}" onclick="dcSet('balance','${x.v}')">${x.l}</button>`).join('');
+  const str=DC_STRENGTH.map(x=>`<button class="dc-seg${e.strength===x.v?' on':''}" onclick="dcSet('strength','${x.v}')">${x.l}</button>`).join('');
+  const old=[e.aroma?'예전 향 표기 '+e.aroma.replace('★ ','')+(e.notes_felt.length?`(${e.notes_felt.join(', ')})`:''):'',e.bad.length?'아쉬움 '+e.bad.join(', '):''].filter(Boolean).join(' · ');
+  return `<div class="dc-zone score"><div class="dc-zt">① 점수</div>
+      <div class="dc-mini">만족도 <span class="dc-req">필수</span></div><div class="dc-stars">${stars}</div>
+      <div class="dc-mini">단맛</div><div class="dc-segs dc-segs5">${sweet}</div></div>
+    <div class="dc-zone feat"><div class="dc-zt">② 특징 <span class="dc-opt">좋고 나쁨 없이 느낌 그대로</span></div>
+      <div class="dc-mini">향 세기 <span class="dc-opt">하나만</span></div><div class="dc-chips">${lvl}</div>
+      <div class="dc-mini">향 종류 <span class="dc-opt">여러 개</span></div><div class="dc-chips">${typ}</div>
+      <div class="dc-mini">산미 <span class="dc-opt">하나만</span></div><div class="dc-chips">${aci}</div>
+      <div class="dc-mini">질감·인상 <span class="dc-opt">여러 개</span></div><div class="dc-chips">${good}</div>
+      <div class="dc-mini">맛 균형 · 농도</div><div class="dc-bals">${bal}</div>
+      <button class="dc-both${e.balance==='both'?' on':''}" onclick="dcSet('balance','both')">${DC_BALANCE_BOTH.l}</button>
+      <div class="dc-segs" style="margin-top:6px">${str}</div>
+      ${old?`<div class="dc-legacy">예전 기록 값(그대로 보존) — ${dcEsc(old)}</div>`:''}</div>
+    <div class="dc-zone prob"><div class="dc-zt">③ 문제 <span class="dc-opt">로스팅 고칠 때 보는 정보 · 여러 개</span></div>
+      <div class="dc-chips">${iss}</div></div>
+    <div class="dc-zone cool"><div class="dc-zt">④ 식었을 때</div>
+      <input class="inp" placeholder="따뜻할 때 (짧게)" value="${dcEsc(e.memo_hot)}" oninput="_dc.memo_hot=this.value">
+      <div class="dc-mini">식었을 때 <span class="dc-opt">여러 개</span></div><div class="dc-chips">${cool}</div>
+      <input class="inp" style="margin-top:6px" placeholder="식었을 때 (짧게)" value="${dcEsc(e.memo_cool)}" oninput="_dc.memo_cool=this.value"></div>`;
+}
 function dcMoreHtml(){
   const e=_dc,b=e.brew;
   const chip=(on,l,fn)=>`<button class="dc-chip${on?' on':''}" onclick="${fn}">${dcEsc(l)}</button>`;
@@ -355,20 +401,7 @@ function dcMoreHtml(){
     clickSel=`<div class="dc-clicks"><button class="dc-adj" onclick="dcClick(-1)">${G.scale?'−0.1':'−1'}</button><select class="sel" onchange="_dc.brew.clicks=this.value">${o}</select><button class="dc-adj" onclick="dcClick(1)">${G.scale?'+0.1':'+1'}</button></div>`;}
   const inp=(k,ph,mode)=>`<input class="inp" ${mode?`inputmode="${mode}"`:''} placeholder="${ph}" value="${dcEsc(b[k])}" oninput="_dc.brew.${k}=this.value">`;
   return `<div class="dc-more">
-    <div class="dc-sub">① 맛</div>
-    <div class="dc-mini">단맛</div><div class="dc-segs dc-segs5">${sweet}</div>
-    <div class="dc-mini">산미 <span class="dc-opt">하나만</span></div><div class="dc-chips">${one(DC_ACIDITY,e.acidity,'acidity')}</div>
-    <div class="dc-mini">향 <span class="dc-opt">하나만</span></div><div class="dc-chips">${one(DC_AROMA,e.aroma,'aroma')}</div>${notes}
-    <div class="dc-sub">② 맛 균형 · 농도</div><div class="dc-bals">${bal}</div>
-    <button class="dc-both${e.balance==='both'?' on':''}" onclick="dcSet('balance','both')">${DC_BALANCE_BOTH.l}</button>
-    <div class="dc-segs" style="margin-top:6px">${str}</div>
-    <div class="dc-sub">③ 따뜻할 때 · 식었을 때</div>
-    <input class="inp" placeholder="따뜻할 때 (짧게)" value="${dcEsc(e.memo_hot)}" oninput="_dc.memo_hot=this.value">
-    <div class="dc-mini">식었을 때 <span class="dc-opt">여러 개</span></div><div class="dc-chips">${cool}</div>
-    <input class="inp" style="margin-top:6px" placeholder="식었을 때 (짧게)" value="${dcEsc(e.memo_cool)}" oninput="_dc.memo_cool=this.value">
-    <div class="dc-sub">④ 좋았던 점 · 아쉬운 점</div><div class="dc-chips">${good}</div>
-    <div class="dc-chips" style="margin-top:8px">${bad}</div>
-    <div class="dc-sub">⑤ 추출 정보 <span class="dc-opt">지난번 값으로 채워져 있어요</span></div>
+    <div class="dc-sub">추출 정보 <span class="dc-opt">지난번 값으로 채워져 있어요</span></div>
     <div class="dc-mini">레시피 <span class="dc-opt">⚡ 프리셋은 아래 값을 한 번에 채움</span></div><div class="dc-chips">${recs}</div>
     ${preset&&preset.steps?`<div class="dc-steps-note">${dcEsc(preset.steps)}</div>`:''}
     <div class="dc-mini">드리퍼</div><div class="dc-chips">${drs}</div>
@@ -386,7 +419,7 @@ function dcMoreHtml(){
     <div class="dc-mini">가수</div><div class="dc-chips">${dil}</div>
     <div class="dc-mini">총 추출 시간 ${b.time?`<b class="dc-tval">${dcEsc(b.time)}</b>`:''}</div><div class="dc-chips">${times}<button class="dc-chip" onclick="dcTimeAdj(-10)">−10초</button><button class="dc-chip" onclick="dcTimeAdj(10)">+10초</button></div>
     <div class="dc-mini">물</div><div class="dc-chips">${waters}</div>
-    <div class="dc-sub">⑥ 한 줄 메모</div>
+    <div class="dc-sub">한 줄 메모</div>
     <input class="inp" placeholder="예: 식으니 단맛이 올라옴" value="${dcEsc(e.memo)}" oninput="_dc.memo=this.value">
   </div>`;
 }
@@ -431,6 +464,12 @@ function dcMatchDecafPreset(){
 }
 function dcSetStars(n){_dc.stars=_dc.stars===n?0:n;dcRerender();}
 function dcSet(k,v){_dc[k]=_dc[k]===v?'':v;if(k==='aroma'&&_dc.aroma!==DC_AROMA_NOTES)_dc.notes_felt=[];dcRerender();}   // 같은 걸 다시 누르면 해제 (맛 균형 막대/둘 다는 한 칸이라 하나만 선택됨)
+function dcIssue(v){   // '문제 없음'을 누르면 나머지 해제, 다른 문제를 누르면 '문제 없음' 해제
+  const a=_dc.issues,N='문제 없음';
+  if(v===N){_dc.issues=a.includes(N)?[]:[N];}
+  else{const b=a.filter(x=>x!==N),i=b.indexOf(v);if(i>=0)b.splice(i,1);else b.push(v);_dc.issues=b;}
+  dcRerender();
+}
 function dcToggle(k,v){const a=_dc[k],i=a.indexOf(v);if(i>=0)a.splice(i,1);else a.push(v);dcRerender();}
 function dcSetBrew(k,v){_dc.brew[k]=_dc.brew[k]===v?'':v;dcRerender();}
 function dcSetRecipe(i){
@@ -538,7 +577,7 @@ function dcSave(){
     date:e.date,
     bean_info:{roast_id:e.sel.roast_id,bean_id:e.sel.bean_id,rb_id:e.sel.rb_id,roastery:e.sel.roastery,decaf:e.sel.decaf||'',bean:e.sel.bean,roast_date:e.sel.roast_date,mode:e.sel.mode,dtr:e.sel.dtr,loss:e.sel.loss,batch_no:e.sel.batch_no,manual:e.sel.manual||'',frozen:e.sel.frozen||''},
     degas_days:dcDays(e.date,e.sel.roast_date),
-    stars:e.stars,sweet:e.sweet||'',acidity:e.acidity,aroma:e.aroma,notes_felt:e.notes_felt.slice(),
+    stars:e.stars,sweet:e.sweet||'',acidity:e.acidity,aroma:e.aroma,notes_felt:e.notes_felt.slice(),aroma_level:e.aroma_level,aroma_types:e.aroma_types.slice(),issues:e.issues.slice(),
     balance:e.balance,strength:e.strength,good:e.good.slice(),bad:e.bad.slice(),
     cool:e.cool.slice(),memo_hot:(e.memo_hot||'').trim(),memo_cool:(e.memo_cool||'').trim(),
     brew:{...e.brew},memo:(e.memo||'').trim(),
@@ -581,7 +620,7 @@ function dcEdit(id){
   const liveRb=s.rb_id&&typeof rbList==='function'?rbList().find(x=>x.id===s.rb_id):null;
   _dc={editId:r.id,date:r.date,sel:live?dcSnapFromRoast(live):liveRb?rbSnap(liveRb):{...s},stars:r.stars||0,balance:r.balance||'',strength:r.strength||'',
        good:(r.good||[]).slice(),bad:(r.bad||[]).slice(),
-       sweet:+r.sweet||0,acidity:r.acidity||'',aroma:r.aroma||'',notes_felt:(r.notes_felt||[]).slice(),cool:(r.cool||[]).slice(),memo_hot:r.memo_hot||'',memo_cool:r.memo_cool||'',
+       sweet:+r.sweet||0,acidity:r.acidity||'',aroma:r.aroma||'',notes_felt:(r.notes_felt||[]).slice(),aroma_level:r.aroma_level||'',aroma_types:(r.aroma_types||[]).slice(),issues:(r.issues||[]).slice(),cool:(r.cool||[]).slice(),memo_hot:r.memo_hot||'',memo_cool:r.memo_cool||'',
        brew:{recipe:'',dripper:'',grinder:'',clicks:'',coffee_g:'',water_g:'',temp:'',time:'',bloom:'',dilute_g:'',water:'',...(r.brew||{})},memo:r.memo||'',more:true};
   renderDailyCup();window.scrollTo(0,0);
 }
@@ -622,7 +661,7 @@ function dcAnaHtml(){
   const profRows=Object.entries(prof).sort((a,b)=>dcAvg(b[1])-dcAvg(a[1])).map(([p,a])=>dcBar(p,dcAvg(a),a.length,{dim:a.length<2})).join('');
   const beanOpts=beanKeys.map(b=>`<option value="${dcEsc(b)}"${b===_dcAnaBean?' selected':''}>${dcEsc(b)} (${beans[b].length})</option>`).join('');
   // 3. 자주 나온 태그
-  const top3=(rs,k)=>{const c={};rs.forEach(r=>(r[k]||[]).forEach(t=>c[t]=(c[t]||0)+1));return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([t,n])=>`${t} ${n}`).join(', ');};
+  const top3=(rs,k)=>{const c={};rs.forEach(r=>(k==='bad'?[...(r.bad||[]),...(r.issues||[]).filter(x=>x!=='문제 없음')]:(r[k]||[])).forEach(t=>c[t]=(c[t]||0)+1));return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([t,n])=>`${t} ${n}`).join(', ');};
   const tagRows=beanKeys.map(b=>{const g=top3(beans[b],'good'),x=top3(beans[b],'bad');if(!g&&!x)return '';
     return `<div class="dc-tag-row"><b>${dcEsc(dcShort(b))}</b>${g?`<div>👍 ${dcEsc(g)}</div>`:''}${x?`<div>👎 ${dcEsc(x)}</div>`:''}</div>`;}).join('')||'<div class="dc-empty">태그를 고른 기록이 아직 없어요.</div>';
   return `<div class="dc-card"><div class="dc-ana-t">① 배치별 숙성 곡선</div>

@@ -7,11 +7,11 @@ const EC_DEFAULT_SET={coffee_g:'8.3',water_g:'150',temp:'93',grind:'지피식스
 const EC_STAGES=[   // 인덱스(0~6)는 저장된 진행체크(steps)와 같아야 해서 바꾸지 말 것. t=시작(초), end=끝(초)
   {t:null,end:0,   label:'마른 향',        time:'물 붓기 전',   act:'분쇄 직후, 두 볼의 마른 향을 번갈아 맡아요',qs:[]},
   {t:0,   end:240, label:'물 붓기 → 기다리기',time:'0:00 ~ 4:00',  act:'{temp}°C 물을 {water}g까지, 가루가 다 젖게 빠르게 부어요. 다 부으면 4:00까지 손대지 않고 기다려요',qs:[],start:true},
-  {t:240, end:270, label:'크러스트 깨기',  time:'4:00 ~ 4:30',  act:'스푼으로 3번 밀면서 코를 대고 향을 맡아요. 스푼은 컵마다 뜨거운 물에 헹궈요',qs:['aroma']},
+  {t:240, end:270, label:'크러스트 깨기',  time:'4:00 ~ 4:30',  act:'스푼으로 3번 밀면서 코를 대고 향을 맡아요. 스푼은 컵마다 뜨거운 물에 헹궈요',qs:['aroma','aroma_t']},
   {t:270, end:600, label:'걷어내기 → 식히기',time:'4:30 ~ 10:00', act:'4:30~5:00 두 스푼으로 위의 거품과 가루를 걷어내요. 끝나면 10:00까지 기다려요',qs:[]},
   {t:600, end:900, label:'맛보기',         time:'10:00 ~ 15:00',act:'스푼으로 떠서 후루룩 세게 마셔요. 2~3분마다 다시 맛봐요',qs:['acid','sweet']},
-  {t:900, end:1200,label:'식었을 때',      time:'15:00 ~ 20:00',act:'미지근할 때 차이가 가장 잘 보여요. 다시 맛봐요',qs:['after','green']},
-  {t:1200,end:null,label:'최종 선택',      time:'20:00 ~',      act:'지금까지 느낀 걸 떠올려서 하나만 골라요',qs:['final']},
+  {t:900, end:1200,label:'식었을 때',      time:'15:00 ~ 20:00',act:'미지근할 때 차이가 가장 잘 보여요. 다시 맛봐요',qs:['after','issue']},
+  {t:1200,end:null,label:'최종 선택',      time:'20:00 ~',      act:'지금까지 느낀 걸 떠올려서 하나만 골라요',qs:['final','conf']},
 ];
 const EC_QS=[
   {key:'aroma', label:'향',   q:'어느 쪽 향이 더 또렷하고 좋아?'},
@@ -95,7 +95,9 @@ function ecSummary(rec){
   head=head.replace(/\s+\(/g,' (').replace(/\s{2,}/g,' ');
   const parts=['aroma','acid','sweet','after','green'].filter(k=>rec.picks&&rec.picks[k]).map(k=>`${EC_QS.find(q=>q.key===k).label} ${ecPickWord(rec.picks[k])}`);
   const fin=rec.picks.final==='same'?'비김':rec.picks.final;
-  return head+(parts.length?' · '+parts.join(' / '):'')+` → 최종 ${fin}`+(rec.blind?' · 블라인드':'');
+  const cup=o=>['A','B'].filter(k=>o&&o[k]&&o[k].length).map(k=>k+' '+o[k].join('·')).join(' / ');
+  const ex=[cup(rec.aroma_types)?'향종류 '+cup(rec.aroma_types):'',cup(rec.issues)?'문제 '+cup(rec.issues):''].filter(Boolean);
+  return head+(parts.length?' · '+parts.join(' / '):'')+(ex.length?' · '+ex.join(' / '):'')+` → 최종 ${fin}`+(rec.confidence?` (확신: ${rec.confidence})`:'')+(rec.blind?' · 블라인드':'');
 }
 function ecWinnerSide(rec){return rec.picks.final==='A'||rec.picks.final==='B'?rec.picks.final:(rec.keep||null);}
 
@@ -114,7 +116,7 @@ function ecGo(view){_ecView=view;renderEasyCup();window.scrollTo(0,0);}
 
 function ecNewState(){
   return {editId:null,date:today(),A:null,B:null,blindMode:'self',blind:false,order:['S1','S2'],revealed:false,seat1:'',
-          settings:{...EC_DEFAULT_SET},t0:null,stageNow:0,
+          settings:{...EC_DEFAULT_SET},t0:null,stageNow:0,cupAroma:{},cupIssue:{},conf:'',
           steps:EC_STAGES.map(()=>false),picks:{aroma:'',acid:'',sweet:'',after:'',green:'',final:''},memo:'',
           tournament_id:null,round:1,keep:''};
 }
@@ -145,7 +147,24 @@ function ecFmt(sec){sec=Math.max(0,Math.floor(sec));return Math.floor(sec/60)+':
 function ecElapsed(){return _ec&&_ec.t0?(Date.now()-_ec.t0)/1000:null;}
 function ecStageIdx(){const el=ecElapsed();if(el==null)return 0;let k=1;EC_STAGES.forEach((st,i)=>{if(st.t!=null&&el>=st.t)k=i;});return k;}
 function ecGuide(t){const st=_ec.settings||{};return t.replace('{temp}',st.temp||'93').replace('{water}',st.water_g||'150');}
+const EC_AROMA_T=['과일','꽃','고소'], EC_ISSUE_T=['없음','풋내','떫음','목마름'];
+function ecCupToggle(field,id,v){   // field: 'cupAroma' | 'cupIssue'
+  const o=_ec[field],a=(o[id]||[]).slice();
+  if(field==='cupIssue'){
+    if(v==='없음')o[id]=a.includes('없음')?[]:['없음'];
+    else{const b=a.filter(x=>x!=='없음'),i=b.indexOf(v);if(i>=0)b.splice(i,1);else b.push(v);o[id]=b;}
+  }else{const i=a.indexOf(v);if(i>=0)a.splice(i,1);else a.push(v);o[id]=a;}
+  ecRerenderKeep();
+}
+function ecSetConf(v){_ec.conf=_ec.conf===v?'':v;ecRerenderKeep();}
+function ecCupChipsHtml(field,opts,flaw){
+  return [0,1].map(i=>{const id=_ec.order[i],cur=_ec[field][id]||[];
+    return `<div class="ec-cupx${flaw?' flaw':''}"><b>${ecCupName(i)}</b><div class="dc-chips">${opts.map(v=>`<button class="ec-chip${flaw&&v==='없음'?' none':''}${cur.includes(v)?' on':''}" onclick="ecCupToggle('${field}','${id}','${v}')">${v}</button>`).join('')}</div></div>`;}).join('');
+}
 function ecQHtml(key){
+  if(key==='aroma_t')return `<div class="ec-q"><div class="ec-q-hd"><b>향 종류</b> <span class="ec-opt">컵마다 · 여러 개</span></div>${ecCupChipsHtml('cupAroma',EC_AROMA_T,false)}</div>`;
+  if(key==='issue')return `<div class="ec-q"><div class="ec-q-hd"><b>풋내·떫음·목마름</b> <span class="ec-opt">컵마다 · 여러 개</span></div><div class="ec-q-txt">컵마다 느낀 걸 골라요 (없으면 "없음")</div>${ecCupChipsHtml('cupIssue',EC_ISSUE_T,true)}</div>`;
+  if(key==='conf')return `<div class="ec-q"><div class="ec-q-hd"><b>확신도</b> <span class="ec-opt">선택</span></div><div class="ec-q-txt">최종 선택에 얼마나 확신해요?</div><div class="ec-pick-row two">${['확실','애매'].map(v=>`<button class="ec-pick${_ec.conf===v?' on':''}" onclick="ecSetConf('${v}')">${v}</button>`).join('')}</div></div>`;
   const e=_ec,q=EC_QS.find(x=>x.key===key),cur=e.picks[key];
   const btn=(val,label)=>`<button class="ec-pick${cur===val?' on':''}" onclick="ecSetPick('${q.key}','${val}')">${label}</button>`;
   const row=q.flaw
@@ -160,7 +179,7 @@ function ecStagesHtml(){
   return EC_STAGES.map((st,i)=>{
     const state=edit?'edit':i===now?'now':i<now&&run?'past':i===nextI?'next':'later';
     const act=ecGuide(st.act||'');
-    const lack=run&&state==='past'&&st.qs.some(k=>!e.picks[k]);
+    const lack=run&&state==='past'&&st.qs.some(k=>EC_QS.find(x=>x.key===k)&&!e.picks[k]);
     let badge='';
     if(state==='now')badge=run&&st.end!=null?`● 지금 · 남은 <b id="ecBadgeNow">${ecFmt(st.end-el)}</b>`:'● 지금';
     else if(state==='next')badge=run?`다음 · <b id="ecBadgeNext">${ecFmt(st.t-el)}</b> 후 시작`:'다음';
@@ -277,7 +296,7 @@ function ecSetBlind(m){
   if(had&&!confirm('블라인드 방식을 바꾸면 고른 평가가 지워져요. 바꿀까요?'))return;
   _ec.blindMode=m;_ec.blind=m==='app';_ec.revealed=false;_ec.seat1='';
   _ec.order=m==='self'?['S1','S2']:m==='app'?(Math.random()<.5?['A','B']:['B','A']):['A','B'];
-  Object.keys(_ec.picks).forEach(k=>_ec.picks[k]='');
+  Object.keys(_ec.picks).forEach(k=>_ec.picks[k]='');_ec.cupAroma={};_ec.cupIssue={};
   ecRerenderKeep();
 }
 function ecShuffle(){
@@ -358,6 +377,9 @@ function ecSubmit(){
     Object.keys(picks).forEach(k=>{if(mp[picks[k]])picks[k]=mp[picks[k]];});   // 자리 번호 → A/B 원두
     order=[e.seat1,s2];
   }
+  const seatMap=mode==='self'&&!e.editId&&e.seat1?{S1:e.seat1,S2:e.seat1==='A'?'B':'A'}:{};
+  const remap=o=>{const r={};Object.entries(o||{}).forEach(([k,v])=>{if(v&&v.length)r[seatMap[k]||k]=v.slice();});return r;};
+  const cupA=remap(e.cupAroma),cupI=remap(e.cupIssue);
   if(mode==='app'&&!e.revealed){
     const who=k=>`${k} · ${e[k].bean} ${ecVariant(e[k])}`.trim();
     alert(`정답 공개!\n\n1번 컵 = ${who(e.order[0])}\n2번 컵 = ${who(e.order[1])}`);
@@ -376,6 +398,7 @@ function ecSubmit(){
     settings:{...(e.settings||{})},              // 원두 g · 물 g · 온도 · 분쇄
     steps:e.steps.slice(),
     picks,
+    ...(Object.keys(cupA).length?{aroma_types:cupA}:{}),...(Object.keys(cupI).length?{issues:cupI}:{}),...(e.conf?{confidence:e.conf}:{}),
     memo:(e.memo||'').trim(),
     tournament_id:e.tournament_id||null,
     round:e.round||1,
@@ -491,6 +514,7 @@ function ecEdit(id){
   const bm=r.blind_mode||(r.blind?'app':'none');
   _ec={editId:r.id,date:r.date,A:strip(r.A),B:strip(r.B),blindMode:bm,blind:bm==='app',order:r.blind_order||['A','B'],revealed:true,seat1:r.seat1||'',
        settings:{...(r.settings||{})},t0:null,stageNow:0,
+       cupAroma:{...(r.aroma_types||{})},cupIssue:{...(r.issues||{})},conf:r.confidence||'',
        steps:EC_STAGES.map((x,i)=>!!(r.steps||[])[i]),picks:{aroma:'',acid:'',sweet:'',after:'',green:'',final:'',...r.picks},memo:r.memo||'',tournament_id:r.tournament_id,round:r.round||1,keep:r.keep||''};
   ecGo('form');
 }
@@ -541,7 +565,8 @@ const EC_CSV_COLS=[
   ['블라인드방식',r=>({self:'혼자 섞기',app:'앱이 섞기',none:'없음'})[r.blind_mode||(r.blind?'app':'none')]],
   ['원두g',r=>(r.settings||{}).coffee_g],['물g',r=>(r.settings||{}).water_g],['물온도',r=>(r.settings||{}).temp],['분쇄',r=>(r.settings||{}).grind],
   ['향',r=>ecPickWord(r.picks.aroma)],['산미',r=>ecPickWord(r.picks.acid)],['단맛',r=>ecPickWord(r.picks.sweet)],['뒷맛',r=>ecPickWord(r.picks.after)],['풋내떫은맛',r=>ecPickWord(r.picks.green)],
-  ['최종',r=>r.picks.final==='same'?'비김':r.picks.final],['비김후남김',r=>r.keep],
+  ['A_향종류',r=>((r.aroma_types||{}).A||[]).join('·')],['B_향종류',r=>((r.aroma_types||{}).B||[]).join('·')],['A_문제',r=>((r.issues||{}).A||[]).join('·')],['B_문제',r=>((r.issues||{}).B||[]).join('·')],
+  ['최종',r=>r.picks.final==='same'?'비김':r.picks.final],['확신도',r=>r.confidence],['비김후남김',r=>r.keep],
   ['진행체크',r=>(r.steps||[]).map((v,i)=>v?i+1:'').filter(Boolean).join(' ')],
   ['메모',r=>r.memo],['요약',r=>r.summary||ecSummary(r)],['ID',r=>r.id],
 ];
