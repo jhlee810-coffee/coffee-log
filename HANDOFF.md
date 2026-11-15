@@ -263,3 +263,11 @@ const info = [
 - **모달 여닫기**: `openMo('id')` / `closeMo('id')`
 - **저장**: `saveDB()` (localStorage에 즉시 저장)
 - **ID 생성**: `genId()` (타임스탬프 + 랜덤)
+
+
+---
+
+## 2026-11-15 업데이트: 디게싱·추천 개편
+- 디게싱 기간·단계·점수·학습은 모두 `rest.js`(datafix.js의 옛 REST_RULES 삭제). 3시점(start·optMin~optMax·end), 숙성 점수 곡선 0~100, 내 평가(한 잔·커핑·쉬운 커핑)로 최적기 학습, 홈 "🧊 소분 냉동 안내". 저장 데이터는 안 건드리고 매번 다시 계산. 자세한 공식·숫자: `COFFEE_LOG_CHANGELOG_20261115.md`.
+- 구매 원두 rest_min = 시음 시작일, rest_max = 끝(예전 "최적기 구간"이 아님). 내 로스팅 생두의 rest_min/max는 예전대로 최적기 구간.
+- 테스트: Node에서 rest.js를 읽어 db 스냅샷(GAS GET)으로 검증 가능(전역 db·BINBON_MODES·roastDTRValue만 필요).

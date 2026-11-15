@@ -70,7 +70,7 @@ function rbItems(){
 }
 function rbItemStage(it,t){
   const age=it.frozen?frozenAgeDays(it.date,it.frozen,t):rbDays(it.date);
-  const w=restWindow(it.kind==='own'?(it.bean&&it.bean.id?it.bean:{name:it.rec.bean_name}):it.rec);
+  const w=it.kind==='own'?restForRoast(it.rec):restForRb(it.rec);
   return {age,w,st:restStage(age,w)};
 }
 
@@ -184,7 +184,7 @@ function rbRenderForm(){
       <input class="inp" placeholder="목록에 없으면 새로 입력 (다음부터 목록에 나옴)" value="${rbEsc(f.roastery)}" oninput="_rbForm.roastery=this.value"></div>
     <div class="fg"><label class="fl">로스팅 날짜 * <span class="fl-hint">봉투에 적힌 날짜</span></label>
       <input class="inp" type="date" value="${rbEsc(f.roast_date)}" oninput="_rbForm.roast_date=this.value" onchange="_rbForm.roast_date=this.value"></div>
-    <div class="fg"><label class="fl">로스터리 권장 숙성 <span class="fl-hint">로스팅 후 며칠부터 며칠까지 · 비우면 기본 규칙(${(()=>{const w=restWindow({name:f.name,origin:f.origin,process:f.process});return w.label+' '+w.min+'~'+w.max+'일';})()})</span></label>
+    <div class="fg"><label class="fl">로스터리 권장 숙성 <span class="fl-hint">왼쪽 = 시음 시작일, 오른쪽 = 끝(상온 보관 한계) · 비우면 시작 7일·끝 28일, 최적기는 시작+5~7일(내 기록으로 조정) (${(()=>{const w=restWindow({name:f.name,origin:f.origin,process:f.process});return w.label+' '+w.min+'~'+w.max+'일';})()})</span></label>
       <div class="rest-row"><input class="inp" type="number" inputmode="numeric" placeholder="${restWindow({name:f.name,origin:f.origin,process:f.process}).min}" value="${rbEsc(f.rest_min||'')}" oninput="_rbForm.rest_min=this.value"><span>~</span>
         <input class="inp" type="number" inputmode="numeric" placeholder="${restWindow({name:f.name,origin:f.origin,process:f.process}).max}" value="${rbEsc(f.rest_max||'')}" oninput="_rbForm.rest_max=this.value"><span>일</span></div></div>
     <div class="fg"><label class="fl">용량</label><div class="dc-chips">${RB_WEIGHTS.map(w=>chip(+f.weight_g===w,w+'g',`_rbForm.weight_g=${w};rbRenderForm()`)).join('')}</div></div>

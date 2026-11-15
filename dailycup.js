@@ -204,21 +204,21 @@ function dcRecentHtml(sel,excludeId){
 /* 배치의 숙성 일수: 냉동한 배치는 냉동한 날에서 멈춘 것으로 */
 function dcAgeOf(s,on){return s&&s.frozen&&typeof frozenAgeDays==='function'?frozenAgeDays(s.roast_date,s.frozen,on):dcDays(on,s&&s.roast_date);}
 
-/* ── 추천 원두 8개 (2026-11-12) ──
-   점수 = 숙성 상태(최적기 100 → 곧 최적기 → 지남) + 최근에 안 마셨을수록(안 마셔 본 건 45, 오늘 마셨으면 0) + 최근 3잔 평점((평균−3)×18)
-   냉동 중인 배치는 숙성이 멈춰 있으니 최소 85점을 줘서 잊지 않게 위로 올림. 같은 생두는 가장 점수 높은 배치 하나만(냉동은 따로) */
+/* ── 추천 원두 8개 (2026-11-15 개편) ──
+   점수 = 숙성 점수(rest.js 곡선 0~100) + 안 마셔 본 원두 +25(단, '시작' 지난 것만) + 마신 지 오래됨(하루 +3, 최대 +15) + 최근 3잔 평점((평균−3)×6, 대략 ±12)
+   냉동 중인 배치는 숙성 점수를 최소 85로 올려 잊지 않게 함. 같은 생두는 가장 점수 높은 배치 하나만(냉동은 따로) */
 const DC_REC_N=8;
 function dcRecommend(n){
   const t=(_dc&&_dc.date)||today(),recs=dcSortedRecords(),best={};
   dcBatchChoices().forEach(c=>{
     const s=c.snap;if(c.held===false||!(s.roast_id||s.rb_id)||!s.roast_date)return;
     const fz=s.frozen||'',age=dcAgeOf(s,t);if(age==null||age<0)return;
-    const w=dcRestOf(s)||{min:7,max:21},st=restStage(age,w);
-    let base=st.o===0?100:st.o===1?Math.max(5,100-18*(st.wait||0)):st.o===2?55:15;
-    if(fz)base=Math.max(base,85);
+    const w=dcRestOf(s),st=restStage(age,w);
+    let base=restScore(age,w);if(fz)base=Math.max(base,85);
     const cups=dcCupsOfBean(s,recs),last=cups[0]?Math.max(0,dcDays(t,cups[0].date)):null;
     const r3=cups.slice(0,3).map(r=>+r.stars||0).filter(Boolean),avg=r3.length?r3.reduce((a,b)=>a+b,0)/r3.length:null;
-    const o={snap:s,fz:!!fz,age,st,avg,last,score:base+(last==null?45:Math.min(last,7)*6)+(avg==null?0:(avg-3)*18)};
+    const bonusNew=(last==null&&age>=w.start)?25:0,bonusOld=last==null?0:Math.min(15,3*last),rate=avg==null?0:(avg-3)*6;
+    const o={snap:s,fz:!!fz,age,st,w,avg,last,score:base+bonusNew+bonusOld+rate};
     const key=(s.rb_id?'rb:'+s.rb_id:(s.bean_id||s.bean))+'|'+(fz?'f':''),cur=best[key];
     if(!cur||o.score>cur.score||(o.score===cur.score&&(s.roast_date||'')<(cur.snap.roast_date||'')))best[key]=o;
   });
@@ -307,7 +307,7 @@ function dcEntryHtml(){
     const s=x.snap,bn=s.bean_id?(db.beans||[]).find(b=>b.id===s.bean_id):null;
     const nm=s.rb_id?s.bean:(typeof dashFullName==='function'?dashFullName(s.bean,bn):dcShort(s.bean));   // 홈 "지금 마실 원두"와 같은 이름
     const on=e.sel&&dcBatchKey(e.sel)===dcBatchKey(s);
-    const stl=x.fz?'🧊 냉동':x.st.o===0?'최적기':x.st.o===1?`${x.st.wait}일 후`:'지남';
+    const stl=x.fz?'🧊 냉동':(x.st.short||x.st.l);
     return `<button class="dc-qbatch${on?' on':''}${x.fz?' frz':''}" onclick="dcSelect({...window._dcQuick[${i}].snap})">
       <b class="dc-qname">${dcEsc(nm)}</b><span>${dcEsc([dcMD(s.roast_date),dcProfile(s)].filter(Boolean).join(' · '))}</span><i class="dc-q-ev">${dcEsc(stl)}${x.avg!=null?' ★'+x.avg.toFixed(1):''}</i></button>`;
   }).join('');
@@ -423,18 +423,13 @@ function dcMoreHtml(){
     <input class="inp" placeholder="예: 식으니 단맛이 올라옴" value="${dcEsc(e.memo)}" oninput="_dc.memo=this.value">
   </div>`;
 }
-function dcRestOf(sel){
-  if(!sel||typeof restWindow!=='function')return null;
-  if(sel.rb_id){const b=(db.roasted_beans||[]).find(x=>x.id===sel.rb_id);return b?restWindow(b):null;}
-  if(sel.roast_id){const r=db.roasts.find(x=>x.id===sel.roast_id);const b=r?beanOfRoast(r):null;return restWindow(b||{name:sel.bean});}
-  return restWindow({name:sel.bean});
-}
+function dcRestOf(sel){return typeof restForSel==='function'?restForSel(sel):null;}   // 배치별 3시점 (rest.js)
 function dcDegHtml(sel,deg){
   if(deg==null)return '로스팅 날짜 없음';
   const fz=sel&&sel.frozen?`🧊 냉동 중 (숙성 멈춤) · 냉동한 날 기준 `:'';
   const w=dcRestOf(sel);if(!w)return `${fz}디개싱 <b>${deg}일차</b>`;
   const st=restStage(deg,w);
-  return `${fz}디개싱 <b>${deg}일차</b> · <span style="color:${st.c}">${st.l}</span> <small style="color:var(--muted)">(최적 ${w.min}~${w.max}일)</small>`;
+  return `${fz}디개싱 <b>${deg}일차</b> · <span style="color:${st.c}">${st.l}</span> <small style="color:var(--muted)">(시작·최적·끝 ${restText(w)} · ${w.src})</small>`;
 }
 function dcDateChanged(v){ // 달력을 닫지 않도록 화면 전체를 다시 그리지 않고 디개싱 글자만 바꿈
   _dc.date=v||today();
@@ -539,12 +534,12 @@ function dcRenderPick(){
   groups.forEach(g=>{g.items.sort((a,b)=>((a.c.held===false)-(b.c.held===false))||(a.c.snap.roast_date||'').localeCompare(b.c.snap.roast_date||'')||(+a.c.snap.batch_no||0)-(+b.c.snap.batch_no||0));
     g.w=dcRestOf(g.items[0].c.snap);g.st={o:9,l:''};g.d=null;
     g.cups=dcCupsOfBean(g.items[0].c.snap,recsAll);   // 이 생두로 마신 기록 (최근 순)
-    g.items.forEach(({c})=>{if(c.held===false)return;const d=dcAgeOf(c.snap,t);if(d==null||!g.w)return;const st=restStage(d,g.w);
+    g.items.forEach(({c})=>{if(c.held===false)return;const d=dcAgeOf(c.snap,t);if(d==null||!g.w)return;const st=restStage(d,dcRestOf(c.snap)||g.w);
       if(st.o<g.st.o||(st.o===g.st.o&&(st.wait??0)<(g.st.wait??0))){g.st=st;g.d=d;}});});   // 가장 마시기 좋은 배치 기준
   groups.sort((a,b)=>a.st.o-b.st.o||(a.st.wait??0)-(b.st.wait??0)||(a.d??999)-(b.d??999));
-  const SEC={0:'🟢 지금 최적기',1:'⏳ 숙성 중 — 곧 최적기',2:'⌛ 최적기 지남',3:'오래됨',9:'날짜 없음'};let lastSec=null;
+  const SEC={0:'🟢 지금 최적기',1:'⏳ 숙성 중 — 곧 최적기',2:'⌛ 최적기 지남',3:'지남',9:'날짜 없음'};let lastSec=null;
   document.getElementById('dcPickList').innerHTML=groups.map(g=>{const head=g.st.o!==lastSec?`<div class="dc-psec">${SEC[g.st.o]||''}</div>`:'';lastSec=g.st.o;return head+`<div class="dc-pg">
-    <div class="dc-pg-t">${g.rb?'<span class="dc-rbtag">산 원두</span> ':''}${dcEsc(g.title)}<span>${dcEsc([g.rb?g.sub.replace('산 원두 · ',''):g.sub,g.w?`최적 ${g.w.min}~${g.w.max}일`:''].filter(Boolean).join(' · '))}</span>${g.notes?`<span class="dc-notes">🍑 ${dcEsc(g.notes)}</span>`:''}${(()=>{const r=g.cups&&g.cups[0];if(!r)return '';const bb=dcBrewBrief(r.brew),rs=(r.bean_info||{}).roast_date;
+    <div class="dc-pg-t">${g.rb?'<span class="dc-rbtag">산 원두</span> ':''}${dcEsc(g.title)}<span>${dcEsc([g.rb?g.sub.replace('산 원두 · ',''):g.sub,g.w?`숙성 ${restText(g.w)}`:''].filter(Boolean).join(' · '))}</span>${g.notes?`<span class="dc-notes">🍑 ${dcEsc(g.notes)}</span>`:''}${(()=>{const r=g.cups&&g.cups[0];if(!r)return '';const bb=dcBrewBrief(r.brew),rs=(r.bean_info||{}).roast_date;
       return `<span class="dc-ev">최근 ${dcEsc(dcMD(r.date))}${rs?` (${dcEsc(dcMD(rs))} 로스팅분)`:''} · ${dcEsc(dcBrief(r))}</span>${bb?`<span class="dc-ev dim">☕ ${dcEsc(bb)}</span>`:''}`;})()}</div>
     <div class="dc-pg-items">${g.items.map(({c,i})=>{const s=c.snap,d=dcAgeOf(s,t),n=counts[dcBatchKey(s)]||0,lc=dcCupsFor(s,recsAll)[0];
       return `<button class="dc-pb${c.drunk?' drunk':''}${c.held===false?' off':''}${s.frozen?' frz':''}" onclick="dcPickIdx(${i})"><b>${dcEsc(dcMD(s.roast_date)||'날짜 없음')}${s.roast_id&&dcProfile(s)?' · '+dcEsc(dcProfile(s)):''}</b><span>${[d!=null?(s.frozen?'🧊 ':'')+d+'일차':'',s.batch_no?'#'+s.batch_no:'',n?n+'잔':'',c.held===false?'정리됨':''].filter(Boolean).join(' · ')}</span>${lc?`<span class="dc-pb-ev">최근 ${dcEsc(dcBrief(lc,3))}</span>`:''}</button>`;}).join('')}</div></div>`;}).join('')

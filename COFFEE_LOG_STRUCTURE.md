@@ -65,6 +65,7 @@ coffee-log/
 ├── cupping.js          — 커핑 탭 (위저드, 드래프트/완료 워크플로우)
 ├── plan.js             — 오늘 로스팅 계획(빈본 탭 위 줄·편집·붙여넣기·Claude 계획 불러오기). db.roast_plans
 ├── datafix.js          — 로스팅↔생두 ID 연결, 배치 보관 상태(나눔/다 마심), 한 번만 하는 데이터 정리
+├── rest.js             — (2026-11-15) 배전 수치·디게싱 3시점(시작/최적기/끝)·숙성 점수 곡선·내 평가로 최적기 학습·소분 냉동 안내. 규칙·공식은 COFFEE_LOG_CHANGELOG_20261115.md. restForRoast/restForRb/restForSel/restWindow/restStage/restScore/restAdvice
 ├── plans/              — Claude가 만든 계획 파일 YYYY-MM-DD.json (공개). tools/make_plan.py로 생성
 ├── tools/              — make_data_xlsx.py(원자료 엑셀), make_plan.py(계획 파일) — 배포 안 함
 ├── roasted.js          — 원두 목록 탭 (구매한 로스팅 원두 등록, 오늘의 한 잔과 연결). 저장 db.roasted_beans
