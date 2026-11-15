@@ -1095,3 +1095,5 @@ html,body,button,.tb,.fc,.chip,.btn,.btn2,[onclick]{touch-action:manipulation;}
 .dash-adv i{display:block;font-style:normal;font-weight:700;margin-top:2px}
 .dash-adv.freeze i{color:#7ed6e8}.dash-adv.try i{color:var(--amber)}.dash-adv.ending i{color:var(--coral)}
 .dash-bean-sub small{color:var(--muted);font-size:12px}
+
+.dash-adv.late i{color:#ff7b72}

@@ -205,7 +205,7 @@ function dcRecentHtml(sel,excludeId){
 function dcAgeOf(s,on){return s&&s.frozen&&typeof frozenAgeDays==='function'?frozenAgeDays(s.roast_date,s.frozen,on):dcDays(on,s&&s.roast_date);}
 
 /* ── 추천 원두 8개 (2026-11-15 개편) ──
-   점수 = 숙성 점수(rest.js 곡선 0~100) + 안 마셔 본 원두 +25(단, '시작' 지난 것만) + 마신 지 오래됨(하루 +3, 최대 +15) + 최근 3잔 평점((평균−3)×6, 대략 ±12)
+   점수 = 숙성 점수(rest.js 곡선 0~100) + 안 마셔 본 원두 +25(단, '시작' 지난 것만) + 마신 지 오래됨(하루 +3, 최대 +15) + 최근 3잔 평점((평균−3)×6, 대략 ±12; 낮은 평가는 그 잔을 최적기 시작일 이후에 마셨을 때만 감점)
    냉동 중인 배치는 숙성 점수를 최소 85로 올려 잊지 않게 함. 같은 생두는 가장 점수 높은 배치 하나만(냉동은 따로) */
 const DC_REC_N=8;
 function dcRecommend(n){
@@ -216,7 +216,7 @@ function dcRecommend(n){
     const w=dcRestOf(s),st=restStage(age,w);
     let base=restScore(age,w);if(fz)base=Math.max(base,85);
     const cups=dcCupsOfBean(s,recs),last=cups[0]?Math.max(0,dcDays(t,cups[0].date)):null;
-    const r3=cups.slice(0,3).map(r=>+r.stars||0).filter(Boolean),avg=r3.length?r3.reduce((a,b)=>a+b,0)/r3.length:null;
+    const r3=cups.slice(0,3).map(restCupRating).filter(v=>v!=null),avg=r3.length?r3.reduce((a,b)=>a+b,0)/r3.length:null;   // 낮은 평가는 최적기 시작 이후에 마신 잔만 감점
     const bonusNew=(last==null&&age>=w.start)?25:0,bonusOld=last==null?0:Math.min(15,3*last),rate=avg==null?0:(avg-3)*6;
     const o={snap:s,fz:!!fz,age,st,w,avg,last,score:base+bonusNew+bonusOld+rate};
     const key=(s.rb_id?'rb:'+s.rb_id:(s.bean_id||s.bean))+'|'+(fz?'f':''),cur=best[key];

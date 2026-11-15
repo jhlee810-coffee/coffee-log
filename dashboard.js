@@ -145,7 +145,7 @@ function renderDash(){
   const frzHtml=frzList.length?`<div class="dash-sub">🧊 냉동 중 ${frzList.length}종 <span style="font-weight:400">· 누르면 바로 기록</span></div><div class="dash-chips">${frzList.map(g=>`<span style="cursor:pointer" onclick="${g.click}">${dashEsc(g.label)} · ${g.from===g.to?dashMD(g.from):dashMD(g.from)+'~'+dashMD(g.to)}분${g.n>1?' · '+g.n+'배치':''}${g.bags?' · '+(g.gs.size===1?[...g.gs][0]+'g':'')+'×'+g.bags:''}</span>`).join('')}</div>`:'';
   // 🧊 소분 냉동 안내 (rest.js restAdvice): 최적기 + 맛있게 마신 배치 / 아직 안 마셔 본 최적기 / 끝나가는 배치
   const adv=typeof restAdvice==='function'?restAdvice(t):[];
-  const advRow=a=>`<div class="dash-adv ${a.kind}" onclick="dashGoTab('roasted')"><b>${dashEsc(a.label)}</b> <span>${dashMD(a.date)}분${a.n>1?' '+a.n+'배치':''} · ${a.age}일차</span><i>${a.kind==='freeze'?'🧊 지금 소분 냉동하기 좋은 때':a.kind==='try'?'최적기예요 · 마셔 보고 맛있으면 냉동':`끝나가요 · 빨리 마시거나 냉동 (끝 ${a.w.end}일)`}</i></div>`;
+  const advRow=a=>`<div class="dash-adv ${a.kind}" onclick="dashGoTab('roasted')"><b>${dashEsc(a.label)}</b> <span>${dashMD(a.date)}분${a.n>1?' '+a.n+'배치':''} · ${a.age}일차</span><i>${a.kind==='freeze'?'🧊 지금 소분 냉동하기 좋은 때':a.kind==='try'?'최적기예요 · 마셔 보고 맛있으면 냉동':a.kind==='late'?`끝 지났어요 · 빨리 마시거나 냉동 (끝 ${a.w.end}일)`:`끝나가요 · 빨리 마시거나 냉동 (끝 ${a.w.end}일)`}</i></div>`;
   const advCard=adv.length?`<div class="dash-card"><div class="dash-t">🧊 소분 냉동 안내 <span>최적기·끝 시점 기준 · 누르면 원두 탭</span></div>${adv.map(advRow).join('')}</div>`:'';
   const LIM=6,shown=_dashMore?rows:rows.slice(0,LIM);
   const beanCard=`<div class="dash-card"><div class="dash-t">🫘 지금 마실 원두 <span>숙성 점수 높은 순 · 누르면 바로 기록</span></div>

@@ -181,7 +181,7 @@ function renderRoasts(){
       </div>`;
     }
 
-    const lc=levelColor(r.roast_level);
+    const lvn=typeof roastLevelName==='function'?roastLevelName(r):r.roast_level,lc=levelColor(lvn);
     const metaParts=[bean.origin,bean.shop,beanPrice?String(beanPrice):'',beanMonth].filter(Boolean).join('  ·  ');
     const statsLine=[r.mode?`모드${r.mode}`:'',dtr?`DTR ${dtr}%`:'',loss?`손실율 ${loss}%`:'',r.input_g?`투입 ${r.input_g}g`:''].filter(Boolean).join('   ');
 
@@ -190,7 +190,7 @@ function renderRoasts(){
       <div class="rhead">
         <span class="rserial">#${String(serial).padStart(2,'0')}</span>
         <div class="rdate">${r.date}</div>
-        ${r.roast_level?`<span class="rlv" style="color:${lc};border-color:${lc}66;background:${lc}1f">${r.roast_level}</span>`:''}
+        ${lvn?`<span class="rlv" style="color:${lc};border-color:${lc}66;background:${lc}1f">${lvn}</span>`:''}
         ${st?`<span class="rst-bdg">${roastStateLabel(st)}</span>`:''}
         <div style="margin-left:auto"><button class="btn2" onclick="event.stopPropagation();editRoast('${r.id}')">수정</button></div>
       </div>
@@ -223,7 +223,7 @@ function openRoastDetail(id){
   const sorted=[...db.roasts].sort((a,b)=>a.date>b.date?1:-1);
   const serial=sorted.findIndex(x=>x.id===id)+1;
   const bean=beanOfRoast(r)||{};
-  const lc=levelColor(r.roast_level);
+  const lvn=typeof roastLevelName==='function'?roastLevelName(r):r.roast_level,lc=levelColor(lvn);
   const ae2=BINBON_MODES[+r.mode];
   let popElapsedStr='',ejElapsedStr='',devSec=null;
   if(ae2&&r.pop_time) popElapsedStr=fmtMS(ae2-toSec(r.pop_time));
@@ -272,7 +272,7 @@ function openRoastDetail(id){
     </div>`:''}
     <div class="ds">
       <div class="dstitle">로스팅 수치</div>
-      ${r.roast_level?dr('레벨',`<span style="color:${lc};font-weight:700">${r.roast_level}</span>`):''}
+      ${lvn?dr('레벨',`<span style="color:${lc};font-weight:700">${lvn}</span>`):''}
       ${dr('빈본 모드',r.mode?`모드${r.mode}`:'')}
       ${dr('DTR',r.dtr_pct?r.dtr_pct+'%':'')}
       ${dr('손실율',r.loss_pct?r.loss_pct+'%'+(r.weight_unreliable?' <span style="color:var(--coral);font-size:12px">⚠ 정전기로 무게 부정확 가능</span>':''):'')}

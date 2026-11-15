@@ -184,9 +184,9 @@ function rbRenderForm(){
       <input class="inp" placeholder="목록에 없으면 새로 입력 (다음부터 목록에 나옴)" value="${rbEsc(f.roastery)}" oninput="_rbForm.roastery=this.value"></div>
     <div class="fg"><label class="fl">로스팅 날짜 * <span class="fl-hint">봉투에 적힌 날짜</span></label>
       <input class="inp" type="date" value="${rbEsc(f.roast_date)}" oninput="_rbForm.roast_date=this.value" onchange="_rbForm.roast_date=this.value"></div>
-    <div class="fg"><label class="fl">로스터리 권장 숙성 <span class="fl-hint">왼쪽 = 시음 시작일, 오른쪽 = 끝(상온 보관 한계) · 비우면 시작 7일·끝 28일, 최적기는 시작+5~7일(내 기록으로 조정) (${(()=>{const w=restWindow({name:f.name,origin:f.origin,process:f.process});return w.label+' '+w.min+'~'+w.max+'일';})()})</span></label>
-      <div class="rest-row"><input class="inp" type="number" inputmode="numeric" placeholder="${restWindow({name:f.name,origin:f.origin,process:f.process}).min}" value="${rbEsc(f.rest_min||'')}" oninput="_rbForm.rest_min=this.value"><span>~</span>
-        <input class="inp" type="number" inputmode="numeric" placeholder="${restWindow({name:f.name,origin:f.origin,process:f.process}).max}" value="${rbEsc(f.rest_max||'')}" oninput="_rbForm.rest_max=this.value"><span>일</span></div></div>
+    <div class="fg"><label class="fl">로스터리 권장 숙성 <span class="fl-hint">왼쪽 = 시음 시작일(비우면 7), 오른쪽 = 끝(비우면 28) · 최적기는 시작+5~7일 (내 기록으로 조정)</span></label>
+      <div class="rest-row"><input class="inp" type="number" inputmode="numeric" placeholder="7" value="${rbEsc(f.rest_min||'')}" oninput="_rbForm.rest_min=this.value"><span>~</span>
+        <input class="inp" type="number" inputmode="numeric" placeholder="28" value="${rbEsc(f.rest_max||'')}" oninput="_rbForm.rest_max=this.value"><span>일</span></div></div>
     <div class="fg"><label class="fl">용량</label><div class="dc-chips">${RB_WEIGHTS.map(w=>chip(+f.weight_g===w,w+'g',`_rbForm.weight_g=${w};rbRenderForm()`)).join('')}</div></div>
     <button class="dc-more-btn" style="margin-top:4px" onclick="_rbForm._more=!_rbForm._more;rbRenderForm()">${f._more?'▴ 접기':'▾ 더 입력하기 (원산지 · 가공 · 로스팅 정도 · 가격 · 컵노트)'}</button>
     ${f._more?`<div style="margin-top:10px">

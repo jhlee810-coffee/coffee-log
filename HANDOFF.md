@@ -271,3 +271,4 @@ const info = [
 - 디게싱 기간·단계·점수·학습은 모두 `rest.js`(datafix.js의 옛 REST_RULES 삭제). 3시점(start·optMin~optMax·end), 숙성 점수 곡선 0~100, 내 평가(한 잔·커핑·쉬운 커핑)로 최적기 학습, 홈 "🧊 소분 냉동 안내". 저장 데이터는 안 건드리고 매번 다시 계산. 자세한 공식·숫자: `COFFEE_LOG_CHANGELOG_20261115.md`.
 - 구매 원두 rest_min = 시음 시작일, rest_max = 끝(예전 "최적기 구간"이 아님). 내 로스팅 생두의 rest_min/max는 예전대로 최적기 구간.
 - 테스트: Node에서 rest.js를 읽어 db 스냅샷(GAS GET)으로 검증 가능(전역 db·BINBON_MODES·roastDTRValue만 필요).
+- (11/15 2차) 추천 평점은 낮은 별을 최적기 시작 이후에 마신 것만 감점, 냉동 권장은 한 잔 별점만, 커핑은 세션 안 상대 비교, 화면 배전 이름은 새 수치 기준, 끝 지난 배치는 "끝 지났어요" 문구. 자세히: COFFEE_LOG_CHANGELOG_20261115.md 2차 수정.

@@ -31,7 +31,7 @@ function roastLevelNum(r,kind){
   return v==null?null:Math.max(0,Math.min(10,Math.round(v*10)/10));
 }
 function rlNameOf(v){if(v==null)return '';for(const [m,n] of RL_CUTS)if(v<m)return n;return '다크';}
-function roastLevelName(r){return (r&&r.roast_level)||rlNameOf(roastLevelNum(r,'cross'));}   // 화면에는 이름만 (저장된 이름이 있으면 그대로)
+function roastLevelName(r){const v=roastLevelNum(r,'cross');return v!=null?rlNameOf(v):((r&&r.roast_level)||'');}   // 화면 이름은 새 수치로 계산 (저장된 roast_level은 그대로 두되 수치를 못 구할 때만 씀)
 
 /* ═══ 2. 기본값 ═══ (일)
    내 로스팅: 시작 7 · 최적기 10~12(케냐·에티오피아 워시드) 또는 10~14(그 외) · 끝 28
@@ -92,7 +92,7 @@ function restStage(days,w){
 }
 
 /* ═══ 4. 평가 기록 모으기 (같은 원두 안 비교용) ═══
-   한 잔: 별점 + 단맛 보정(±0.5) · 커핑: 총점 → 1~5 환산 · 쉬운 커핑: 이긴 쪽 4.0, 진 쪽 3.0(비김 3.5), 비중 0.6
+   한 잔: 별점 + 단맛 보정(±0.5) · 커핑: 같은 세션 안 컵끼리만 상대 비교(세션 평균 3.5점, 총점 4점 차 = 1점, 컵 2개 미만 세션은 제외) · 쉬운 커핑: 이긴 쪽 4.0, 진 쪽 3.0(비김 3.5), 비중 0.6
    디개싱 일수는 저장된 값 대신 로스팅 날짜와 마신 날짜로 다시 계산 (냉동한 배치는 냉동한 날에서 멈춤) */
 let _restCache=null;
 function restDaysBetween(a,b){
@@ -122,10 +122,11 @@ function restData(){
     const q=+c.stars+(+c.sweet>0?0.25*(+c.sweet-3):0);
     push(s.roast_id,s.rb_id,restDaysBetween(rd,end),q,1);
   });
-  (db.cuppings||[]).forEach(cp=>(cp.cups||[]).forEach(cu=>{
-    const r=roastById[cu.roast_id];if(!r||!(+cu.total>0))return;
-    push(r.id,'',restDaysBetween(r.date,cp.date),Math.max(1,Math.min(5,1+(+cu.total-60)/7.5)),1);
-  }));
+  (db.cuppings||[]).forEach(cp=>{   // 커핑 환산: 같은 세션 안의 컵끼리만 상대 비교 (세션 평균 = 3.5점, 총점 4점 차 = 1점), 컵이 2개 미만인 세션은 안 씀
+    const cs=(cp.cups||[]).filter(cu=>+cu.total>0&&roastById[cu.roast_id]);if(cs.length<2)return;
+    const mean=cs.reduce((a,cu)=>a+(+cu.total),0)/cs.length;
+    cs.forEach(cu=>{const r=roastById[cu.roast_id];push(r.id,'',restDaysBetween(r.date,cp.date),Math.max(1.5,Math.min(5,3.5+(+cu.total-mean)*0.25)),1);});
+  });
   (db.easycups||[]).forEach(e=>{
     const f=(e.picks||{}).final;if(!f)return;
     ['A','B'].forEach(k=>{const s=e[k]||{};if(!s.roast_id)return;const r=roastById[s.roast_id];
@@ -135,6 +136,26 @@ function restData(){
   _restCache=o;
   o.delta=restRbDelta(o);
   return o;
+}
+
+/* 커피 한 잔 기록 하나의 디게싱 일수 / 생두 키 (별점 판단용 — 냉동 안내·추천 평점은 한 잔 별점만 씀) */
+function restCupAge(c){
+  const D=restData(),s=c.bean_info||{};
+  const rd=s.rb_id?(D.rbById[s.rb_id]||{}).roast_date:(s.roast_id&&D.roastById[s.roast_id]?D.roastById[s.roast_id].date:s.roast_date);
+  return restDaysBetween(rd,(s.frozen&&s.frozen<c.date)?s.frozen:c.date);
+}
+function restCupBeanKey(c){
+  const D=restData(),s=c.bean_info||{};
+  if(s.rb_id)return 'rb:'+s.rb_id;
+  const r=s.roast_id?D.roastById[s.roast_id]:null;
+  return r?(r.bean_id||('n:'+r.bean_name)):(s.bean_id||('n:'+s.bean));
+}
+/* 추천 평점 보정: 높은 평가(>3)는 그대로 가산, 낮은 평가(<3)는 그 잔을 그 배치의 최적기 시작일 이후에 마셨을 때만 감점 (최적기 전이면 덜 숙성일 수 있어 3점으로 침) */
+function restCupRating(c){
+  const st=+c.stars;if(!(st>0))return null;
+  if(st>=3)return st;
+  const w=restForSel(c.bean_info),age=restCupAge(c);
+  return (w&&age!=null&&age>=w.optMin)?st:3;
 }
 
 /* ═══ 5. 학습: 평가가 가장 좋았던 디게싱 일수 찾기 ═══
@@ -249,20 +270,23 @@ function restText(w){return w?`${w.start} · ${w.optMin}~${w.optMax} · ${w.end}
 
 /* ═══ 7. 홈 안내: 소분 냉동 / 끝나감 ═══ */
 function restCupsOfRoast(id){return (db.dailycups||[]).filter(c=>(c.bean_info||{}).roast_id===id);}
+/* 냉동 권장의 "★4 이상"은 커피 한 잔(dailycups) 별점만 (쉬운 커핑·커핑·단맛 보정 값은 안 씀). 같은 생두 이전 로스팅도 한 잔 별점 4 이상만 */
 function restAdvice(t){
   const out=[];if(typeof db==='undefined'||!db)return out;
   const D=restData(),held=typeof roastHeld==='function'?roastHeld:()=>true;
+  const cupsAll=(db.dailycups||[]).map(c=>({c,k:restCupBeanKey(c),age:restCupAge(c)}));
   const grp={};
   const add=(kind,key,item)=>{const k=kind+'|'+key;(grp[k]=grp[k]||{kind,...item,n:0}).n++;};
+  const endKind=(age,w)=>{if(w.end-age>5)return '';if(age<=w.end)return 'ending';return age<=w.end+14?'late':'';};
   (db.roasts||[]).forEach(r=>{
     if(!held(r)||r.frozen||r.stock_state==='gift'||!r.date)return;
     const age=restDaysBetween(r.date,t);if(age==null||age<0)return;
     const w=restForRoast(r),bean=D.beanById[r.bean_id]||{},name=typeof dashFullName==='function'?dashFullName(r.bean_name,bean.id?bean:null):r.bean_name;
     const beanKey=r.bean_id||('n:'+r.bean_name),mine=restCupsOfRoast(r.id);
     const item={label:name,date:r.date,age,w,tab:'roasted'};
-    if(w.end-age<=5&&age<=w.end+14){add('ending',r.date+'|'+beanKey,item);return;}
+    const ek=endKind(age,w);if(ek){add(ek,r.date+'|'+beanKey,item);return;}
     if(age>=w.optMin&&age<=w.optMax){
-      const good=mine.some(c=>+c.stars>=4)||D.ev.some(e=>e.bid===beanKey&&e.rid&&e.rid!==r.id&&e.q>=4&&e.age>=w.optMin-2&&e.age<=w.optMax+2);
+      const good=mine.some(c=>+c.stars>=4)||cupsAll.some(x=>x.k===beanKey&&(x.c.bean_info||{}).roast_id!==r.id&&!(x.c.bean_info||{}).rb_id&&+x.c.stars>=4&&x.age!=null&&x.age>=w.optMin-2&&x.age<=w.optMax+2);
       const tasted=mine.length>0||D.ev.some(e=>e.bid===beanKey&&e.rid);
       if(good)add('freeze',r.date+'|'+beanKey,item);else if(!tasted)add('try',r.date+'|'+beanKey,item);
     }
@@ -272,10 +296,11 @@ function restAdvice(t){
     const age=restDaysBetween(b.roast_date,t);if(age==null||age<0)return;
     const w=restForRb(b),mine=(db.dailycups||[]).filter(c=>(c.bean_info||{}).rb_id===b.id);
     const item={label:b.name,date:b.roast_date,age,w,tab:'roasted'};
-    if(w.end-age<=5&&age<=w.end+14){add('ending','rb'+b.id,item);return;}
+    const ek=endKind(age,w);if(ek){add(ek,'rb'+b.id,item);return;}
     if(age>=w.optMin&&age<=w.optMax){
       if(mine.some(c=>+c.stars>=4))add('freeze','rb'+b.id,item);else if(!mine.length)add('try','rb'+b.id,item);
     }
   });
-  return Object.values(grp).sort((a,b)=>({freeze:0,ending:1,try:2})[a.kind]-({freeze:0,ending:1,try:2})[b.kind]||a.date.localeCompare(b.date));
+  const ord={freeze:0,ending:1,late:2,try:3};
+  return Object.values(grp).sort((a,b)=>ord[a.kind]-ord[b.kind]||a.date.localeCompare(b.date));
 }
