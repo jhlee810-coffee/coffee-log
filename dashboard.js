@@ -123,7 +123,7 @@ function renderDash(){
   const frzMark=list=>list.some(a=>a.kind==='freeze')?'🧊 ':'';
   const lossOfId=id=>dcLossOfRoast(roasts.find(x=>x.id===id));
   const lossTail=id=>{const h=dcLossHtml(lossOfId(id));return h?' · '+h:'';};
-  const tagHtml=o=>{const p=[];if(o.isNew)p.push('<span class="dash-tag new">새 원두</span>');if(o.avg!=null&&o.avg>=4)p.push(`<span class="dash-tag fav">맛있게 마심 ★${o.avg.toFixed(1)}</span>`);return p.length?`<div class="dash-tags">${p.join('')}</div>`:'';};
+  const tagHtml=o=>{const p=[];if(o.avg!=null&&o.avg>=4)p.push(`<span class="dash-tag fav">맛있게 마심 ★${o.avg.toFixed(1)}</span>`);return p.length?`<div class="dash-tags">${p.join('')}</div>`:'';};
   const badgeHtml=(o,mark)=>o.fz?`<span class="dash-badge" style="color:#7fb8ff;border-color:#7fb8ff">🧊 냉동 · ${o.age}일차</span>`:`<span class="dash-badge" style="color:${o.st.c};border-color:${o.st.c}">${mark}${o.age}일차 · ${o.st.l}</span>`;
   const gBean=g=>g.beanId?db.beans.find(b=>b.id===g.beanId):null;
   const nmKinds={};[...gmap.values()].filter(g=>!g.rb).forEach(g=>{const n=dashFullName(g.bean,gBean(g));(nmKinds[n]=nmKinds[n]||new Set()).add(g.bean);});
