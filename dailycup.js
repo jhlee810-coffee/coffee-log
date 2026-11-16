@@ -253,7 +253,7 @@ function dcClickLabel(gr,c){const G=dcGrinder(gr);if(c===''||c==null)return '';r
 function dcGrinder(name){return DC_GRINDERS.find(g=>g.name===name)||null;}
 function dcAllRecipes(){
   const conv=r=>({name:r.name,coffee_g:r.coffee||r.coffee_g||'',water_g:r.water||r.water_g||'',temp:r.temp||''});
-  return [...(db.recipes||[]).map(conv),...OFFICIAL_RECIPES.map(conv)];
+  return [...(db.recipes||[]).map(conv),...OFFICIAL_RECIPES.filter(r=>!DC_PRESETS.some(p=>p.name===r.name)).map(conv)];   // 같은 이름은 ⚡ 프리셋 칩만 (중복 방지)
 }
 function dcDrippers(){ // 기본 목록 + 직접 추가했던 드리퍼
   const extra=dcList().map(r=>r.brew&&r.brew.dripper).filter(d=>d&&!DC_DRIPPERS.includes(d));
