@@ -42,10 +42,10 @@ function dashFullName(name,b,long){
 }
 /* 최근에 마신 평가 한 줄 (dailycup.js 의 dcBrief) — cs: 커피 한 잔 기록들, pre: 앞에 붙일 말 */
 /* 홈 행의 "마신 기록" 한 줄 (2026-11-17): 이 배치(산 원두는 그 원두)로 마신 잔 수·평균 + 가장 최근 한 잔
-   (날짜 · 숙성 일차 · ★ · 단맛(3이 아닐 때) · 산미 · ⚠ 문제 · 식으면(특이할 때) · 내 한 줄 평가). 마신 적 없으면 "아직 안 마심".
+   (날짜 · 숙성 일차 · ★ · 단맛(3이 아닐 때) · 산미 · ⚠ 문제 · 식으면(특이할 때) · 내 한 줄 평가). 마신 적 없으면 줄 자체가 없음.
    배치마다 다른 원두로 보므로 같은 생두의 다른 로스팅 기록은 섞지 않음 */
 function dashCupLine(cs,who){
-  if(!cs||!cs.length)return '<div class="dash-bean-ev none">아직 안 마심</div>';
+  if(!cs||!cs.length)return '';   // 마신 기록이 없으면 아무것도 안 붙임 (줄이 없으면 안 마신 것)
   const r=cs.slice().sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:(b.created_at||0)-(a.created_at||0))[0];
   const avg=(cs.reduce((a,c)=>a+(+c.stars||0),0)/cs.length).toFixed(1);
   const p=[`${who} ${cs.length}잔`];if(cs.length>1)p.push('평균 ★'+avg);
