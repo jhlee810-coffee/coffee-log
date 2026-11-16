@@ -79,16 +79,16 @@ function restScore(age,w){
   if(age<=w.end)return 100-60*restSmooth((age-w.optMax)/Math.max(1,w.end-w.optMax));
   return Math.max(5,40-6*(age-w.end));
 }
-/* 단계: 숙성 중(n일 남음) / 마셔도 됨 / 최적기 / 끝나감(끝 5일 전부터) / 지남. o: 0 최적기 · 1 숙성 중·마셔도 됨(곧 최적기) · 2 최적기 후 · 3 지남 */
+/* 단계 (2026-11-17 쉽게): 🟡 최적기 전(최적기까지 n일) / 🟢 최적기 / ⚪ 최적기 후(최적기 n일 지남) / 🟠 끝나감(끝 5일 전부터) / 🔴 지남. '마셔도 됨' 이름은 없앰.
+   o: 0 최적기 · 1 최적기 전(곧 최적기) · 2 최적기 후·끝나감 · 3 지남 */
 function restStage(days,w){
   if(days==null||!w)return {l:'',short:'',c:'var(--muted)',o:9,score:0};
   const score=Math.round(restScore(days,w));
-  if(days<w.start)return {l:`숙성 중 · ${w.start-days}일 남음`,short:`숙성 중(${w.start-days}일)`,c:'var(--amber)',o:1,wait:w.optMin-days,score};
-  if(days<w.optMin)return {l:'마셔도 됨',short:'마셔도 됨',c:'#b8d98a',o:1,wait:w.optMin-days,score};
+  if(days<w.optMin){const n=w.optMin-days;return {l:`최적기까지 ${n}일`,short:`${n}일 후 최적기`,c:'var(--amber)',o:1,wait:n,score};}
   if(days<=w.optMax)return {l:'최적기',short:'최적기',c:'#7ed6a5',o:0,score};
   if(days>w.end)return {l:'지남',short:'지남',c:'var(--coral)',o:3,score};
   if(days>=Math.max(w.optMax+1,w.end-5))return {l:'끝나감',short:'끝나감',c:'#e8a05a',o:2,score};
-  return {l:'마셔도 됨',short:'마셔도 됨',c:'var(--muted2)',o:2,score};
+  return {l:`최적기 ${days-w.optMax}일 지남`,short:'최적기 후',c:'var(--muted2)',o:2,score};
 }
 
 /* ═══ 4. 평가 기록 모으기 (같은 원두 안 비교용) ═══

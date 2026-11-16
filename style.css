@@ -1120,3 +1120,5 @@ html,body,button,.tb,.fc,.chip,.btn,.btn2,[onclick]{touch-action:manipulation;}
 
 .dash-bean-ev.none{color:var(--muted)}
 .dash-bean-memo{font-size:12px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;clear:both}
+
+.dash-legend{display:flex;flex-wrap:wrap;gap:2px 12px;font-size:12px;margin:0 0 6px}

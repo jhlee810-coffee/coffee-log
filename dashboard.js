@@ -126,7 +126,6 @@ function renderDash(){
   const advAll=typeof restAdvice==='function'?restAdvice(t):[];
   const frzMark=list=>list.some(a=>a.kind==='freeze')?'🧊 ':'';
   const badgeHtml=(o,mark)=>o.fz?`<span class="dash-badge" style="color:#7fb8ff;border-color:#7fb8ff">🧊 냉동 · ${o.age}일차</span>`:`<span class="dash-badge" style="color:${o.st.c};border-color:${o.st.c}">${mark}${o.age}일차 · ${o.st.l}</span>`;
-  const preNote=o=>!o.fz&&o.age<o.w.optMin?` · 최적기 ${o.w.optMin}~${o.w.optMax}일차`:'';   // 아직 최적기 전인 원두에만 최적기 안내
   const ownRoasts=order.map(o=>o.snap.roast_id?roasts.find(x=>x.id===o.snap.roast_id):null);
   const nmKinds={};ownRoasts.forEach(r=>{if(!r)return;const n=dashFullName(r.bean_name,beanOfRoast(r));(nmKinds[n]=nmKinds[n]||new Set()).add(r.bean_name);});
   const rowName=r=>{const bn=beanOfRoast(r),n=dashFullName(r.bean_name,bn);return nmKinds[n]&&nmKinds[n].size>1?dashFullName(r.bean_name,bn,true):n;};   // 줄인 이름이 서로 겹치면 더 긴 이름으로
@@ -138,7 +137,7 @@ function renderDash(){
       const myAdv=advAll.filter(a=>a.rbid===b.id);
       return {score:o.score,html:`<div class="dash-bean" onclick="openDailyCupRb('${b.id}')">
       <div class="dash-bean-top"><b>${dashEsc(b.name)}</b>${badgeHtml(o,frzMark(myAdv))}</div>
-      <div class="dash-bean-sub"><span class="dc-rbtag">산 원두</span> ${dashEsc(b.roastery||'')} · ${dashMD(b.roast_date)} 로스팅${preNote(o)}</div>${dashCupLine(cs,'이 원두')}</div>`};
+      <div class="dash-bean-sub"><span class="dc-rbtag">산 원두</span> ${dashEsc(b.roastery||'')} · ${dashMD(b.roast_date)} 로스팅</div>${dashCupLine(cs,'이 원두')}</div>`};
     }
     const r=ownRoasts[i];if(!r)return null;
     const cs=cups.filter(c=>c.bean_info&&c.bean_info.roast_id===r.id);
@@ -147,7 +146,7 @@ function renderDash(){
     const lossH=dcLossHtml(dcLossOfRoast(r));
     return {score:o.score,html:`<div class="dash-bean" onclick="openDailyCupRoast('${r.id}')">
       <div class="dash-bean-top"><b>${dashEsc(rowName(r))}</b>${badgeHtml(o,frzMark(myAdv))}</div>
-      <div class="dash-bean-sub">${idTxt}${lossH?' · '+lossH:''}${dashEsc(preNote(o))}
+      <div class="dash-bean-sub">${idTxt}${lossH?' · '+lossH:''}
         <button class="dash-done" onclick="event.stopPropagation();dashMarkDone('${r.id}')">다 마심</button></div>${dashCupLine(cs,'이 배치')}</div>`};
   }).filter(Boolean);
   // 🧊 냉동 중인 배치 (잊지 않게 따로 표시, 누르면 바로 기록)
@@ -161,7 +160,8 @@ function renderDash(){
   const frzList=Object.values(frzG).sort((a,b)=>(a.from||'').localeCompare(b.from||''));
   const frzHtml=frzList.length?`<div class="dash-sub">🧊 냉동 중 ${frzList.length}종 <span style="font-weight:400">· 누르면 바로 기록</span></div><div class="dash-chips">${frzList.map(g=>`<span style="cursor:pointer" onclick="${g.click}">${dashEsc(g.label)} · ${g.from===g.to?dashMD(g.from):dashMD(g.from)+'~'+dashMD(g.to)}분${g.n>1?' · '+g.n+'배치':''}${g.bags?' · '+(g.gs.size===1?[...g.gs][0]+'g':'')+'×'+g.bags:''}</span>`).join('')}</div>`:'';
   const LIM=typeof DC_REC_N==='number'?DC_REC_N:8,shown=_dashMore?rows:rows.slice(0,LIM);
-  const beanCard=`<div class="dash-card"><div class="dash-t">🫘 지금 마실 원두 <span>커피 한 잔의 추천과 같은 순서 · 누르면 그 배치로 바로 기록 · 🧊 맛있게 마신 원두</span></div>
+  const beanCard=`<div class="dash-card"><div class="dash-t">🫘 지금 마실 원두 <span>누르면 그 배치로 바로 기록 · 🧊 맛있게 마신 원두</span></div>
+    <div class="dash-legend"><span style="color:#7ed6a5">● 최적기</span><span style="color:var(--amber)">● 최적기 전</span><span style="color:var(--muted2)">● 최적기 후</span><span style="color:#e8a05a">● 끝나감</span><span style="color:var(--coral)">● 지남</span></div>
     ${shown.map(r=>r.html).join('')||'<div class="dash-empty">최근 45일 안에 볶은 원두가 없어요</div>'}
     ${rows.length>LIM?`<button class="dash-btn ghost" onclick="_dashMore=!_dashMore;renderDash()">${_dashMore?'접기':`더 보기 (${rows.length-LIM}개)`}</button>`:''}${frzHtml}</div>`;
 
