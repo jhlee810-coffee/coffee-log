@@ -222,26 +222,37 @@ function dcRecentHtml(sel,excludeId){
 /* 배치의 숙성 일수: 냉동한 배치는 냉동한 날에서 멈춘 것으로 */
 function dcAgeOf(s,on){return s&&s.frozen&&typeof frozenAgeDays==='function'?frozenAgeDays(s.roast_date,s.frozen,on):dcDays(on,s&&s.roast_date);}
 
-/* ── 추천 원두 8개 (2026-11-15 개편) ──
-   점수 = 숙성 점수(rest.js 곡선 0~100) + 안 마셔 본 원두 +25(단, '시작' 지난 것만) + 마신 지 오래됨(하루 +3, 최대 +15) + 최근 3잔 평점((평균−3)×6, 대략 ±12; 낮은 평가는 그 잔을 최적기 시작일 이후에 마셨을 때만 감점)
-   냉동 중인 배치는 숙성 점수를 최소 85로 올려 잊지 않게 함. 같은 생두는 가장 점수 높은 배치 하나만(냉동은 따로) */
+/* ── 추천 원두 (2026-11-17 개편, 커피 한 잔 추천 8개 = 홈 "지금 마실 원두" 앞부분 — 같은 함수 dcRanked) ──
+   점수 = 숙성 점수(rest.js 곡선 0~100)
+        + 안 마셔 본 생두: 최적기 +25 / 마셔도 됨~끝 +8 (숙성 중은 0)
+        + 맛있게 마심: (최근 3잔 평균 평점 − 3) × 15  (★4 +15, ★5 +30, ★2 −15. 낮은 평가는 그 배치 최적기 시작 이후에 마신 잔만 감점)
+        + 마신 지 오래됨: 하루 +1, 최대 +5 (동점 정리용)
+   냉동 중인 배치는 숙성 점수를 최소 85로 올려 잊지 않게 함. 같은 생두는 가장 점수 높은 배치 하나만 앞(top)에, 나머지 배치는 뒤(rest)에 */
 const DC_REC_N=8;
-function dcRecommend(n){
-  const t=(_dc&&_dc.date)||today(),recs=dcSortedRecords(),best={};
+function dcScoreAll(t){
+  t=t||((_dc&&_dc.date)||today());const recs=dcSortedRecords(),out=[];
   dcBatchChoices().forEach(c=>{
     const s=c.snap;if(c.held===false||!(s.roast_id||s.rb_id)||!s.roast_date)return;
     const fz=s.frozen||'',age=dcAgeOf(s,t);if(age==null||age<0)return;
     const w=dcRestOf(s),st=restStage(age,w);
     let base=restScore(age,w);if(fz)base=Math.max(base,85);
     const cups=dcCupsOfBean(s,recs),last=cups[0]?Math.max(0,dcDays(t,cups[0].date)):null;
-    const r3=cups.slice(0,3).map(restCupRating).filter(v=>v!=null),avg=r3.length?r3.reduce((a,b)=>a+b,0)/r3.length:null;   // 낮은 평가는 최적기 시작 이후에 마신 잔만 감점
-    const bonusNew=(last==null&&age>=w.start)?25:0,bonusOld=last==null?0:Math.min(15,3*last),rate=avg==null?0:(avg-3)*6;
-    const o={snap:s,fz:!!fz,age,st,w,avg,last,score:base+bonusNew+bonusOld+rate};
-    const key=(s.rb_id?'rb:'+s.rb_id:(s.bean_id||s.bean))+'|'+(fz?'f':''),cur=best[key];
-    if(!cur||o.score>cur.score||(o.score===cur.score&&(s.roast_date||'')<(cur.snap.roast_date||'')))best[key]=o;
+    const r3=cups.slice(0,3).map(restCupRating).filter(v=>v!=null),avg=r3.length?r3.reduce((a,b)=>a+b,0)/r3.length:null;
+    const bonusNew=last!=null?0:(age>=w.optMin&&age<=w.optMax)?25:(age>=w.start&&age<=w.end)?8:0;
+    const bonusOld=last==null?0:Math.min(5,last),rate=avg==null?0:(avg-3)*15;
+    out.push({snap:s,fz:!!fz,age,st,w,avg,last,isNew:last==null&&age>=w.start,score:base+bonusNew+bonusOld+rate,
+      key:(s.rb_id?'rb:'+s.rb_id:(s.bean_id||s.bean))+'|'+(fz?'f':'')});
   });
-  return Object.values(best).sort((a,b)=>b.score-a.score||(a.snap.roast_date||'').localeCompare(b.snap.roast_date||'')).slice(0,n||DC_REC_N);
+  return out;
 }
+function dcRanked(t){   // {top: 생두당 최고 배치(점수 순), rest: 나머지 배치(점수 순)}
+  const all=dcScoreAll(t),best={};
+  const cmp=(a,b)=>b.score-a.score||(a.snap.roast_date||'').localeCompare(b.snap.roast_date||'');
+  all.forEach(o=>{const cur=best[o.key];if(!cur||cmp(o,cur)<0)best[o.key]=o;});
+  const top=Object.values(best).sort(cmp),inTop=new Set(top);
+  return {top,rest:all.filter(o=>!inTop.has(o)).sort(cmp)};
+}
+function dcRecommend(n){return dcRanked().top.slice(0,n||DC_REC_N);}
 function dcUseBrew(id){   // 그때 쓴 추출값(레시피·그라인더·온도·g 등)을 지금 기록에 채움
   const r=dcList().find(x=>x.id===id);if(!r||!r.brew||!_dc)return;
   Object.entries(r.brew).forEach(([k,v])=>{if(v!==''&&v!=null)_dc.brew[k]=v;});
