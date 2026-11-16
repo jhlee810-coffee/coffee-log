@@ -60,6 +60,7 @@ function ecRoastLoss(r){
   if(r.input_g&&r.output_g)return ((+r.input_g - +r.output_g)/+r.input_g*100).toFixed(1);
   return '';
 }
+function ecLossTxt(s){const L=typeof dcLossOfSnap==='function'?dcLossOfSnap(s):null;return L?dcLossTxt(L):(s&&s.loss?'손실 '+s.loss+'%':'');}   // 손실률 (정전기 이전 배치는 ⚠)
 function ecBatchMap(){ // 같은 날 몇 번째 배치였는지 (기록 순서 기준)
   const m={},cnt={};
   (db.roasts||[]).forEach(r=>{cnt[r.date]=(cnt[r.date]||0)+1;m[r.id]=+r.batch_no||cnt[r.date];});  // 저장된 배치 순서 우선
@@ -136,7 +137,7 @@ function ecSideCard(side){
       <button class="ec-bigbtn ghost" onclick="ecOpenManual('${side}')">직접 입력</button></div></div>`;
   }
   const meta=[s.roast_date?ecMD(s.roast_date)+' 로스팅':'',s.mode?s.mode+'번 모드':'',s.dtr?'DTR '+s.dtr+'%':'',
-    s.loss?'손실 '+s.loss+'%':'',s.batch?'그날 '+s.batch+'번째':''].filter(Boolean).join(' · ');
+    ecLossTxt(s)].filter(Boolean).join(' · ');
   return `<div class="ec-side"><div class="ec-side-hd"><span class="ec-badge">${side}</span><span class="ec-side-name">${ecEsc(s.bean)}</span></div>
     <div class="ec-side-meta">${ecEsc(meta)} · ${deg!=null?`디개싱 <b>${deg}일</b>`:'디개싱 일수 알 수 없음(로스팅 날짜 없음)'}${s.memo?`<br>메모: ${ecEsc(s.memo)}`:''}</div>
     <div class="ec-side-btns sm"><button class="btn2" onclick="ecOpenPick('${side}')">다시 고르기</button>
@@ -324,7 +325,7 @@ function ecRenderPickList(){
   if(!list.length){el.innerHTML='<div class="ec-hint" style="padding:14px 0">맞는 로스팅 기록이 없어요. 검색어를 지우거나 "직접 입력"을 써 주세요.</div>';return;}
   el.innerHTML=list.slice(0,80).map(({r})=>{
     const dtr=ecRoastDTR(r),loss=ecRoastLoss(r);
-    const meta=[r.mode?r.mode+'번 모드':'',dtr?'DTR '+dtr+'%':'',loss?'손실 '+loss+'%':'','그날 '+bm[r.id]+'번째'].filter(Boolean).join(' · ');
+    const meta=[r.mode?r.mode+'번 모드':'',dtr?'DTR '+dtr+'%':'',ecLossTxt({roast_id:r.id,loss})].filter(Boolean).join(' · ');
     return `<div class="ec-pick-item" onclick="ecChooseRoast('${r.id}')"><div class="ec-pi-top"><span>${ecMD(r.date)}</span><b>${ecEsc(r.bean_name)}</b></div><div class="ec-pi-meta">${meta}</div></div>`;
   }).join('')+(list.length>80?`<div class="ec-hint">최근 80개만 보여요. 생두 이름으로 걸러 보세요.</div>`:'');
 }

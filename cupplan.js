@@ -23,7 +23,7 @@ function cpShort(n){const w=String(n||'').trim().split(/\s+/),o=new Set((db.bean
 function cpRoastInfo(r){
   if(!r)return '';
   const dtr=ecRoastDTR(r);
-  return [cpShort(r.bean_name),(r.mode||'?')+'-'+(dtr||'?'),r.total_time?'총 '+r.total_time:''].filter(Boolean).join(' · ');
+  return [cpShort(r.bean_name),(r.mode||'?')+'-'+(dtr||'?'),ecLossTxt({roast_id:r.id,loss:ecRoastLoss(r)}),r.total_time?'총 '+r.total_time:''].filter(Boolean).join(' · ');
 }
 // "11/7#1" → 로스팅 기록 (연도는 계획 날짜 기준, 계획 달보다 큰 달이면 작년)
 function cpFindRef(ref,planDate){
@@ -32,11 +32,13 @@ function cpFindRef(ref,planDate){
   const y=+m[1]>pm?py-1:py,d=`${y}-${String(m[1]).padStart(2,'0')}-${String(m[2]).padStart(2,'0')}`;
   return (db.roasts||[]).find(r=>r.date===d&&String(cpBatch(r))===String(+m[3]))||null;
 }
+function cpProf(r){const d=ecRoastDTR(r);return (r.mode||'?')+'-'+(d?Math.round(+d):'?');}   // 2-12 (번호 대신 모드-DTR로 구별)
 function cpItemLabel(it){
   const a=cpRoast(it.a_roast_id),b=cpRoast(it.b_roast_id);
   const sa=a?cpShort(a.bean_name):(it.a_ref||'?'),sb=b?cpShort(b.bean_name):(it.b_ref||'?');
-  const na=a?cpBatch(a)+'번':'',nb=b?cpBatch(b)+'번':'';
-  return sa===sb?`${sa} ${na} vs ${nb}`:`${sa} ${na} vs ${sb} ${nb}`;
+  const diffDay=a&&b&&a.date!==b.date;   // 날짜가 다르면 날짜도 같이
+  const pa=a?cpProf(a)+(diffDay?' '+ecMD(a.date):''):'',pb=b?cpProf(b)+(diffDay?' '+ecMD(b.date):''):'';
+  return sa===sb?`${sa} ${pa} vs ${pb}`:`${sa} ${pa} vs ${sb} ${pb}`;
 }
 function cpSave(p){p.updated_at=Date.now();db.cupping_plans=db.cupping_plans||{};db.cupping_plans[p.date]=p;saveDB();}
 

@@ -116,10 +116,11 @@ function renderDash(){
     (groups[k]=groups[k]||{date:r.date,bean:r.bean_name,beanId:bean?bean.id:'',items:[],ids:[]}).items.push(r);
     groups[k].ids.push(r.id);
   });
-  // 🧊 소분 냉동 안내는 따로 카드를 두지 않고 해당 원두 행 안에 한 줄로 합침 (rest.js restAdvice 결과를 배치 id로 짝짓기)
-  const advAll=typeof restAdvice==='function'?restAdvice(t):[],advUsed=new Set();
-  const advLineHtml=a=>`<div class="dash-adv-in ${a.kind}">${a.kind==='freeze'?'🧊 지금 소분 냉동하기 좋은 때':a.kind==='try'?'🧊 최적기예요 · 마셔 보고 맛있으면 냉동':a.kind==='late'?`⚠ 끝 지났어요 · 빨리 마시거나 냉동 (끝 ${a.w.end}일)`:`⏳ 끝나가요 · 빨리 마시거나 냉동 (끝 ${a.w.end}일)`}</div>`;
-  const advHtmlOf=list=>[...new Map(list.map(a=>[a.kind,a])).values()].map(advLineHtml).join('');
+  // 🧊 = 내가 ★4 이상 줘서 소분 냉동하기 좋은 원두 (배지 앞 아이콘만). 최적기·끝나감 등 글자 안내는 배지(일차·단계)로 충분해서 뺌 (2026-11-17)
+  const advAll=typeof restAdvice==='function'?restAdvice(t):[];
+  const frzMark=list=>list.some(a=>a.kind==='freeze')?'🧊 ':'';
+  const lossOfId=id=>dcLossOfRoast(roasts.find(x=>x.id===id));
+  const lossTail=id=>{const h=dcLossHtml(lossOfId(id));return h?' · '+h:'';};
   const gBean=g=>g.beanId?db.beans.find(b=>b.id===g.beanId):null;
   const nmKinds={};Object.values(groups).forEach(g=>{const n=dashFullName(g.bean,gBean(g));(nmKinds[n]=nmKinds[n]||new Set()).add(g.bean);});
   const rowName=g=>{const n=dashFullName(g.bean,gBean(g));return nmKinds[n]&&nmKinds[n].size>1?dashFullName(g.bean,gBean(g),true):n;};   // 줄인 이름이 서로 겹치면 더 긴 이름으로
@@ -135,22 +136,22 @@ function renderDash(){
     const ev=dashLastCup(cs)||(bn&&typeof dcCupsOfBean==='function'?dashLastCup(dcCupsOfBean({bean_id:bn.id,bean:g.bean}),'이전 로스팅 '):'');
     const best=cand[0].r,seenP=new Map();   // 점수 가장 높은 배치로 열기, 프로파일이 둘 이상이면 칩으로 다른 배치도 바로 고르기
     cand.forEach(c=>{const r=c.r,dtr=parseFloat(r.dtr_pct),lb=r.mode?`${r.mode}-${isNaN(dtr)?'?':Math.round(dtr)}`:'';if(lb&&!seenP.has(lb))seenP.set(lb,r.id);});
-    const pchips=seenP.size>1?`<div class="dash-pchips">다른 배치로 기록 ${[...seenP].map(([lb,id])=>`<button class="dash-pchip${id===best.id?' on':''}" onclick="event.stopPropagation();openDailyCupRoast('${id}')">${lb}</button>`).join('')}</div>`:'';
-    const myAdv=advAll.filter(a=>(a.ids||[]).some(id=>g.ids.includes(id)));myAdv.forEach(a=>advUsed.add(a));
+    const pchips=seenP.size>1?`<div class="dash-pchips">다른 배치로 기록 ${[...seenP].map(([lb,id])=>`<button class="dash-pchip${id===best.id?' on':''}" onclick="event.stopPropagation();openDailyCupRoast('${id}')">${lb}${lossTail(id)}</button>`).join('')}</div>`:'';
+    const myAdv=advAll.filter(a=>(a.ids||[]).some(id=>g.ids.includes(id)));
     return {d,st,score:st.score,html:`<div class="dash-bean" onclick="openDailyCupRoast('${best.id}')">
-      <div class="dash-bean-top"><b>${dashEsc(rowName(g))}</b><span class="dash-badge" style="color:${st.c};border-color:${st.c}">${d}일차 · ${st.l}</span></div>
-      <div class="dash-bean-sub">${dashMD(g.date)} 로스팅${lvName?' · '+dashEsc(lvName):''} · <span title="숙성 시작 · 최적기 · 끝">숙성 ${restText(w)}</span> <small>(${w.src})</small> · ${g.items.length}배치${seenP.size===1?' ('+[...seenP.keys()][0]+')':''}${cs.length?` · ${cs.length}잔 ★${av}`:''}
-        <button class="dash-done" onclick="event.stopPropagation();dashMarkDone('${g.ids.join(',')}')">다 마심</button></div>${advHtmlOf(myAdv)}${pchips}${ev}</div>`};
+      <div class="dash-bean-top"><b>${dashEsc(rowName(g))}</b><span class="dash-badge" style="color:${st.c};border-color:${st.c}">${frzMark(myAdv)}${d}일차 · ${st.l}</span></div>
+      <div class="dash-bean-sub">${dashMD(g.date)} 로스팅${lvName?' · '+dashEsc(lvName):''} · <span title="숙성 시작 · 최적기 · 끝">숙성 ${restText(w)}</span> <small>(${w.src})</small> · ${g.items.length}배치${seenP.size===1?` (${[...seenP.keys()][0]}${lossTail([...seenP.values()][0])})`:''}${cs.length?` · ${cs.length}잔 ★${av}`:''}
+        <button class="dash-done" onclick="event.stopPropagation();dashMarkDone('${g.ids.join(',')}')">다 마심</button></div>${pchips}${ev}</div>`};
   });
   (db.roasted_beans||[]).filter(b=>b.status!=='다 마심'&&!b.frozen).forEach(b=>{
     const w=restForRb(b);
     const d=dashDays(b.roast_date,t),st=restStage(d,w);
     const cs=cups.filter(c=>c.bean_info&&c.bean_info.rb_id===b.id);
     const av=cs.length?(cs.reduce((s,c)=>s+(+c.stars||0),0)/cs.length).toFixed(1):'';
-    const myAdv=advAll.filter(a=>a.rbid===b.id);myAdv.forEach(a=>advUsed.add(a));
+    const myAdv=advAll.filter(a=>a.rbid===b.id);
     rows.push({d,st,score:st.score,html:`<div class="dash-bean" onclick="openDailyCupRb('${b.id}')">
-      <div class="dash-bean-top"><b>${dashEsc(b.name)}</b><span class="dash-badge" style="color:${st.c};border-color:${st.c}">${d!=null?d+'일차 · ':''}${st.l}</span></div>
-      <div class="dash-bean-sub"><span class="dc-rbtag">산 원두</span> ${dashEsc(b.roastery||'')} · ${dashMD(b.roast_date)} 로스팅 · <span title="숙성 시작 · 최적기 · 끝">숙성 ${restText(w)}</span> <small>(${w.src})</small>${cs.length?` · ${cs.length}잔 ★${av}`:''}</div>${advHtmlOf(myAdv)}${dashLastCup(cs)}</div>`});
+      <div class="dash-bean-top"><b>${dashEsc(b.name)}</b><span class="dash-badge" style="color:${st.c};border-color:${st.c}">${frzMark(myAdv)}${d!=null?d+'일차 · ':''}${st.l}</span></div>
+      <div class="dash-bean-sub"><span class="dc-rbtag">산 원두</span> ${dashEsc(b.roastery||'')} · ${dashMD(b.roast_date)} 로스팅 · <span title="숙성 시작 · 최적기 · 끝">숙성 ${restText(w)}</span> <small>(${w.src})</small>${cs.length?` · ${cs.length}잔 ★${av}`:''}</div>${dashLastCup(cs)}</div>`});
   });
   rows.sort((a,b)=>(b.score||0)-(a.score||0)||(a.d??99)-(b.d??99));  // 숙성 점수 높은 순 (rest.js 곡선)
   // 🧊 냉동 중인 배치 (잊지 않게 따로 표시, 누르면 바로 기록)
@@ -163,12 +164,10 @@ function renderDash(){
     g.n++;if((x.rd||'')<g.from)g.from=x.rd||'';if((x.rd||'')>g.to)g.to=x.rd||'';if(+x.q)g.bags+=+x.q;if(x.g)g.gs.add(x.g);});
   const frzList=Object.values(frzG).sort((a,b)=>(a.from||'').localeCompare(b.from||''));
   const frzHtml=frzList.length?`<div class="dash-sub">🧊 냉동 중 ${frzList.length}종 <span style="font-weight:400">· 누르면 바로 기록</span></div><div class="dash-chips">${frzList.map(g=>`<span style="cursor:pointer" onclick="${g.click}">${dashEsc(g.label)} · ${g.from===g.to?dashMD(g.from):dashMD(g.from)+'~'+dashMD(g.to)}분${g.n>1?' · '+g.n+'배치':''}${g.bags?' · '+(g.gs.size===1?[...g.gs][0]+'g':'')+'×'+g.bags:''}</span>`).join('')}</div>`:'';
-  // 지금 마실 원두 목록(45일 이내)에 없는 오래된 배치의 끝 안내만 아래에 따로
-  const leftHtml=advAll.filter(a=>!advUsed.has(a)).map(a=>`<div class="dash-bean" onclick="${a.rbid?`openDailyCupRb('${a.rbid}')`:a.ids&&a.ids[0]?`openDailyCupRoast('${a.ids[0]}')`:`dashGoTab('roasted')`}"><div class="dash-bean-top"><b>${dashEsc(a.label)}</b><span class="dash-badge" style="color:var(--coral);border-color:var(--coral)">${a.age}일차</span></div><div class="dash-bean-sub">${dashMD(a.date)} 로스팅${a.n>1?' · '+a.n+'배치':''}</div>${advLineHtml(a)}</div>`).join('');
   const LIM=6,shown=_dashMore?rows:rows.slice(0,LIM);
-  const beanCard=`<div class="dash-card"><div class="dash-t">🫘 지금 마실 원두 <span>숙성 점수 높은 순 · 누르면 그 배치로 바로 기록 · 🧊 줄은 소분 냉동 안내</span></div>
+  const beanCard=`<div class="dash-card"><div class="dash-t">🫘 지금 마실 원두 <span>숙성 점수 높은 순 · 누르면 그 배치로 바로 기록 · 🧊 맛있게 마신 원두</span></div>
     ${shown.map(r=>r.html).join('')||'<div class="dash-empty">최근 45일 안에 볶은 원두가 없어요</div>'}
-    ${rows.length>LIM?`<button class="dash-btn ghost" onclick="_dashMore=!_dashMore;renderDash()">${_dashMore?'접기':`더 보기 (${rows.length-LIM}개)`}</button>`:''}${leftHtml?`<div class="dash-sub">⏳ 오래된 배치 <span style="font-weight:400">· 끝 시점이 지났어요</span></div>${leftHtml}`:''}${frzHtml}</div>`;
+    ${rows.length>LIM?`<button class="dash-btn ghost" onclick="_dashMore=!_dashMore;renderDash()">${_dashMore?'접기':`더 보기 (${rows.length-LIM}개)`}</button>`:''}${frzHtml}</div>`;
 
   // ── 로스팅 ──
   const dates=[...new Set(roasts.map(r=>r.date))].sort();
@@ -179,7 +178,7 @@ function renderDash(){
   const lossAvg=recent.length?(recent.reduce((s,r)=>s+(1-r.output_g/r.input_g),0)/recent.length*100).toFixed(1):'';
   const low=typeof beanUsage==='function'?inStock.map(b=>({b,u:beanUsage(b)})).filter(x=>x.u.remaining!==null&&x.u.remaining<300&&x.u.count>0).sort((a,b)=>a.u.remaining-b.u.remaining):[];
   const roastCard=`<div class="dash-card"><div class="dash-t">🔥 로스팅 <span>${lastDate?`마지막 ${dashMD(lastDate)} (${since===0?'오늘':since+'일 전'}) · ${lastBatch.length}배치`:'기록 없음'}${lossAvg?` · 손실 ${lossAvg}% (무게 정확한 ${recent.length}배치)`:''}</span></div>
-    ${lastBatch.length?`<div class="dash-chips">${lastBatch.map(r=>`<span>${r.batch_no?r.batch_no+'. ':''}${dashEsc(dashShort(r.bean_name))} ${r.mode?r.mode+'-'+(r.dtr_pct?Math.round(parseFloat(r.dtr_pct)):'?'):''}</span>`).join('')}</div>`:''}
+    ${lastBatch.length?`<div class="dash-chips">${lastBatch.map(r=>`<span>${dashEsc(dashShort(r.bean_name))} ${r.mode?r.mode+'-'+(r.dtr_pct?Math.round(parseFloat(r.dtr_pct)):'?'):''}${(()=>{const h=dcLossHtml(dcLossOfRoast(r));return h?' · '+h:'';})()}</span>`).join('')}</div>`:''}
     ${unroasted.length?`<div class="dash-sub">로스팅 전 생두 ${unroasted.length}종</div><div class="dash-chips">${unroasted.map(b=>`<span>${dashEsc(dashShort(b.name))}</span>`).join('')}</div>`:''}
     ${low.length?`<div class="dash-sub">얼마 안 남은 생두</div><div class="dash-chips">${low.map(x=>`<span class="${x.u.remaining<120?'warn':''}">${dashEsc(dashShort(x.b.name))} ≈${Math.max(0,Math.round(x.u.remaining))}g</span>`).join('')}</div>`:''}
     <div class="dash-btn-row"><button class="dash-btn" onclick="dashGoTab('timer')">🔥 빈본 타이머</button><button class="dash-btn ghost" onclick="dashGoTab('roasts')">로스팅 기록</button></div></div>`;

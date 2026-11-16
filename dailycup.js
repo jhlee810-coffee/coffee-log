@@ -118,6 +118,23 @@ function dcRoastLoss(r){
   if(r.input_g&&r.output_g)return ((+r.input_g - +r.output_g)/+r.input_g*100).toFixed(1);
   return '';
 }
+/* ── 내가 로스팅한 원두 구별 표기 (2026-11-17): 원두명 · 로스팅 날짜 · 모드-DTR · 손실률. 배치 순서는 화면에 안 보임.
+   손실은 11/7 이전 배치(정전기로 무게 부정확, weight_unreliable)면 ⚠ 를 붙이고 흐리게 */
+function dcLossOfRoast(r){if(!r)return null;const v=dcRoastLoss(r);return v&&!isNaN(+v)?{v:String(+(+v).toFixed(1)),bad:!!r.weight_unreliable}:null;}
+function dcLossOfSnap(s){   // 스냅샷({roast_id,loss}) → 로스팅 기록에서 다시 읽음 (⚠ 판단 때문), 기록이 없으면 스냅샷 값
+  if(!s||!s.roast_id)return null;
+  const r=(db.roasts||[]).find(x=>x.id===s.roast_id);if(r)return dcLossOfRoast(r);
+  return s.loss&&!isNaN(+s.loss)?{v:String(+(+s.loss).toFixed(1)),bad:false}:null;
+}
+function dcLossHtml(L,short){return L?`<span class="lossv${L.bad?' bad':''}">${short?'':'손실 '}${L.v}%${L.bad?'⚠':''}</span>`:'';}
+function dcLossTxt(L,short){return L?(short?'':'손실 ')+L.v+'%'+(L.bad?'⚠':''):'';}
+function dcSelMetaHtml(sel){   // 고른 원두 박스 한 줄: 11/7 로스팅 · 모드 2 · DTR 12% · 손실 11.8%
+  const own=!!sel.roast_id;
+  return [sel.roast_date?dcEsc(dcMD(sel.roast_date)+' 로스팅'):'',
+    own?(sel.mode?dcEsc('모드 '+sel.mode+(sel.dtr?' · DTR '+Math.round(+sel.dtr)+'%':'')):''):dcEsc(dcProfile(sel)),
+    own?dcLossHtml(dcLossOfSnap(sel)):'',
+    sel.manual?'직접 입력':'',sel.rb_id?'산 원두':'',sel.frozen?'🧊 냉동':''].filter(Boolean).join(' · ');
+}
 function dcProfile(s){ // "3-12" (구매 원두는 로스터리)
   if(s&&s.rb_id)return s.roastery||'구매';
   if(!s||!s.mode)return '';
@@ -310,11 +327,11 @@ function dcEntryHtml(){
     const on=e.sel&&dcBatchKey(e.sel)===dcBatchKey(s);
     const stl=x.fz?'🧊 냉동':(x.st.short||x.st.l);
     return `<button class="dc-qbatch${on?' on':''}${x.fz?' frz':''}" onclick="dcSelect({...window._dcQuick[${i}].snap})">
-      <b class="dc-qname">${dcEsc(nm)}</b><span>${dcEsc([dcMD(s.roast_date),dcProfile(s)].filter(Boolean).join(' · '))}</span><i class="dc-q-ev">${dcEsc(stl)}${x.avg!=null?' ★'+x.avg.toFixed(1):''}</i></button>`;
+      <b class="dc-qname">${dcEsc(nm)}</b><span>${dcEsc([dcMD(s.roast_date),dcProfile(s)].filter(Boolean).join(' · '))}</span>${(()=>{const h=s.roast_id?dcLossHtml(dcLossOfSnap(s)):'';return h?`<span class="dc-q-loss">${h}</span>`:'';})()}<i class="dc-q-ev">${dcEsc(stl)}${x.avg!=null?' ★'+x.avg.toFixed(1):''}</i></button>`;
   }).join('');
   const selNotes=e.sel?dcBeanNotes(e.sel).join(', '):'';
   const selBox=e.sel?`<div class="dc-sel"><div class="dc-sel-name">${dcEsc(e.sel.bean)}</div>${selNotes?`<div class="dc-notes">🍑 ${dcEsc(selNotes)}</div>`:''}
-      <div class="dc-sel-meta">${dcEsc([e.sel.roast_date?dcMD(e.sel.roast_date)+' 로스팅':'',dcProfile(e.sel),e.sel.batch_no?`그날 ${e.sel.batch_no}번째`:'',e.sel.manual?'직접 입력':'',e.sel.rb_id?'산 원두':'',e.sel.frozen?'🧊 냉동':''].filter(Boolean).join(' · '))}</div>
+      <div class="dc-sel-meta">${dcSelMetaHtml(e.sel)}</div>
       <div class="dc-sel-deg" id="dcDegText">${dcDegHtml(e.sel,deg)}</div>${dcRecentHtml(e.sel,e.editId)}</div>`:'';
   const stars=[1,2,3,4,5].map(n=>`<button class="dc-star${e.stars>=n?' on':''}" onclick="dcSetStars(${n})" aria-label="별 ${n}개">★</button>`).join('');
   return `<div class="sh"><div class="stl">${e.editId?'기록 수정':'오늘의 한 잔'}</div>${e.editId?'<button class="btn2" onclick="dcCancelEdit()">수정 취소</button>':''}</div>
@@ -567,7 +584,7 @@ function dcRenderPick(){
     <div class="dc-pg-t">${g.rb?'<span class="dc-rbtag">산 원두</span> ':''}${dcEsc(g.title)}<span>${dcEsc([g.rb?g.sub.replace('산 원두 · ',''):g.sub,g.w?`숙성 ${restText(g.w)}`:''].filter(Boolean).join(' · '))}</span>${g.notes?`<span class="dc-notes">🍑 ${dcEsc(g.notes)}</span>`:''}${(()=>{const r=g.cups&&g.cups[0];if(!r)return '';const bb=dcBrewBrief(r.brew),rs=(r.bean_info||{}).roast_date;
       return `<span class="dc-ev">최근 ${dcEsc(dcMD(r.date))}${rs?` (${dcEsc(dcMD(rs))} 로스팅분)`:''} · ${dcEsc(dcBrief(r))}</span>${bb?`<span class="dc-ev dim">☕ ${dcEsc(bb)}</span>`:''}`;})()}</div>
     <div class="dc-pg-items">${g.items.map(({c,i})=>{const s=c.snap,d=dcAgeOf(s,t),n=counts[dcBatchKey(s)]||0,lc=dcCupsFor(s,recsAll)[0];
-      return `<button class="dc-pb${c.drunk?' drunk':''}${c.held===false?' off':''}${s.frozen?' frz':''}" onclick="dcPickIdx(${i})"><b>${dcEsc(dcMD(s.roast_date)||'날짜 없음')}${s.roast_id&&dcProfile(s)?' · '+dcEsc(dcProfile(s)):''}</b><span>${[d!=null?(s.frozen?'🧊 ':'')+d+'일차':'',s.batch_no?'#'+s.batch_no:'',n?n+'잔':'',c.held===false?'정리됨':''].filter(Boolean).join(' · ')}</span>${lc?`<span class="dc-pb-ev">최근 ${dcEsc(dcBrief(lc,3))}</span>`:''}</button>`;}).join('')}</div></div>`;}).join('')
+      return `<button class="dc-pb${c.drunk?' drunk':''}${c.held===false?' off':''}${s.frozen?' frz':''}" onclick="dcPickIdx(${i})"><b>${dcEsc(dcMD(s.roast_date)||'날짜 없음')}${s.roast_id&&dcProfile(s)?' · '+dcEsc(dcProfile(s)):''}${s.roast_id&&dcLossOfSnap(s)?' · '+dcLossHtml(dcLossOfSnap(s)):''}</b><span>${[d!=null?(s.frozen?'🧊 ':'')+d+'일차':'',n?n+'잔':'',c.held===false?'정리됨':''].filter(Boolean).join(' · ')}</span>${lc?`<span class="dc-pb-ev">최근 ${dcEsc(dcBrief(lc,3))}</span>`:''}</button>`;}).join('')}</div></div>`;}).join('')
     ||`<div class="dc-empty">맞는 원두가 없어요.${_dcPickAll?'':' 아래 체크로 다 마신·오래된 것도 볼 수 있어요.'}</div>`;
   window._dcPickList=list;
 }

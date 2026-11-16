@@ -1105,3 +1105,9 @@ html,body,button,.tb,.fc,.chip,.btn,.btn2,[onclick]{touch-action:manipulation;}
 .dash-pchips{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:6px;font-size:12px;color:var(--muted);clear:both}
 .dash-pchip{font-family:inherit;font-size:12.5px;background:var(--bg3);border:1px solid var(--b2);color:var(--text2);border-radius:8px;padding:3px 10px;cursor:pointer}
 .dash-pchip.on{background:var(--amber);border-color:var(--amber);color:#222;font-weight:700}
+
+/* 2026-11-17 손실률 표기 (정전기 이전 배치는 ⚠ + 흐리게) */
+.lossv{white-space:nowrap}
+.lossv.bad{opacity:.62}
+.dc-q-loss{display:block;font-size:10.5px;color:var(--text2)}
+.dash-chips span.lossv,.dash-bean-sub .lossv{background:none;border:0;border-radius:0;padding:0;font-size:inherit;color:inherit}

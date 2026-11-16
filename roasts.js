@@ -59,7 +59,6 @@ function batchGap(r){
 }
 function batchLine(r){
   const parts=[];
-  if(r.batch_no)parts.push(`그날 ${r.batch_no}번째`);
   if(r.start_time||r.end_time)parts.push(`${r.start_time||'?'}~${r.end_time||'?'}`);
   const g=batchGap(r);
   if(g)parts.push(g.from==='end'?`직전 배치 후 ${g.min}분 휴식`:`직전 시작 후 ${g.min}분`);
