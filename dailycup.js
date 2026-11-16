@@ -20,7 +20,7 @@ const DC_COOL=['더 좋아짐','비슷함','나빠짐','단맛 올라옴','신�
 const DC_BLOOM=['30초','45초','1분','1분 30초'];
 const DC_DILUTE=['0','10','20','30','40'];
 const DC_TIMES=['2:30','3:00','3:30','4:00','4:30'];
-const DC_WATERS=['백산수10+딥스골드1'];
+const DC_WATERS=['백산수10+딥스골드1','백산수','평창수'];   // 물 칩 (2026-11-17)
 // 물 온도: 직접 쓰지 않고 고르기 (2026-11-12). 92도가 가장 많이 씀 → 처음 값(지난 기록이 없을 때)
 const DC_TEMPS=['84','85','86','87','88','89','90','91','92','93','94','95','96','97','98'];   // 일반 추출
 const DC_TEMP_COLD=['상온','45','50','75'];                                                      // 저온 추출
@@ -42,6 +42,7 @@ const DC_PRESETS=[
   {name:'세이 더블블룸',dripper:'하리오 V60',grinder:'ZP6',clicks:'60',coffee_g:'15',water_g:'250',dilute_g:'20',temp:'92',bloom:'30초',time:'2:30 이내',water:'백산수10+딥스골드1',
    steps:'필터 TH-3 · 1차 50g 원 그리며 → 0:30 2차 50g → 1:30 3차 150g 강하게 푸어링 (총 250g) → 2:30 안에 끝 · 가수 20g'},
 ];
+const DC_MAIN_RECIPES=['펄사 미니 15','테츠카스야 10회 레시피','10푸어 ZP6','세이 더블블룸','10푸어 코만'];   // 레시피 칩에 먼저 보일 5개 (나머지는 '기타'). 디카페인 원두는 짝 프리셋으로 자동 전환 (2026-11-17)
 const DC_BAD_TAGS=['향 약함','발효취·술 냄새','단맛 없음','밋밋함','떫음','물 같음(얇음)','풋내·곡물 냄새','탄맛·스모키','텁텁함(구운 빵 맛)','오래된 맛(종이·눅눅)'];
 const DC_BALANCE=[
   {v:'sour2',  l:'많이 시다'},
@@ -324,34 +325,74 @@ function dcEntryHtml(){
     ${selBox}
     <div class="dc-date">마신 날짜 <input class="inp" type="date" value="${e.date}" onchange="dcDateChanged(this.value)"></div>
   </div>
+  ${dcRecipeCardHtml()}
   ${dcZonesHtml()}
-  <div class="dc-card">
-    <button class="dc-more-btn" style="margin-top:0" onclick="_dc.more=!_dc.more;dcRerender()">${e.more?'▴ 접기':'▾ 추출 정보 · 한 줄 메모'}${dcMoreCount()?` (${dcMoreCount()})`:''}</button>
-    ${e.more?dcMoreHtml():''}
-  </div>
   <button class="dc-save" onclick="dcSave()">${e.editId?'수정 저장':'저장'}</button>`;
 }
-function dcMoreCount(){const e=_dc;return (e.memo?1:0)+(e.brew&&e.brew.time?1:0);}
-/* ── 4구역 입력 (2026-11-14): 점수 · 특징 · 문제 · 식었을 때 — 전부 처음부터 한 화면에 펼침 ── */
+/* ── ① 레시피 카드 (2026-11-17): 물 → 레시피 칩(5개 + 기타) → 요약 한 줄 → [세부 수정] ── */
+function dcRecipeList(){   // 프리셋 + 앱 레시피를 이름 기준으로 합침 (같은 이름은 프리셋 우선)
+  const out=[],seen=new Set();
+  DC_PRESETS.forEach((p,i)=>{if(!seen.has(p.name)){seen.add(p.name);out.push({name:p.name,kind:'p',i,p});}});
+  dcAllRecipes().forEach((r,i)=>{if(!seen.has(r.name)){seen.add(r.name);out.push({name:r.name,kind:'r',i});}});
+  return out;
+}
+function dcRecipePick(name){
+  const b=_dc.brew,list=dcRecipeList();let it=list.find(x=>x.name===name);if(!it)return;
+  if(b.recipe===name||(it.kind==='p'&&it.p.decafTwin&&b.recipe===it.p.decafTwin)){b.recipe='';dcRerender();return;}   // 다시 누르면 해제 (디카페인 짝으로 바뀐 상태도)
+  if(it.kind==='p'&&it.p.decafTwin&&_dc.sel&&_dc.sel.decaf){const tw=list.find(x=>x.name===it.p.decafTwin);if(tw)it=tw;}   // 디카페인 원두면 짝 프리셋으로
+  if(it.kind==='p')dcApplyPreset(it.i);else dcSetRecipe(it.i);
+}
+function dcRecipeChipsHtml(){
+  const b=_dc.brew,list=dcRecipeList(),q=t=>dcEsc(t).replace(/'/g,"\\'");
+  const isOn=it=>b.recipe===it.name||(it.kind==='p'&&!!it.p.decafTwin&&b.recipe===it.p.decafTwin);
+  const chip=it=>`<button class="dc-chip${isOn(it)?' on':''}" onclick="dcRecipePick('${q(it.name)}')">${dcEsc(it.name)}</button>`;
+  const main=DC_MAIN_RECIPES.map(n=>list.find(x=>x.name===n)).filter(Boolean);
+  const rest=list.filter(x=>!main.includes(x)),restOn=main.some(isOn)?null:rest.find(isOn);   // 디카페인 짝은 메인 칩이 대신 켜져 있으니 따로 안 보임
+  const unknown=b.recipe&&!list.some(x=>x.name===b.recipe)?`<button class="dc-chip on" onclick="_dc.brew.recipe='';dcRerender()">${dcEsc(b.recipe)}</button>`:'';   // 목록에 없는 예전 레시피 이름
+  return `<div class="dc-chips">${main.map(chip).join('')}${restOn&&!_dc.recMore?chip(restOn):''}${unknown}<button class="dc-chip add" onclick="_dc.recMore=!_dc.recMore;dcRerender()">${_dc.recMore?'기타 ▴':'기타 ▾'}</button></div>`+
+    (_dc.recMore?`<div class="dc-chips dc-rec-more">${rest.map(chip).join('')||'<span class="dc-opt">다른 레시피가 없어요</span>'}</div>`:'');
+}
+function dcWaterChipsHtml(){
+  const b=_dc.brew,q=t=>dcEsc(t).replace(/'/g,"\\'");
+  const all=[...new Set([...DC_WATERS,...dcList().map(r=>r.brew&&r.brew.water).filter(Boolean),b.water].filter(Boolean))];
+  return all.map(w=>`<button class="dc-chip${b.water===w?' on':''}" onclick="dcSetBrew('water','${q(w)}')">${dcEsc(w)}</button>`).join('')+`<button class="dc-chip add" onclick="dcAskBrew('water','물 이름 (예: 에비앙)')">+ 직접 추가</button>`;
+}
+function dcBrewSummaryHtml(){   // 지금 저장될 추출값 한 줄 요약 (지난번 값이 채워져 있으니 눈으로 확인)
+  const b=_dc.brew,g=b.grinder?b.grinder+(b.clicks?' '+dcClickLabel(b.grinder,b.clicks):''):'';
+  const parts=[b.dripper,g,(b.coffee_g||b.water_g)?`${b.coffee_g||'?'}g → ${b.water_g||'?'}g`:'',b.dilute_g!==''&&b.dilute_g!=null?`가수 ${b.dilute_g}g`:'',dcTempLabel(b.temp),b.bloom?'불림 '+b.bloom:'',b.time?'⏱ '+b.time:''].filter(Boolean);
+  return parts.length?parts.map(t=>`<span>${dcEsc(t)}</span>`).join(''):'<i>추출 정보가 비어 있어요 — 아래 세부 수정에서 입력하세요</i>';
+}
+function dcRecipeCardHtml(){
+  const e=_dc,b=e.brew,preset=DC_PRESETS.find(p=>p.name===b.recipe);
+  return `<div class="dc-zone recipe"><div class="dc-zt">① 레시피 <span class="dc-opt">어떻게 내렸는지 먼저 확인 · 지난번 값이 채워져 있어요</span></div>
+    <div class="dc-mini">💧 물</div><div class="dc-chips">${dcWaterChipsHtml()}</div>
+    <div class="dc-mini">레시피 <span class="dc-opt">누르면 아래 값을 한 번에 채움 (물은 그대로)</span></div>${dcRecipeChipsHtml()}
+    ${preset&&preset.steps?`<div class="dc-steps-note">${dcEsc(preset.steps)}</div>`:''}
+    <div class="dc-bsum">${dcBrewSummaryHtml()}</div>
+    <button class="dc-more-btn" style="margin-top:8px" onclick="_dc.more=!_dc.more;dcRerender()">${e.more?'▴ 세부 접기':'▾ 세부 수정 (드리퍼 · 그라인더 · 온도 · 불림 · 시간)'}</button>
+    ${e.more?dcMoreHtml():''}</div>`;
+}
+/* ── 점수 · 특징(따뜻할 때 + 식었을 때) · 문제 · 한 줄 평가 — 전부 같은 색 (2026-11-17) ── */
 function dcZonesHtml(){
   const e=_dc;
   const q=t=>dcEsc(t).replace(/'/g,"\\'");
-  const ch=(on,l,fn,cls)=>`<button class="dc-chip dz${cls?' '+cls:''}${on?' on':''}" onclick="${fn}">${dcEsc(l)}</button>`;
+  const ch=(on,l,fn)=>`<button class="dc-chip dz${on?' on':''}" onclick="${fn}">${dcEsc(l)}</button>`;
   const stars=[1,2,3,4,5].map(n=>`<button class="dc-star${e.stars>=n?' on':''}" onclick="dcSetStars(${n})" aria-label="별 ${n}개">★</button>`).join('');
   const sweet=[1,2,3,4,5].map(n=>`<button class="dc-seg${e.sweet===n?' on':''}" onclick="dcSetNum('sweet',${n})">${n}</button>`).join('');
   const lvl=DC_AROMA_LEVEL.map(v=>ch(e.aroma_level===v,v,`dcSet('aroma_level','${q(v)}')`)).join('');
   const typ=DC_AROMA_TYPES.map(v=>ch(e.aroma_types.includes(v),v,`dcToggle('aroma_types','${q(v)}')`)).join('');
   const aci=DC_ACIDITY.map(v=>ch(e.acidity===v,v,`dcSet('acidity','${q(v)}')`)).join('');
   const good=[...new Set([...DC_GOOD_TAGS,...e.good])].map(v=>ch(e.good.includes(v),v,`dcToggle('good','${q(v)}')`)).join('');
-  const iss=DC_ISSUES.map((v,i)=>ch(e.issues.includes(v),v,`dcIssue('${q(v)}')`,i===0?'ok':'bad')).join('');
+  const iss=DC_ISSUES.map(v=>ch(e.issues.includes(v),v,`dcIssue('${q(v)}')`)).join('');
   const cool=DC_COOL.map(v=>ch(e.cool.includes(v),v,`dcToggle('cool','${q(v)}')`)).join('');
   const bal=DC_BALANCE.map(x=>`<button class="dc-bal${e.balance===x.v?' on':''}" onclick="dcSet('balance','${x.v}')">${x.l}</button>`).join('');
   const str=DC_STRENGTH.map(x=>`<button class="dc-seg${e.strength===x.v?' on':''}" onclick="dcSet('strength','${x.v}')">${x.l}</button>`).join('');
   const old=[e.aroma?'예전 향 표기 '+e.aroma.replace('★ ','')+(e.notes_felt.length?`(${e.notes_felt.join(', ')})`:''):'',e.bad.length?'아쉬움 '+e.bad.join(', '):''].filter(Boolean).join(' · ');
-  return `<div class="dc-zone score"><div class="dc-zt">① 점수</div>
+  return `<div class="dc-zone score"><div class="dc-zt">② 점수</div>
       <div class="dc-mini">만족도 <span class="dc-req">필수</span></div><div class="dc-stars">${stars}</div>
       <div class="dc-mini">단맛</div><div class="dc-segs dc-segs5">${sweet}</div></div>
-    <div class="dc-zone feat"><div class="dc-zt">② 특징 <span class="dc-opt">좋고 나쁨 없이 느낌 그대로</span></div>
+    <div class="dc-zone feat"><div class="dc-zt">③ 특징 <span class="dc-opt">좋고 나쁨 없이 느낌 그대로</span></div>
+      <div class="dc-sub2 first">🔥 따뜻할 때</div>
       <div class="dc-mini">향 세기 <span class="dc-opt">하나만</span></div><div class="dc-chips">${lvl}</div>
       <div class="dc-mini">향 종류 <span class="dc-opt">여러 개</span></div><div class="dc-chips">${typ}</div>
       <div class="dc-mini">산미 <span class="dc-opt">하나만</span></div><div class="dc-chips">${aci}</div>
@@ -359,31 +400,21 @@ function dcZonesHtml(){
       <div class="dc-mini">맛 균형 · 농도</div><div class="dc-bals">${bal}</div>
       <button class="dc-both${e.balance==='both'?' on':''}" onclick="dcSet('balance','both')">${DC_BALANCE_BOTH.l}</button>
       <div class="dc-segs" style="margin-top:6px">${str}</div>
-      ${old?`<div class="dc-legacy">예전 기록 값(그대로 보존) — ${dcEsc(old)}</div>`:''}</div>
-    <div class="dc-zone prob"><div class="dc-zt">③ 문제 <span class="dc-opt">로스팅 고칠 때 보는 정보 · 여러 개</span></div>
+      ${old?`<div class="dc-legacy">예전 기록 값(그대로 보존) — ${dcEsc(old)}</div>`:''}
+      <input class="inp" style="margin-top:10px" placeholder="따뜻할 때 메모 (짧게)" value="${dcEsc(e.memo_hot)}" oninput="_dc.memo_hot=this.value">
+      <div class="dc-sub2">🌡 식었을 때</div>
+      <div class="dc-mini" style="margin-top:6px">식으면 어땠나요? <span class="dc-opt">여러 개</span></div><div class="dc-chips">${cool}</div>
+      <input class="inp" style="margin-top:10px" placeholder="식었을 때 메모 (짧게)" value="${dcEsc(e.memo_cool)}" oninput="_dc.memo_cool=this.value"></div>
+    <div class="dc-zone prob"><div class="dc-zt">④ 문제 <span class="dc-opt">로스팅 고칠 때 보는 정보 · 여러 개</span></div>
       <div class="dc-chips">${iss}</div></div>
-    <div class="dc-zone cool"><div class="dc-zt">④ 식었을 때</div>
-      <input class="inp" placeholder="따뜻할 때 (짧게)" value="${dcEsc(e.memo_hot)}" oninput="_dc.memo_hot=this.value">
-      <div class="dc-mini">식었을 때 <span class="dc-opt">여러 개</span></div><div class="dc-chips">${cool}</div>
-      <input class="inp" style="margin-top:6px" placeholder="식었을 때 (짧게)" value="${dcEsc(e.memo_cool)}" oninput="_dc.memo_cool=this.value"></div>`;
+    <div class="dc-zone memo"><div class="dc-zt">⑤ 한 줄 평가</div>
+      <input class="inp" placeholder="예: 식으니 단맛이 올라옴" value="${dcEsc(e.memo)}" oninput="_dc.memo=this.value"></div>`;
 }
+/* 세부 수정 (드리퍼 · 그라인더 · g · 온도 · 불림 · 가수 · 총 추출 시간) */
 function dcMoreHtml(){
   const e=_dc,b=e.brew;
   const chip=(on,l,fn)=>`<button class="dc-chip${on?' on':''}" onclick="${fn}">${dcEsc(l)}</button>`;
   const q=s=>dcEsc(s).replace(/'/g,"\\'");
-  const bal=DC_BALANCE.map(x=>`<button class="dc-bal${e.balance===x.v?' on':''}" onclick="dcSet('balance','${x.v}')">${x.l}</button>`).join('');
-  const str=DC_STRENGTH.map(x=>`<button class="dc-seg${e.strength===x.v?' on':''}" onclick="dcSet('strength','${x.v}')">${x.l}</button>`).join('');
-  const good=DC_GOOD_TAGS.map(t=>chip(e.good.includes(t),t,`dcToggle('good','${q(t)}')`)).join('');
-  const bad=DC_BAD_TAGS.map(t=>chip(e.bad.includes(t),t,`dcToggle('bad','${q(t)}')`)).join('');
-  const recs=DC_PRESETS.map((p,i)=>chip(b.recipe===p.name,'⚡ '+p.name,`dcApplyPreset(${i})`)).join('')+
-    dcAllRecipes().map((r,i)=>chip(b.recipe===r.name,r.name,`dcSetRecipe(${i})`)).join('');
-  const preset=DC_PRESETS.find(p=>p.name===b.recipe);
-  const one=(arr,cur,k)=>arr.map(v=>chip(cur===v,v,`dcSet('${k}','${q(v)}')`)).join('');
-  const sweet=[1,2,3,4,5].map(n=>`<button class="dc-seg${e.sweet===n?' on':''}" onclick="dcSetNum('sweet',${n})">${n}</button>`).join('');
-  const notes=e.aroma===DC_AROMA_NOTES?(()=>{const bn=dcBeanNotes(e.sel);const all=[...new Set([...bn,...e.notes_felt])];
-    return `<div class="dc-mini">느낀 컵노트 <span class="dc-opt">${bn.length?'이 원두 컵노트':'등록된 컵노트 없음'} · 여러 개</span></div><div class="dc-chips">${
-      all.map(n=>chip(e.notes_felt.includes(n),n,`dcToggle('notes_felt','${q(n)}')`)).join('')}<button class="dc-chip add" onclick="dcAddNote()">+ 직접 추가</button></div>`;})():'';
-  const cool=DC_COOL.map(t=>chip(e.cool.includes(t),t,`dcToggle('cool','${q(t)}')`)).join('');
   const bloom=DC_BLOOM.map(v=>chip(b.bloom===v,v,`dcSetBrew('bloom','${v}')`)).join('')+chip(b.bloom&&!DC_BLOOM.includes(b.bloom),b.bloom&&!DC_BLOOM.includes(b.bloom)?b.bloom:'직접',`dcAskBrew('bloom','불림 시간 (예: 40초)')`);
   const dil=DC_DILUTE.map(v=>chip(String(b.dilute_g)===v,v+'g',`dcSetBrew('dilute_g','${v}')`)).join('')+chip(b.dilute_g!==''&&b.dilute_g!=null&&!DC_DILUTE.includes(String(b.dilute_g)),b.dilute_g!==''&&b.dilute_g!=null&&!DC_DILUTE.includes(String(b.dilute_g))?b.dilute_g+'g':'직접',`dcAskBrew('dilute_g','가수 (g)')`);
   const times=DC_TIMES.map(v=>chip(b.time===v,v,`dcSetBrew('time','${v}')`)).join('');
@@ -392,7 +423,6 @@ function dcMoreHtml(){
   // 목록에 없는 예전 값(예: 93.5)은 선택된 칩으로 하나 더 보여서 잃어버리지 않게
   const tempChips=DC_TEMPS.map(tchip).join('')+(tcur&&![...DC_TEMPS,...DC_TEMP_COLD].includes(tcur)?chip(true,tcur,`dcSetBrew('temp','${q(tcur)}')`):'');
   const tempCold=DC_TEMP_COLD.map(tchip).join('');
-  const waters=[...new Set([...DC_WATERS,...dcList().map(r=>r.brew&&r.brew.water).filter(Boolean),b.water].filter(Boolean))].map(w=>chip(b.water===w,w,`dcSetBrew('water','${q(w)}')`)).join('')+`<button class="dc-chip add" onclick="dcAskBrew('water','물 이름 (예: 에비앙)')">+ 직접 추가</button>`;
   const drs=dcDrippers().map(d=>chip(b.dripper===d,d,`dcSetBrew('dripper','${q(d)}')`)).join('')+`<button class="dc-chip add" onclick="dcAddDripper()">+ 직접 추가</button>`;
   const grs=DC_GRINDERS.map(g=>chip(b.grinder===g.name,g.name,`dcSetGrinder('${q(g.name)}')`)).join('');
   const G=dcGrinder(b.grinder);
@@ -401,9 +431,6 @@ function dcMoreHtml(){
     clickSel=`<div class="dc-clicks"><button class="dc-adj" onclick="dcClick(-1)">${G.scale?'−0.1':'−1'}</button><select class="sel" onchange="_dc.brew.clicks=this.value">${o}</select><button class="dc-adj" onclick="dcClick(1)">${G.scale?'+0.1':'+1'}</button></div>`;}
   const inp=(k,ph,mode)=>`<input class="inp" ${mode?`inputmode="${mode}"`:''} placeholder="${ph}" value="${dcEsc(b[k])}" oninput="_dc.brew.${k}=this.value">`;
   return `<div class="dc-more">
-    <div class="dc-sub">추출 정보 <span class="dc-opt">지난번 값으로 채워져 있어요</span></div>
-    <div class="dc-mini">레시피 <span class="dc-opt">⚡ 프리셋은 아래 값을 한 번에 채움</span></div><div class="dc-chips">${recs}</div>
-    ${preset&&preset.steps?`<div class="dc-steps-note">${dcEsc(preset.steps)}</div>`:''}
     <div class="dc-mini">드리퍼</div><div class="dc-chips">${drs}</div>
     <div class="dc-mini">그라인더 · 클릭수</div><div class="dc-chips">${grs}</div>${clickSel}
     <div class="dc-grid4">
@@ -417,10 +444,7 @@ function dcMoreHtml(){
     <div class="dc-chips">${tempCold}</div>
     <div class="dc-mini">불림</div><div class="dc-chips">${bloom}</div>
     <div class="dc-mini">가수</div><div class="dc-chips">${dil}</div>
-    <div class="dc-mini">총 추출 시간 ${b.time?`<b class="dc-tval">${dcEsc(b.time)}</b>`:''}</div><div class="dc-chips">${times}<button class="dc-chip" onclick="dcTimeAdj(-10)">−10초</button><button class="dc-chip" onclick="dcTimeAdj(10)">+10초</button></div>
-    <div class="dc-mini">물</div><div class="dc-chips">${waters}</div>
-    <div class="dc-sub">한 줄 메모</div>
-    <input class="inp" placeholder="예: 식으니 단맛이 올라옴" value="${dcEsc(e.memo)}" oninput="_dc.memo=this.value">
+    <div class="dc-mini">총 추출 시간 ${b.time?`<b class="dc-tval">${dcEsc(b.time)}</b>`:''}</div><div class="dc-chips">${times}<button class="dc-chip" onclick="dcTimeAdj(-5)">−5초</button><button class="dc-chip" onclick="dcTimeAdj(5)">+5초</button></div>
   </div>`;
 }
 function dcRestOf(sel){return typeof restForSel==='function'?restForSel(sel):null;}   // 배치별 3시점 (rest.js)
@@ -441,13 +465,14 @@ function dcSetNum(k,n){_dc[k]=_dc[k]===n?0:n;dcRerender();}
 function dcAddNote(){const v=(prompt('느낀 컵노트')||'').trim();if(v&&!_dc.notes_felt.includes(v)){_dc.notes_felt.push(v);}dcRerender();}
 function dcAskBrew(k,label){const v=(prompt(label,_dc.brew[k]||'')||'').trim();if(v){_dc.brew[k]=k==='dilute_g'?v.replace(/[^0-9.]/g,''):v;}dcRerender();}
 function dcTimeAdj(d){
-  const t=_dc.brew.time||'3:00',p=t.split(':');let s=(+p[0])*60+(+p[1]||0)+d;if(s<0)s=0;
-  _dc.brew.time=Math.floor(s/60)+':'+String(s%60).padStart(2,'0');dcRerender();
+  const m=String(_dc.brew.time||'3:00').match(/(\d+):(\d{1,2})/);
+  let sec=m?(+m[1])*60+(+m[2]):180;sec=Math.max(0,sec+d);
+  _dc.brew.time=Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');dcRerender();
 }
 function dcApplyPreset(i){
   const p=DC_PRESETS[i];if(!p)return;
   if(_dc.brew.recipe===p.name){_dc.brew.recipe='';dcRerender();return;}
-  ['dripper','grinder','clicks','coffee_g','water_g','dilute_g','temp','bloom','time','water'].forEach(k=>{if(p[k]!=null)_dc.brew[k]=p[k];});
+  ['dripper','grinder','clicks','coffee_g','water_g','dilute_g','temp','bloom','time'].forEach(k=>{if(p[k]!=null)_dc.brew[k]=p[k];});
   _dc.brew.recipe=p.name;dcRerender();
 }
 /* 디카페인 원두를 고르면 짝 프리셋으로 바꿔 줌 (반대도) */
@@ -668,6 +693,17 @@ function dcAnaHtml(){
     <div class="dc-card"><div class="dc-ana-t">③ 자주 나온 태그 <span class="dc-opt">생두별 상위 3개</span></div>${tagRows}</div>`;
 }
 
+/* 홈 "지금 마실 원두"에서 그 배치(로스팅 기록)가 골라진 채로 열기 (2026-11-17) */
+function openDailyCupRoast(id){
+  const r=db.roasts.find(x=>x.id===id);
+  const tb=[...document.querySelectorAll('.tb')].find(t=>(t.getAttribute('onclick')||'').includes("'dailycup'"));
+  if(tb)showTab('dailycup',tb);
+  if(!r){window.scrollTo(0,0);return;}
+  if(!_dc||_dc.editId)dcNew();
+  _dc.sel=dcSnapFromRoast(r);
+  dcMatchDecafPreset();
+  renderDailyCup();window.scrollTo(0,0);
+}
 /* 생두 카드에서 바로 열기 (생두 목록 → ☕ 한 잔 기록) */
 function openDailyCupFor(beanId){
   const b=db.beans.find(x=>x.id===beanId);const beanName=b?b.name:'';

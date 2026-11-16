@@ -276,14 +276,14 @@ function restAdvice(t){
   const D=restData(),held=typeof roastHeld==='function'?roastHeld:()=>true;
   const cupsAll=(db.dailycups||[]).map(c=>({c,k:restCupBeanKey(c),age:restCupAge(c)}));
   const grp={};
-  const add=(kind,key,item)=>{const k=kind+'|'+key;(grp[k]=grp[k]||{kind,...item,n:0}).n++;};
+  const add=(kind,key,item)=>{const k=kind+'|'+key,g=(grp[k]=grp[k]||{kind,...item,n:0,ids:[]});g.n++;(item.ids||[]).forEach(i=>g.ids.push(i));if(item.rbid)g.rbid=item.rbid;};   // ids = 이 안내에 묶인 로스팅 기록 id (홈에서 행과 짝짓기)
   const endKind=(age,w)=>{if(w.end-age>5)return '';if(age<=w.end)return 'ending';return age<=w.end+14?'late':'';};
   (db.roasts||[]).forEach(r=>{
     if(!held(r)||r.frozen||r.stock_state==='gift'||!r.date)return;
     const age=restDaysBetween(r.date,t);if(age==null||age<0)return;
     const w=restForRoast(r),bean=D.beanById[r.bean_id]||{},name=typeof dashFullName==='function'?dashFullName(r.bean_name,bean.id?bean:null):r.bean_name;
     const beanKey=r.bean_id||('n:'+r.bean_name),mine=restCupsOfRoast(r.id);
-    const item={label:name,date:r.date,age,w,tab:'roasted'};
+    const item={label:name,date:r.date,age,w,tab:'roasted',ids:[r.id]};
     const ek=endKind(age,w);if(ek){add(ek,r.date+'|'+beanKey,item);return;}
     if(age>=w.optMin&&age<=w.optMax){
       const good=mine.some(c=>+c.stars>=4)||cupsAll.some(x=>x.k===beanKey&&(x.c.bean_info||{}).roast_id!==r.id&&!(x.c.bean_info||{}).rb_id&&+x.c.stars>=4&&x.age!=null&&x.age>=w.optMin-2&&x.age<=w.optMax+2);
@@ -295,7 +295,7 @@ function restAdvice(t){
     if(b.status==='다 마심'||b.frozen||!b.roast_date)return;
     const age=restDaysBetween(b.roast_date,t);if(age==null||age<0)return;
     const w=restForRb(b),mine=(db.dailycups||[]).filter(c=>(c.bean_info||{}).rb_id===b.id);
-    const item={label:b.name,date:b.roast_date,age,w,tab:'roasted'};
+    const item={label:b.name,date:b.roast_date,age,w,tab:'roasted',rbid:b.id};
     const ek=endKind(age,w);if(ek){add(ek,'rb'+b.id,item);return;}
     if(age>=w.optMin&&age<=w.optMax){
       if(mine.some(c=>+c.stars>=4))add('freeze','rb'+b.id,item);else if(!mine.length)add('try','rb'+b.id,item);

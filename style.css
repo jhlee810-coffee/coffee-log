@@ -1068,15 +1068,6 @@ html,body,button,.tb,.fc,.chip,.btn,.btn2,[onclick]{touch-action:manipulation;}
 .dc-zone .dc-mini{font-size:13px;margin:12px 0 6px}
 .dc-zone .dc-chips{gap:8px}
 .dc-zone .dc-chip.dz{min-height:44px;padding:8px 14px;border-radius:10px;font-size:15px}
-.dc-zone.feat .dc-zt{color:#c9ced6;border-left-color:#9aa1ab}
-.dc-zone.feat .dc-chip.dz{background:var(--bg4);border:1px solid #6b717b;color:#b8bec7}
-.dc-zone.feat .dc-chip.dz.on{background:#d3d8df;border-color:#d3d8df;color:#222;font-weight:800}
-.dc-zone.prob{border:2px solid #e5534b}
-.dc-zone.prob .dc-zt{color:#ff7b72;border-left-color:#e5534b}
-.dc-zone.prob .dc-chip.dz.bad{background:transparent;border:2px solid #e5534b;color:#ff9a93}
-.dc-zone.prob .dc-chip.dz.bad.on{background:#e5534b;color:#fff;font-weight:800}
-.dc-zone.prob .dc-chip.dz.ok{background:transparent;border:2px solid #4fae6b;color:#8fd6a5}
-.dc-zone.prob .dc-chip.dz.ok.on{background:#4fae6b;border-color:#4fae6b;color:#fff;font-weight:800}
 .dc-legacy{font-size:12px;color:var(--muted);margin-top:10px}
 /* 쉬운 커핑: 컵별 칩 · 확신도 */
 .ec-cupx{margin:8px 0}.ec-cupx>b{display:block;font-size:14px;margin-bottom:4px;color:var(--text)}
@@ -1097,3 +1088,20 @@ html,body,button,.tb,.fc,.chip,.btn,.btn2,[onclick]{touch-action:manipulation;}
 .dash-bean-sub small{color:var(--muted);font-size:12px}
 
 .dash-adv.late i{color:#ff7b72}
+
+/* 2026-11-17 한 잔 화면: 레시피 카드 · 특징 안 소제목 · 홈 지금 마실 원두 안의 냉동 안내/배치 칩 */
+.dc-sub2{font-size:14px;font-weight:800;color:var(--text);margin:18px 0 0;padding-top:12px;border-top:1px solid var(--b1)}
+.dc-sub2.first{margin-top:6px;padding-top:0;border-top:none}
+.dc-bsum{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;font-size:13px}
+.dc-bsum span{background:var(--bg3);border:1px solid var(--b2);border-radius:8px;padding:4px 9px;color:var(--text)}
+.dc-bsum i{font-style:normal;color:var(--coral);font-size:13px}
+.dc-zone.recipe .dc-chips{gap:6px}
+.dc-zone.memo .inp{margin-top:4px}
+.dc-qbatches.q8 .dc-qname{-webkit-line-clamp:4}
+.dash-adv-in{font-size:12.5px;font-weight:700;margin-top:6px;padding:5px 9px;border-radius:8px;background:rgba(126,214,232,.10);color:#7ed6e8;line-height:1.4;clear:both}
+.dash-adv-in.try{color:var(--amber);background:rgba(240,180,60,.10)}
+.dash-adv-in.ending{color:var(--coral);background:rgba(255,123,114,.10)}
+.dash-adv-in.late{color:#ff7b72;background:rgba(255,123,114,.14)}
+.dash-pchips{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:6px;font-size:12px;color:var(--muted);clear:both}
+.dash-pchip{font-family:inherit;font-size:12.5px;background:var(--bg3);border:1px solid var(--b2);color:var(--text2);border-radius:8px;padding:3px 10px;cursor:pointer}
+.dash-pchip.on{background:var(--amber);border-color:var(--amber);color:#222;font-weight:700}
