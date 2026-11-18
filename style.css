@@ -1144,3 +1144,8 @@ html,body,button,.tb,.fc,.chip,.btn,.btn2,[onclick]{touch-action:manipulation;}
 .bc-rpick b{color:var(--text)}
 .bc-rfinal{font-size:15px;margin-top:6px}
 .bc-rfinal b{color:var(--amber)}
+
+/* 원두 고르기 창: 정렬 줄 · 원산지/구매처 칩 (2026-11-18) */
+.dc-pfs.sort{margin-top:6px}
+.dc-pfs.sort .dc-pf{font-size:13px;padding-left:2px;padding-right:2px}
+#dcPickFilters .filters{margin:6px 0 2px;display:flex;flex-direction:column;gap:6px}

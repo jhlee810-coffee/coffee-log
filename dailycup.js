@@ -563,24 +563,46 @@ function dcOpenPick(filter,hook,date){   // hook: 브루잉 비교(brewcmp.js)�
   dcRenderPick();openMo('moDcPick');
 }
 let _dcPickKind='all', _dcPickAll=false;
+let _dcPickSort='new', _dcPickOS='';   // 정렬 'new'(로스팅 최신순) | 'old' | 'stage'(숙성 단계순) · 원산지/구매처 칩 '' | 'origin:x' | 'shop:x'
+function dcPickOS(key){_dcPickOS=_dcPickOS===key?'':key;dcRenderPick();}
+function dcOSOf(s){   // 고른 원두의 원산지·구매처(통합된 이름) — 생두 목록·원두 탭과 같은 기준
+  const cs=n=>(typeof canonShop==='function'?canonShop(n):n)||'';
+  if(s.rb_id){const b=(db.roasted_beans||[]).find(x=>x.id===s.rb_id);return {origin:(b&&b.origin)||'',shop:cs(b?b.roastery:s.roastery)};}
+  const r=s.roast_id?(db.roasts||[]).find(x=>x.id===s.roast_id):null;
+  const bn=r&&typeof beanOfRoast==='function'?beanOfRoast(r):(db.beans||[]).find(x=>x.name===s.bean||x.id===s.bean_id);
+  return {origin:(bn&&bn.origin)||'',shop:cs(bn&&bn.shop)};
+}
 const DC_PICK_DAYS=60;   // '보유 중' 보기에서 이보다 오래된 로스팅은 숨김 (전체 보기에선 보임)
 function dcRenderPick(){
   _dcPickQ=document.getElementById('dcPickSearch').value;
   const q=_dcPickQ.toLowerCase().replace(/\s+/g,'');
   const t=(window._dcPickHook&&window._dcPickDate)||_dc.date||today();
-  // 위쪽 거르기 버튼
+  // 위쪽: 종류 · 정렬 · (원산지 / 구매처 칩). 다 마심·나눔은 항상 숨김
   const seg=(v,l)=>`<button class="dc-pf${_dcPickKind===v?' on':''}" onclick="_dcPickKind='${v}';dcRenderPick()">${l}</button>`;
-  document.getElementById('dcPickFilters').innerHTML=`<div class="dc-pfs">${seg('all','전체')}${seg('mine','내 로스팅')}${seg('bought','산 원두')}</div>
-    <label class="dc-pall"><input type="checkbox" ${_dcPickAll?'checked':''} onchange="_dcPickAll=this.checked;dcRenderPick()"> 다 마심·나눔·${DC_PICK_DAYS}일 지난 것도 보기</label>`;
-  let list=dcBatchChoices().filter(c=>{
+  const sseg=(v,l)=>`<button class="dc-pf${_dcPickSort===v?' on':''}" onclick="_dcPickSort='${v}';dcRenderPick()">${l}</button>`;
+  const norm=x=>String(x||'').toLowerCase().replace(/\s+/g,'');
+  const base=dcBatchChoices().filter(c=>{
     const s=c.snap;
+    if(c.held===false)return false;   // 다 마심·나눔은 안 보임
     if(_dcPickKind==='mine'&&!s.roast_id)return false;
     if(_dcPickKind==='bought'&&!s.rb_id)return false;
-    if(q&&!String(s.bean||'').toLowerCase().replace(/\s+/g,'').includes(q)&&!String(s.roastery||'').toLowerCase().replace(/\s+/g,'').includes(q))return false;
-    if(!_dcPickAll){
-      if(c.held===false)return false;
-      const d=dcAgeOf(s,t);if(s.roast_id&&d!=null&&d>DC_PICK_DAYS&&!c.drunk&&!s.frozen)return false;   // 냉동 중인 건 오래돼도 보임
-    }
+    if(!_dcPickAll){const d=dcAgeOf(s,t);if(s.roast_id&&d!=null&&d>DC_PICK_DAYS&&!c.drunk&&!s.frozen)return false;}   // 냉동 중인 건 오래돼도 보임
+    return true;
+  });
+  base.forEach(c=>{c.os=dcOSOf(c.snap);});
+  const srt=a=>[...new Set(a.filter(Boolean))].sort((x,y)=>String(x).localeCompare(String(y),'ko'));
+  const origins=srt(base.map(c=>c.os.origin)),shops=srt(base.map(c=>c.os.shop));
+  if(_dcPickOS&&!(_dcPickOS.startsWith('origin:')?origins.includes(_dcPickOS.slice(7)):shops.includes(_dcPickOS.slice(5))))_dcPickOS='';
+  const oc=(key,lbl)=>`<div class="fc${_dcPickOS===key?' on':''}" onclick="dcPickOS('${dcEsc(key).replace(/'/g,"\\'")}')">${dcEsc(lbl)}</div>`;
+  document.getElementById('dcPickFilters').innerHTML=`<div class="dc-pfs">${seg('all','전체')}${seg('mine','내 로스팅')}${seg('bought','산 원두')}</div>
+    <div class="dc-pfs sort">${sseg('new','로스팅 최신순')}${sseg('old','오래된 순')}${sseg('stage','숙성 단계순')}</div>
+    ${(origins.length||shops.length)?`<div class="filters">${origins.length?`<div class="frow">${origins.map(o=>oc('origin:'+o,o)).join('')}</div>`:''}${shops.length?`<div class="frow">${shops.map(x=>oc('shop:'+x,x)).join('')}</div>`:''}</div>`:''}
+    <label class="dc-pall"><input type="checkbox" ${_dcPickAll?'checked':''} onchange="_dcPickAll=this.checked;dcRenderPick()"> ${DC_PICK_DAYS}일 지난 것도 보기</label>`;
+  let list=base.filter(c=>{
+    const s=c.snap;
+    if(_dcPickOS.startsWith('origin:')&&c.os.origin!==_dcPickOS.slice(7))return false;
+    if(_dcPickOS.startsWith('shop:')&&c.os.shop!==_dcPickOS.slice(5))return false;
+    if(q&&!norm([s.bean,s.roastery,c.os.origin,c.os.shop].join(' ')).includes(q))return false;   // 이름·로스터리·원산지·구매처
     return true;
   });
   const counts={};dcList().forEach(r=>{const k=dcBatchKey(r.bean_info||{});counts[k]=(counts[k]||0)+1;});
@@ -602,14 +624,22 @@ function dcRenderPick(){
     g.cups=dcCupsOfBean(g.items[0].c.snap,recsAll);   // 이 생두로 마신 기록 (최근 순)
     g.items.forEach(({c})=>{if(c.held===false)return;const d=dcAgeOf(c.snap,t);if(d==null||!g.w)return;const st=restStage(d,dcRestOf(c.snap)||g.w);
       if(st.o<g.st.o||(st.o===g.st.o&&(st.wait??0)<(g.st.wait??0))){g.st=st;g.d=d;}});});   // 가장 마시기 좋은 배치 기준
-  groups.sort((a,b)=>a.st.o-b.st.o||(a.st.wait??0)-(b.st.wait??0)||(a.d??999)-(b.d??999));
+  if(_dcPickSort==='stage')groups.sort((a,b)=>a.st.o-b.st.o||(a.st.wait??0)-(b.st.wait??0)||(a.d??999)-(b.d??999));
+  else{   // 로스팅 날짜 기준: 원두 묶음은 (최신순이면 가장 최근 / 오래된 순이면 가장 오래된) 로스팅 날짜로, 묶음 안 배치도 같은 방향
+    const dir=_dcPickSort==='old'?1:-1,dk=x=>x.c.snap.roast_date||'';
+    groups.forEach(g=>{
+      g.items.sort((a,b)=>{const x=dk(a),y=dk(b);if(!x!==!y)return x?-1:1;return dir*x.localeCompare(y)||dir*((+a.c.snap.batch_no||0)-(+b.c.snap.batch_no||0));});
+      const ds=g.items.map(dk).filter(Boolean);g.dmax=ds.reduce((a,b)=>a>b?a:b,'');g.dmin=ds.reduce((a,b)=>a<b?a:b,ds[0]||'');
+    });
+    groups.sort((a,b)=>{const x=dir<0?a.dmax:a.dmin,y=dir<0?b.dmax:b.dmin;if(!x!==!y)return x?-1:1;return dir*x.localeCompare(y);});
+  }
   const SEC={0:'🟢 지금 최적기',1:'🟡 최적기 전',2:'⚪ 최적기 후',3:'🔴 지남',9:'날짜 없음'};let lastSec=null;
-  document.getElementById('dcPickList').innerHTML=groups.map(g=>{const head=g.st.o!==lastSec?`<div class="dc-psec">${SEC[g.st.o]||''}</div>`:'';lastSec=g.st.o;return head+`<div class="dc-pg">
+  document.getElementById('dcPickList').innerHTML=groups.map(g=>{const head=_dcPickSort==='stage'&&g.st.o!==lastSec?`<div class="dc-psec">${SEC[g.st.o]||''}</div>`:'';lastSec=g.st.o;return head+`<div class="dc-pg">
     <div class="dc-pg-t">${g.rb?'<span class="dc-rbtag">산 원두</span> ':''}${dcEsc(g.title)}<span>${dcEsc([g.rb?g.sub.replace('산 원두 · ',''):g.sub,g.w?`숙성 ${restText(g.w)}`:''].filter(Boolean).join(' · '))}</span>${g.notes?`<span class="dc-notes">🍑 ${dcEsc(g.notes)}</span>`:''}${(()=>{const r=g.cups&&g.cups[0];if(!r)return '';const bb=dcBrewBrief(r.brew),rs=(r.bean_info||{}).roast_date;
       return `<span class="dc-ev">최근 ${dcEsc(dcMD(r.date))}${rs?` (${dcEsc(dcMD(rs))} 로스팅분)`:''} · ${dcEsc(dcBrief(r))}</span>${bb?`<span class="dc-ev dim">☕ ${dcEsc(bb)}</span>`:''}`;})()}</div>
     <div class="dc-pg-items">${g.items.map(({c,i})=>{const s=c.snap,d=dcAgeOf(s,t),n=counts[dcBatchKey(s)]||0,lc=dcCupsFor(s,recsAll)[0];
       return `<button class="dc-pb${c.drunk?' drunk':''}${c.held===false?' off':''}${s.frozen?' frz':''}" onclick="dcPickIdx(${i})"><b>${dcEsc(dcMD(s.roast_date)||'날짜 없음')}${s.roast_id&&dcProfile(s)?' · '+dcEsc(dcProfile(s)):''}${s.roast_id&&dcLossOfSnap(s)?' · '+dcLossHtml(dcLossOfSnap(s)):''}</b><span>${[d!=null?(s.frozen?'🧊 ':'')+d+'일차':'',n?n+'잔':'',c.held===false?'정리됨':''].filter(Boolean).join(' · ')}</span>${lc?`<span class="dc-pb-ev">최근 ${dcEsc(dcBrief(lc,3))}</span>`:''}</button>`;}).join('')}</div></div>`;}).join('')
-    ||`<div class="dc-empty">맞는 원두가 없어요.${_dcPickAll?'':' 아래 체크로 다 마신·오래된 것도 볼 수 있어요.'}</div>`;
+    ||`<div class="dc-empty">맞는 원두가 없어요.${_dcPickAll?'':` 아래 체크로 ${DC_PICK_DAYS}일 지난 것도 볼 수 있어요.`}</div>`;
   window._dcPickList=list;
 }
 function dcPicked(snap){const h=window._dcPickHook;if(h){window._dcPickHook=null;closeMo('moDcPick');h(snap);}else dcSelect(snap);}   // 고르기 창에서 고른 원두
