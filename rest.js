@@ -128,6 +128,7 @@ function restData(){
     cs.forEach(cu=>{const r=roastById[cu.roast_id];push(r.id,'',restDaysBetween(r.date,cp.date),Math.max(1.5,Math.min(5,3.5+(+cu.total-mean)*0.25)),1);});
   });
   (db.easycups||[]).forEach(e=>{
+    if(e.kind==='brew')return;   // 브루잉 비교는 같은 원두를 다르게 내린 비교라 숙성 학습에서 뺌
     const f=(e.picks||{}).final;if(!f)return;
     ['A','B'].forEach(k=>{const s=e[k]||{};if(!s.roast_id)return;const r=roastById[s.roast_id];
       push(s.roast_id,'',s.degas_days!=null&&s.degas_days!==''?+s.degas_days:restDaysBetween(r&&r.date,e.date),f===k?4.0:(f==='same'?3.5:3.0),0.6);});

@@ -5,3 +5,16 @@
 - 브루잉 탭: app.js `OFFICIAL_RECIPES`에 `r_dagabi`(내 레시피, 2단계 타이머) 추가. 커피 한 잔: dailycup.js `DC_PRESETS`에 `더가비` 추가, `DC_DRIPPERS`에 `더가비` 추가(드리퍼 칩). 프리셋을 누르면 불림이 비워지고 물은 건드리지 않음(기존 규칙).
 - 레시피 칩 5개(`DC_MAIN_RECIPES`)는 그대로라서 더가비는 **기타 ▾** 안에 있음 (자주 쓰면 메인 5개에 넣을 수 있음).
 - 버전: app.js · dailycup.js `20261118a`.
+
+## 쉬운 커핑 > "브루잉 비교" 모드 (brewcmp.js, 새 파일)
+- 목적: 같은 원두를 그라인더·분쇄도·불림·온도·레시피·드리퍼·필터·배치·디게싱 일수 등을 바꿔 내린 2~3잔(A·B·C)을 나란히 비교.
+- **시작**: 쉬운 커핑 목록의 [+ 새 비교] → 선택 화면 `🥣 커핑 | 🧪 브루잉 비교`(커핑은 기존 흐름 그대로 `ecStartNew`) → 브루잉 비교면 `2잔 | 3잔`. (`ecChoose()` → `bcChooseHtml()`)
+- **화면(한 장, 마법사 아님)**: 비교한 날 → 잔 카드 A·B(·C) → 🔧 이번에 바꾼 것 → 🥣 블라인드(선택, 기본 "안 함") → 🔥 따뜻할 때 5행(향·산미·단맛·뒷맛·바디감) + 🧊 식은 뒤 5행(비워도 저장) + 맛 체크(잔마다 목마름·떫음·탁함) → 🏁 최종 선택(A·B·C·비슷함, 필수) + 한 줄 메모 → (혼자 섞기면) ✅ 정답 확인.
+- **잔 카드**: 오늘의 한 잔과 같은 방식으로 원두 선택(A 잔에만 추천 8칩, 모든 잔에 [원두 고르기] = `moDcPick` 창 재사용 — `dcOpenPick(filter,hook,date)`, `dcPicked`), 추출 요약 한 줄 + [▾ 추출 수정](레시피·드리퍼·**필터(새 칸)**·그라인더·클릭·원두g·물g·온도·불림·가수·시간·물·내린 날), 물빠짐 완료 시간, 짧은 메모. 디게싱은 `dcAgeOf`(냉동 반영) 자동 계산, 잔마다 "내린 날"을 달리하면 같은 배치라도 디게싱 일수 비교 가능.
+- **앞 잔 복사**: 손대지 않은 B·C 는 앞 잔의 원두·추출값·날짜를 계속 따라감(`bcSync`). 한 번이라도 고친 잔은 `touched` 가 되어 독립. [↺ 앞 잔과 같게]로 다시 복사.
+- **바꾼 것 자동 선택**: 잔끼리 다른 항목을 자동 체크(`bcAutoChanged`) — 분쇄도는 같은 그라인더를 쓴 잔끼리 클릭수가 다를 때, 디게싱 일수는 같은 배치일 때만. 눌러서 고치면 수동 상태(`changed_auto:false`), [자동으로 다시]로 복귀. 기타는 수동 전용.
+- **블라인드**: 기존과 같은 `혼자 섞기`(자리 번호로 평가 → 저장 전 자리→잔 정답 고르기, 겹치면 막음) / `앱이 섞기`(무작위 순서, 정답 보기·다시 섞기, 저장 때 정답 공개). 저장할 땐 자리 번호가 A/B/C 로 환산됨.
+- **저장 구조** (`ecLoad/ecSave` 그대로 → `db.easycups` → Sheets 동기화): `{kind:'brew', n, date, A,B,C(3잔일 때만: 원두 스냅샷+degas_days), brews:{A:{recipe,dripper,filter,grinder,clicks,coffee_g,water_g,dilute_g,temp,bloom,time,water}…}, drain:{A:'2:45'}, cup_memo, cup_dates(다른 날 내린 잔만), flaws:{A:['목마름']}, changed:[…], changed_auto, picks:{warm:{aroma,acid,sweet,after,body}, cool:{…}, final, + 평평한 값=따뜻할 때}, blind, blind_mode, blind_order, memo, summary}`. 옛 쉬운 커핑 기록(kind 없음)은 그대로 열리고 안 깨짐. 기록 한 건당 동기화 용량 약 275자(압축 후, 한도 50,000자 중 현재 약 29,600).
+- **목록**: 같은 목록에 `🧪 브루잉 비교 · n잔` 카드로 섞여 보임(날짜·원두·바꾼 것 / 항목별 잔 값 차이 / 🔥·🧊 선택 / 최종 / 물빠짐·문제·메모 / 디게싱). 복사·CSV(종류·C_생두·바꾼것·잔별추출·식은뒤·물빠짐 등 열 추가)에도 포함. "생두별 승패" 집계와 rest.js 숙성 학습에서는 브루잉 비교를 뺌(같은 원두를 다르게 내린 비교라서).
+- 고친 기존 파일: easycup.js(화면 분기·목록·CSV·`ecPickWord` C), dailycup.js(고르기 창 hook), rest.js(brew 제외), cupplan.js(새로고침 조건), index.html(스크립트·버전), style.css(`.bc-*`).
+- 버전: brewcmp.js · dailycup.js · easycup.js · rest.js · cupplan.js · app.js · style.css `20261118b`.

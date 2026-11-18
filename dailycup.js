@@ -556,7 +556,8 @@ function dcClick(d){
 }
 
 /* ── 원두 고르기 ── */
-function dcOpenPick(filter){
+function dcOpenPick(filter,hook,date){   // hook: 브루잉 비교(brewcmp.js)가 같은 고르기 창을 쓸 때 고른 원두를 받을 함수
+  window._dcPickHook=hook||null;window._dcPickDate=hook?date:null;
   _dcPickQ=filter||'';
   document.getElementById('dcPickSearch').value=_dcPickQ;
   dcRenderPick();openMo('moDcPick');
@@ -566,7 +567,7 @@ const DC_PICK_DAYS=60;   // '보유 중' 보기에서 이보다 오래된 로스
 function dcRenderPick(){
   _dcPickQ=document.getElementById('dcPickSearch').value;
   const q=_dcPickQ.toLowerCase().replace(/\s+/g,'');
-  const t=_dc.date||today();
+  const t=(window._dcPickHook&&window._dcPickDate)||_dc.date||today();
   // 위쪽 거르기 버튼
   const seg=(v,l)=>`<button class="dc-pf${_dcPickKind===v?' on':''}" onclick="_dcPickKind='${v}';dcRenderPick()">${l}</button>`;
   document.getElementById('dcPickFilters').innerHTML=`<div class="dc-pfs">${seg('all','전체')}${seg('mine','내 로스팅')}${seg('bought','산 원두')}</div>
@@ -611,11 +612,12 @@ function dcRenderPick(){
     ||`<div class="dc-empty">맞는 원두가 없어요.${_dcPickAll?'':' 아래 체크로 다 마신·오래된 것도 볼 수 있어요.'}</div>`;
   window._dcPickList=list;
 }
-function dcPickIdx(i){const c=(window._dcPickList||[])[i];if(c)dcSelect({...c.snap});}
+function dcPicked(snap){const h=window._dcPickHook;if(h){window._dcPickHook=null;closeMo('moDcPick');h(snap);}else dcSelect(snap);}   // 고르기 창에서 고른 원두
+function dcPickIdx(i){const c=(window._dcPickList||[])[i];if(c)dcPicked({...c.snap});}
 function dcPickManual(){
   const name=document.getElementById('dcManName').value.trim();
   if(!name){alert('원두 이름을 넣어 주세요.');return;}
-  dcSelect({roast_id:'',bean:name,roast_date:document.getElementById('dcManDate').value,mode:'',dtr:'',loss:'',batch_no:'',manual:true});
+  dcPicked({roast_id:'',bean:name,roast_date:document.getElementById('dcManDate').value,mode:'',dtr:'',loss:'',batch_no:'',manual:true});
 }
 
 /* ── 저장 ── */

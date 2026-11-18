@@ -1122,3 +1122,25 @@ html,body,button,.tb,.fc,.chip,.btn,.btn2,[onclick]{touch-action:manipulation;}
 .dash-bean-memo{font-size:12px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;clear:both}
 
 .dash-legend{display:flex;flex-wrap:wrap;gap:2px 12px;font-size:12px;margin:0 0 6px}
+
+/* ═══ 브루잉 비교 (brewcmp.js, 2026-11-18) ═══ */
+.bc-cup-hd{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.bc-cup-hd b{font-size:15px}
+.bc-follow{font-size:12px;color:var(--muted);margin-left:auto}
+.bc-copy{margin-left:auto;background:transparent;border:1px solid var(--b2);border-radius:14px;color:var(--text2);font-size:12px;padding:3px 10px;cursor:pointer;font-family:inherit}
+.bc-cup .dc-pickbtn{margin-top:6px}
+.bc-two{display:grid;grid-template-columns:1fr 1.4fr;gap:0 8px;margin-top:6px}
+.bc-tags{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:13px;color:var(--text2)}
+.bc-tag1 b{color:var(--amber);margin-right:2px}
+.bc-prow{display:grid;grid-template-columns:54px 1fr;gap:8px;align-items:center;padding:5px 0}
+.bc-pl{font-size:14px;color:var(--text2)}
+.bc-pbtns{display:grid;grid-template-columns:repeat(var(--c,3),1fr);gap:6px}
+.bc-pbtns .ec-pick{padding:10px 2px;font-size:14px;min-height:44px}
+.bc-pbtns .ec-pick small{font-size:10.5px;opacity:.85}
+.bc-rtag{font-size:12px;color:var(--amber);margin-bottom:3px}
+.bc-rdiff{margin:6px 0;font-size:13px;color:var(--text2);line-height:1.5}
+.bc-rdiff span{display:inline-block;min-width:62px;color:var(--muted);margin-right:4px}
+.bc-rpick{font-size:13px;color:var(--text2);margin-top:2px}
+.bc-rpick b{color:var(--text)}
+.bc-rfinal{font-size:15px;margin-top:6px}
+.bc-rfinal b{color:var(--amber)}

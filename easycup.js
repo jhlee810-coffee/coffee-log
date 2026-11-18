@@ -86,8 +86,9 @@ function ecSideLabel(s,other){
   if((!v||v===ov)&&s.roast_date)v=(v?v+' ':'')+ecMD(s.roast_date)+' 로스팅';
   return v||'';
 }
-function ecPickWord(p){return p==='A'?'A':p==='B'?'B':p==='same'?'비슷함':p==='both'?'둘 다':p==='none'?'없음':'';}
+function ecPickWord(p){return p==='A'?'A':p==='B'?'B':p==='C'?'C':p==='same'?'비슷함':p==='both'?'둘 다':p==='none'?'없음':'';}
 function ecSummary(rec){
+  if(rec.kind==='brew')return bcSummary(rec);
   const A=rec.A,B=rec.B;
   const same=ecShort(A.bean)===ecShort(B.bean);
   let head;
@@ -107,9 +108,12 @@ function renderEasyCup(){
   const el=document.getElementById('ecRoot');
   if(!el)return;
   // 커핑 계획(cupplan.js): 목록·저장 완료 화면 위에 배너
-  const bar=_ecView!=='form'&&typeof cpBannerHtml==='function'?cpBannerHtml():'';
+  const bar=_ecView!=='form'&&_ecView!=='bform'&&_ecView!=='choose'&&typeof cpBannerHtml==='function'?cpBannerHtml():'';
   if(typeof cpCheckRemote==='function'&&Date.now()-(window._cpChecked||0)>60000){window._cpChecked=Date.now();cpCheckRemote();}
   if(_ecView==='form'&&_ec)el.innerHTML=ecFormHtml();
+  else if(_ecView==='bform'&&_bc)el.innerHTML=bcFormHtml();       // 브루잉 비교 (brewcmp.js)
+  else if(_ecView==='choose')el.innerHTML=bcChooseHtml();
+  else if(_ecView==='bdone')el.innerHTML=bar+bcDoneHtml();
   else if(_ecView==='done')el.innerHTML=bar+ecDoneHtml();
   else el.innerHTML=bar+ecListHtml();
 }
@@ -427,7 +431,7 @@ function ecDoneHtml(){
   ${rec.blind_mode==='self'?`<div class="ec-done-seat">1번 자리 = ${ecEsc(ecShort(rec[rec.blind_order[0]].bean)+' '+ecVariant(rec[rec.blind_order[0]]))} (${rec.blind_order[0]})<br>2번 자리 = ${ecEsc(ecShort(rec[rec.blind_order[1]].bean)+' '+ecVariant(rec[rec.blind_order[1]]))} (${rec.blind_order[1]})</div>`
     :rec.blind&&rec.blind_order?`<div class="ec-hint">블라인드 정답: 1번 컵 = ${rec.blind_order[0]}, 2번 컵 = ${rec.blind_order[1]}</div>`:''}</div>
   <button class="ec-save" onclick="ecNextFromWinner('${rec.id}')">🏆 승자로 다음 비교하기</button>
-  <div class="ec-pick-row two" style="margin-top:10px"><button class="ec-pick" onclick="ecStartNew()">새 비교 시작</button><button class="ec-pick" onclick="ecGo('list')">기록 보기</button></div>`;
+  <div class="ec-pick-row two" style="margin-top:10px"><button class="ec-pick" onclick="ecChoose()">새 비교 시작</button><button class="ec-pick" onclick="ecGo('list')">기록 보기</button></div>`;
 }
 function ecNextFromWinner(id){
   const rec=ecLoad().find(x=>x.id===id);if(!rec)return;
@@ -459,7 +463,7 @@ function ecContinue(rec,side){
 function ecMatch(rec,q){
   if(!q)return true;
   const n=s=>String(s||'').toLowerCase().replace(/\s+/g,'');
-  return n(rec.A.bean).includes(q)||n(rec.B.bean).includes(q)||n(rec.memo).includes(q);
+  return n(rec.A.bean).includes(q)||n(rec.B.bean).includes(q)||(rec.C&&n(rec.C.bean).includes(q))||n(rec.memo).includes(q)||(rec.kind==='brew'&&n((rec.changed||[]).join('')).includes(q));
 }
 function ecTally(list){
   const t={};
@@ -477,9 +481,9 @@ function ecListHtml(){
   const all=ecLoad();
   const q=_ecFilter.toLowerCase().replace(/\s+/g,'');
   const list=all.filter(r=>ecMatch(r,q)).sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:(b.created_at||0)-(a.created_at||0));
-  const head=`<div class="sh"><div class="stl">쉬운 커핑 (2개 비교)</div><button class="btn btn-sm" onclick="ecStartNew()">+ 새 비교</button></div>`;
-  if(!all.length)return head+`<button class="ec-save" onclick="ecStartNew()">첫 비교 시작하기</button>
-    <div class="empty"><div class="empty-icon">⚖️</div><div class="empty-text">원두 2개를 놓고 어느 쪽이 더 나은지 골라 보세요</div></div>`+ecExportHtml(0);
+  const head=`<div class="sh"><div class="stl">쉬운 커핑</div><button class="btn btn-sm" onclick="ecChoose()">+ 새 비교</button></div>`;
+  if(!all.length)return head+`<button class="ec-save" onclick="ecChoose()">첫 비교 시작하기</button>
+    <div class="empty"><div class="empty-icon">⚖️</div><div class="empty-text">원두 2개를 놓고 비교하거나(커핑), 내리는 방법을 바꿔 2~3잔을 비교해 보세요(브루잉 비교)</div></div>`+ecExportHtml(0);
   // 토너먼트 묶음 (2판 이상)
   const byT={};all.forEach(r=>{const k=r.tournament_id||r.id;(byT[k]=byT[k]||[]).push(r);});
   const seen=new Set();
@@ -494,12 +498,13 @@ function ecListHtml(){
     const shown=g.filter(x=>ecMatch(x,q)).reverse();
     return `<div class="ec-tour"><div class="ec-tour-hd">🏆 토너먼트 ${ecMD(g[0].date)} · ${g.length}판 · 최종 승자: <b>${ecEsc(champ)}</b></div>${shown.map(x=>ecRowHtml(x,true)).join('')}</div>`;
   }).join('');
-  const tally=ecTally(list).map(([k,v])=>`<div class="ec-tally-row"><span>${ecEsc(k)}</span><b>${v.w}승 ${v.l}패 ${v.d}무</b></div>`).join('');
+  const tally=ecTally(list.filter(r=>r.kind!=='brew')).map(([k,v])=>`<div class="ec-tally-row"><span>${ecEsc(k)}</span><b>${v.w}승 ${v.l}패 ${v.d}무</b></div>`).join('');
   return head+`<input class="search" placeholder="생두 이름으로 거르기..." value="${ecEsc(_ecFilter)}" oninput="ecSetFilter(this.value)" id="ecFilterInp">
     <div class="ec-sec-t">기록 ${list.length}건 (최신순)</div>${rows||'<div class="ec-hint">맞는 기록이 없어요.</div>'}
     <div class="ec-sec-t">생두별 승패</div><div class="ec-card">${tally||'<div class="ec-hint">기록이 없어요.</div>'}</div>`+ecExportHtml(all.length);
 }
 function ecRowHtml(r,inTour){
+  if(r.kind==='brew')return bcRowHtml(r);
   return `<div class="ec-row"><div class="ec-row-sum">${inTour?`<span class="ec-round">${r.round}판</span>`:''}${ecEsc(r.summary||ecSummary(r))}</div>
     ${r.memo?`<div class="ec-row-memo">“${ecEsc(r.memo)}”</div>`:''}
     <div class="ec-row-meta">디개싱 A ${r.A.degas_days??'-'}일 · B ${r.B.degas_days??'-'}일${r.keep?` · 비김 후 ${r.keep} 남김`:''}</div>
@@ -511,6 +516,7 @@ function ecSetFilter(v){
 }
 function ecEdit(id){
   const r=ecLoad().find(x=>x.id===id);if(!r)return;
+  if(r.kind==='brew'){bcEdit(id);return;}
   const strip=s=>{const c={...s};delete c.degas_days;return c;};
   const bm=r.blind_mode||(r.blind?'app':'none');
   _ec={editId:r.id,date:r.date,A:strip(r.A),B:strip(r.B),blindMode:bm,blind:bm==='app',order:r.blind_order||['A','B'],revealed:true,seat1:r.seat1||'',
@@ -570,6 +576,13 @@ const EC_CSV_COLS=[
   ['최종',r=>r.picks.final==='same'?'비김':r.picks.final],['확신도',r=>r.confidence],['비김후남김',r=>r.keep],
   ['진행체크',r=>(r.steps||[]).map((v,i)=>v?i+1:'').filter(Boolean).join(' ')],
   ['메모',r=>r.memo],['요약',r=>r.summary||ecSummary(r)],['ID',r=>r.id],
+  // 브루잉 비교(kind:'brew') 전용 — 커핑 기록은 '커핑'과 빈 칸. 향~뒷맛 칸은 브루잉 비교에선 "따뜻할 때" 값
+  ['종류',r=>r.kind==='brew'?'브루잉 비교':'커핑'],['C_생두',r=>(r.C||{}).bean||''],['C_디개싱일수',r=>(r.C||{}).degas_days??''],
+  ['바디감',r=>ecPickWord((r.picks||{}).body)],['바꾼것',r=>(r.changed||[]).join('·')],
+  ['잔별추출',r=>r.kind==='brew'?bcIdsOf(r).map(id=>id+': '+(dcBrewBrief((r.brews||{})[id])||'-')).join(' | '):''],
+  ['식은뒤',r=>r.kind==='brew'?BC_QS.filter(q=>((r.picks||{}).cool||{})[q.key]).map(q=>q.label+' '+ecPickWord(r.picks.cool[q.key])).join(' / '):''],
+  ['물빠짐',r=>Object.entries(r.drain||{}).map(([k,v])=>k+' '+v).join(' / ')],
+  ['잔별문제체크',r=>Object.entries(r.flaws||{}).map(([k,v])=>k+' '+v.join('·')).join(' / ')],
 ];
 function ecCsvCell(v){v=v==null?'':String(v);return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}
 function ecDownloadCSV(){

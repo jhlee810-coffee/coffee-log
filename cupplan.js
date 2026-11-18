@@ -88,7 +88,7 @@ function cpBannerHtml(){
   }
   return `<div class="plan-bar cp-bar">${h}</div>`;
 }
-function cpRefresh(){if(typeof renderEasyCup==='function'&&_ecView!=='form')renderEasyCup();}
+function cpRefresh(){if(typeof renderEasyCup==='function'&&_ecView!=='form'&&_ecView!=='bform'&&_ecView!=='choose')renderEasyCup();}
 async function cpCheckRemote(){
   try{
     const r=await fetch('cupplans/'+cpToday()+'.json?nc='+Date.now(),{cache:'no-store'});
