@@ -4,14 +4,18 @@
 // 흐름: 실제 데이터로 HTML 라벨 → 글자 맞춤(넘치면 줄바꿈·글자 줄임) → 줄 단위로 캔버스에 그림(lbPaintRoot) → 흑백 1비트 → (필요하면 회전·가운데 384점) → niimbluelib로 출력
 // 프린터 연결: 웹 블루투스(아이폰 Bluefy, PC 크롬) / 웹 시리얼(PC USB). 사파리처럼 안 되면 [라벨 이미지 저장]
 // 라이브러리: lib/niimbluelib.min.js (MIT, 0.49.1) — 프린터 쪽을 처음 쓸 때 불러옴
-// 글꼴 Noto Sans KR 은 Google Fonts 에서 (인터넷 필요)
+// 글꼴 Noto Sans KR 은 Google Fonts 에서 (인터넷 필요). 구매처 SEY 는 SEY 로고(굵지 않은 기하학적 대문자, 넓은 자간)와 가장 비슷한 Outfit(+자간 0.15em)으로 찍음 — 로고 모양과 후보 글꼴을 픽셀 비교해서 고름 (2026-11-22)
 
 const LB_LIBS={nb:'lib/niimbluelib.min.js?v=0.49.1'};
-const LB_FONT_CSS='https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@500;700;900&display=swap';
+const LB_FONT_CSS='https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@500;700;900&family=Outfit:wght@500;600&display=swap';
 const LB_HEAD=384;      // B1 프린트헤드 가로 점수(48mm). 50mm 롤(400점)은 양끝 8점씩 안 닿음 → 가운데 384점만 찍힘
 const LB_TH=150;        // 흑백 변환 기준 (0~255, 클수록 굵게)
 // text-autospace / text-spacing-trim 끄기: 최신 크롬·사파리가 한글과 영문·기호 사이에 자동으로 넣는 간격·다듬기를 꺼서, 화면(DOM) 배치와 캔버스에 그린 결과가 브라우저와 상관없이 같게 함
 const LB_FONT='font-family:\'Noto Sans KR\',\'Apple SD Gothic Neo\',\'Malgun Gothic\',sans-serif;text-autospace:no-autospace;text-spacing-trim:space-all;';
+/* SEY 로고 글꼴: 이름이 SEY 면 Outfit + 넓은 자간 (w: 글자 굵기. 흰 글씨는 얇게 번지기 쉬워 600) */
+const lbIsSey=n=>String(n||'').trim().toLowerCase()==='sey';
+const lbShopStyle=(n,w,fs)=>lbIsSey(n)?`font-family:'Outfit','Noto Sans KR',sans-serif;font-weight:${w||500};letter-spacing:0.15em;${fs?`font-size:${fs}px;`:''}`:'';
+const lbShopName=n=>{const v=typeof canonShop==='function'?canonShop(n):n;return v||'';};
 const LB_WRAP='word-break:keep-all;overflow-wrap:anywhere;';
 const LB_TYPES={
   bean :{name:'생두 정보',        w:720,h:400,rollW:50,rollH:90,rotate:true},
@@ -52,7 +56,7 @@ function lbNum(v){const n=parseFloat(v);return isNaN(n)?'':String(+n.toFixed(2))
 
 /* ── 라벨에 넣을 데이터 ── */
 function lbBeanData(b){
-  return {name:b.name||'',shop:b.shop||'',regionFarm:String(b.region||'').replace(/\s*\/\s*/g,' · '),altitude:lbAlt(b.altitude),
+  return {name:b.name||'',shop:lbShopName(b.shop),regionFarm:String(b.region||'').replace(/\s*\/\s*/g,' · '),altitude:lbAlt(b.altitude),
     variety:lbList(b.variety),process:lbProc(b.process),notes:lbNotes(b.cup_notes),price:lbNum(b.price)};
 }
 function lbRoastData(r){
@@ -79,7 +83,7 @@ function lbVacRoastData(r,g){
   return {name:b.name||r.bean_name||'',date:lbDate(r.date),g:g+'g',notes:lbNotes(b.cup_notes)};
 }
 function lbVacRbData(b,g){
-  return {roastery:b.roastery||'',name:b.name||'',date:lbDate(b.roast_date),g:g+'g',notes:lbNotes(b.cup_notes)};
+  return {roastery:lbShopName(b.roastery),name:b.name||'',date:lbDate(b.roast_date),g:g+'g',notes:lbNotes(b.cup_notes)};
 }
 
 /* ── 디자인 마크업 (design/labels 의 인라인 스타일 그대로) ── */
@@ -88,7 +92,7 @@ function lbHtmlBean(d){
   return `<div class="lb-root" style="width:720px;height:400px;box-sizing:border-box;background:#ffffff;color:#000000;${LB_FONT}display:flex;flex-direction:column;overflow:hidden">
 <div style="background:#000000;color:#ffffff;padding:18px 32px 16px;display:flex;justify-content:space-between;align-items:flex-end;gap:16px">
 <div data-fit="2" data-min="30" style="${LB_WRAP}font-size:44px;font-weight:900;line-height:1.1;letter-spacing:-0.5px">${lbEsc(d.name)}</div>
-<div style="display:flex;gap:14px;font-size:26px;font-weight:700;line-height:1.1;white-space:nowrap;margin-bottom:2px"><span>${lbEsc(d.shop)}</span>${d.price?`<span>${lbEsc(d.price)}</span>`:''}</div>
+<div style="display:flex;gap:14px;font-size:26px;font-weight:700;line-height:1.1;white-space:nowrap;margin-bottom:2px"><span style="${lbShopStyle(d.shop,600,30)}">${lbEsc(d.shop)}</span>${d.price?`<span>${lbEsc(d.price)}</span>`:''}</div>
 </div>
 <div style="flex-grow:1;padding:16px 32px 0;display:grid;grid-template-columns:minmax(0,1fr) fit-content(300px);column-gap:28px;row-gap:20px;align-content:start">
 ${lbFit('지역 · 농장',d.regionFarm)}${lbFit('고도',d.altitude)}${lbFit('품종',d.variety)}${lbFit('가공',d.process)}
@@ -127,7 +131,7 @@ function lbHtmlVac(d){
 }
 function lbHtmlVacb(d){
   return `<div class="lb-root" style="width:400px;height:240px;box-sizing:border-box;background:#ffffff;color:#000000;${LB_FONT}padding:14px 24px 14px;display:flex;flex-direction:column;gap:5px;overflow:hidden">
-<div data-fit="1" data-min="24" style="font-size:24px;font-weight:700;line-height:1.2;white-space:nowrap">${lbEsc(d.roastery)}</div>
+<div data-fit="1" data-min="24" style="font-size:24px;font-weight:700;line-height:1.2;white-space:nowrap;${lbShopStyle(d.roastery,500,30)}">${lbEsc(d.roastery)}</div>
 <div data-fit="2" data-min="24" style="${LB_WRAP}font-size:28px;font-weight:900;line-height:1.15;letter-spacing:-0.5px">${lbEsc(d.name)}</div>
 <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;border-bottom:3px solid #000000;padding-bottom:5px">
 <div style="font-size:26px;font-weight:700;line-height:1.2;white-space:nowrap">${lbEsc(d.date)}</div>
@@ -154,7 +158,7 @@ function lbFonts(text){
   return _lbFontCss.then(async okCss=>{
     if(!okCss){LB.fontOk=false;return;}
     const t=text||'가나다';
-    const res=await Promise.race([Promise.all(['500','700','900'].map(w=>document.fonts.load(`${w} 28px "Noto Sans KR"`,t))),new Promise(r=>setTimeout(()=>r(null),10000))]);
+    const res=await Promise.race([Promise.all([...['500','700','900'].map(w=>document.fonts.load(`${w} 28px "Noto Sans KR"`,t)),...['500','600'].map(w=>document.fonts.load(`${w} 28px "Outfit"`,'SEY'))]),new Promise(r=>setTimeout(()=>r(null),10000))]);
     LB.fontOk=!!res&&res.every(a=>a&&a.length);
   }).catch(()=>{LB.fontOk=false;});
 }
@@ -277,7 +281,7 @@ async function lbRender(type,d){
       out.data[o]=out.data[o+1]=out.data[o+2]=v;out.data[o+3]=255;
     }
     ctx.putImageData(out,0,0);
-    if(LB.fontOk===false)notes.push('Noto Sans KR 글꼴을 못 불러와서 다른 글꼴로 그렸어요 (인터넷 확인)');
+    if(LB.fontOk===false)notes.push('Noto Sans KR·Outfit 글꼴을 못 불러와서 다른 글꼴로 그렸어요 (인터넷 확인)');
     return {type,w,h,canvas:c1,notes};
   }finally{host.remove();}
 }

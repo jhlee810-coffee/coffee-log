@@ -39,12 +39,22 @@ const DC_PRESETS=[
    steps:'필터 카펙 TH-2 (하리오 V60도 가능) · 블룸 40g → 0:30 60g → 1:00부터 약 15초 간격 센터 푸어 30g×7 (총 310g) → 3:15~3:30 다 떨어질 때까지 · 가수 30g'},
   {name:'10푸어 ZP6',dripper:'하리오 네오',grinder:'ZP6',clicks:'80',coffee_g:'20',water_g:'310',dilute_g:'30',temp:'92',bloom:'30초',time:'3:15~3:30',water:'백산수10+딥스골드1',   // ZP6 분쇄도 8.0 (저장값 80 = 화면 8.0)
    steps:'필터 카펙 TH-2 (하리오 V60도 가능) · 블룸 40g → 0:30 60g → 1:00부터 약 15초 간격 센터 푸어 30g×7 (총 310g) → 3:15~3:30 다 떨어질 때까지 · 가수 30g'},
-  {name:'세이 더블블룸',dripper:'하리오 V60',grinder:'ZP6',clicks:'60',coffee_g:'15',water_g:'250',dilute_g:'20',temp:'92',bloom:'30초',time:'2:30 이내',water:'백산수10+딥스골드1',
+  {name:'SEY 더블블룸',dripper:'하리오 V60',grinder:'ZP6',clicks:'60',coffee_g:'15',water_g:'250',dilute_g:'20',temp:'92',bloom:'30초',time:'2:30 이내',water:'백산수10+딥스골드1',
    steps:'필터 TH-3 · 1차 50g 원 그리며 → 0:30 2차 50g → 1:30 3차 150g 강하게 푸어링 (총 250g) → 2:30 안에 끝 · 가수 20g'},
   {name:'더가비',dripper:'더가비',grinder:'ZP6',clicks:'55',coffee_g:'12',water_g:'215',dilute_g:'0',temp:'94',bloom:'',time:'3:00',water:'백산수10+딥스골드1',   // ZP6 분쇄도 5.5 (저장값 55 = 화면 5.5)
    steps:'필터 하이플럭스 155 · 블룸 없이 처음부터 215g 붓기 → 3:00 추출 종료 (총 215g, 가수 없음)'},
 ];
-const DC_MAIN_RECIPES=['펄사 미니 15','테츠카스야 10회 레시피','10푸어 ZP6','세이 더블블룸','10푸어 코만'];   // 레시피 칩에 먼저 보일 5개 (나머지는 '기타'). 디카페인 원두는 짝 프리셋으로 자동 전환 (2026-11-17)
+const DC_RECIPE_RENAMED={'세이 더블블룸':'SEY 더블블룸'};   // 옛 이름 → 새 이름 (2026-11-22). 저장된 기록의 레시피 이름도 앱 열 때 바꿈
+function dcFixRecipeNames(){
+  if(!db)return 0;let n=0;
+  const fix=o=>{if(o&&DC_RECIPE_RENAMED[o.recipe]){o.recipe=DC_RECIPE_RENAMED[o.recipe];n++;}};
+  (db.dailycups||[]).forEach(r=>fix(r.brew));
+  (db.easycups||[]).forEach(r=>{if(r.brews)Object.values(r.brews).forEach(fix);});
+  (db.brewlogs||[]).forEach(b=>{if(b&&DC_RECIPE_RENAMED[b.recipe]){b.recipe=DC_RECIPE_RENAMED[b.recipe];n++;}});
+  if(n&&typeof saveDB==='function')saveDB();
+  return n;
+}
+const DC_MAIN_RECIPES=['펄사 미니 15','테츠카스야 10회 레시피','10푸어 ZP6','SEY 더블블룸','10푸어 코만'];   // 레시피 칩에 먼저 보일 5개 (나머지는 '기타'). 디카페인 원두는 짝 프리셋으로 자동 전환 (2026-11-17)
 const DC_BAD_TAGS=['향 약함','발효취·술 냄새','단맛 없음','밋밋함','떫음','물 같음(얇음)','풋내·곡물 냄새','탄맛·스모키','텁텁함(구운 빵 맛)','오래된 맛(종이·눅눅)'];
 const DC_BALANCE=[
   {v:'sour2',  l:'많이 시다'},

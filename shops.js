@@ -9,6 +9,10 @@ const SHOP_ALIASES={
   'mi커피':'엠아이커피',
   'MI 커피':'엠아이커피',
   '엠아이 커피':'엠아이커피',
+  '세이':'SEY',            // 2026-11-22 세이 → SEY (라벨에는 SEY 로고 비슷한 글꼴로 찍힘)
+  '세이 커피':'SEY',
+  'sey':'SEY',
+  'sey coffee':'SEY',
 };
 function canonShop(name){
   const v=String(name||'').trim().replace(/\s+/g,' ');
