@@ -137,7 +137,7 @@ function renderDash(){
       const myAdv=advAll.filter(a=>a.rbid===b.id);
       return {score:o.score,html:`<div class="dash-bean" onclick="openDailyCupRb('${b.id}')">
       <div class="dash-bean-top"><b>${dashEsc(b.name)}</b>${badgeHtml(o,frzMark(myAdv))}</div>
-      <div class="dash-bean-sub"><span class="dc-rbtag">산 원두</span> ${dashEsc(b.roastery||'')} · ${dashMD(b.roast_date)} 로스팅</div>${dashCupLine(cs,'이 원두')}</div>`};
+      <div class="dash-bean-sub"><span class="rb-shop">${dashEsc(b.roastery||'구매')}</span> ${dashMD(b.roast_date)} 로스팅</div>${dashCupLine(cs,'이 원두')}</div>`};
     }
     const r=ownRoasts[i];if(!r)return null;
     const cs=cups.filter(c=>c.bean_info&&c.bean_info.roast_id===r.id);

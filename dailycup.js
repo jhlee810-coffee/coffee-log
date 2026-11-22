@@ -231,6 +231,37 @@ function dcRecentHtml(sel,excludeId){
       <div class="dc-rc-b">${dcEsc(dcBrief(r))}</div>${memo?`<div class="dc-rc-m">“${dcEsc(memo)}”</div>`:''}
       ${bb?`<div class="dc-rc-r"><span>☕ ${dcEsc(bb)}</span><button onclick="dcUseBrew('${r.id}')">이 추출값 쓰기</button></div>`:''}</div>`;}).join('')+`</div>`;
 }
+/* ── 이 배치(또는 이 생두 전체)로 마신 기록 전체 — 최신 → 과거, 상세 (2026-11-23) ── */
+let _dcHist=null;
+function dcBrewFull(b){
+  if(!b)return '';
+  const g=b.grinder?b.grinder+(b.clicks?' '+dcClickLabel(b.grinder,b.clicks):''):'';
+  return [b.recipe,b.dripper,b.filter?'필터 '+b.filter:'',g,dcTempLabel(b.temp),(b.coffee_g||b.water_g)?`${b.coffee_g||'?'}g→${b.water_g||'?'}g`:'',
+    b.dilute_g!==''&&b.dilute_g!=null?'가수 '+b.dilute_g+'g':'',b.bloom?'불림 '+b.bloom:'',b.time?'⏱ '+b.time:'',b.water].filter(Boolean).join(' · ');
+}
+function dcHistOpen(kind,id){
+  let snap=null;
+  if(kind==='rb'){const b=(db.roasted_beans||[]).find(x=>x.id===id);snap=b&&rbSnap(b);}
+  else{const r=(db.roasts||[]).find(x=>x.id===id);snap=r&&dcSnapFromRoast(r);}
+  if(snap){_dcHist={snap,all:false};dcHistRender();openMo('moDcHist');}
+}
+function dcHistSel(){if(_dc&&_dc.sel){_dcHist={snap:_dc.sel,all:false};dcHistRender();openMo('moDcHist');}}
+function dcHistCard(r,key){
+  const s=r.bean_info||{},other=dcBatchKey(s)!==key,w=dcRestOf(s),deg=r.degas_days,st=(deg!=null&&w)?restStage(deg,w):null;
+  const brief=dcBrief(r).replace(/^★\d+( · )?/,''),bf=dcBrewFull(r.brew);
+  const tags=[...(r.good||[]),...(r.notes_felt||[])].join(', ');
+  const memos=[['🔥',r.memo_hot],['🌡',r.memo_cool],['',r.memo]].filter(m=>m[1]).map(m=>`<div class="dc-rc-m">${m[0]} “${dcEsc(m[1])}”</div>`).join('');
+  return `<div class="dc-hc"><div class="dc-hc-h"><b>${dcEsc(dcMD(r.date))}</b>${deg!=null?` · <span style="color:${st?st.c:'inherit'}">${deg}일차${st&&st.l?' · '+dcEsc(st.l):''}</span>`:''} · <span class="dc-hc-s">${dcStars(r.stars)}</span>${other&&s.roast_date?`<span class="dc-hc-o">${dcEsc(dcMD(s.roast_date))} 로스팅분${dcProfile(s)?' '+dcEsc(dcProfile(s)):''}</span>`:''}</div>
+    ${brief?`<div class="dc-rc-b">${dcEsc(brief)}</div>`:''}${tags?`<div class="dc-rc-b dim">${dcEsc(tags)}</div>`:''}${memos}
+    ${bf?`<div class="dc-hc-r">☕ ${dcEsc(bf)}</div>`:''}</div>`;
+}
+function dcHistRender(){
+  if(!_dcHist)return;
+  const {snap,all}=_dcHist,recs=dcSortedRecords(),batch=dcCupsFor(snap,recs),bean=snap.rb_id?batch:dcCupsOfBean(snap,recs),list=all?bean:batch,key=dcBatchKey(snap);
+  document.getElementById('dcHistTitle').textContent=snap.bean;
+  const tog=snap.rb_id?'':`<div class="dc-pfs two"><button class="dc-pf${!all?' on':''}" onclick="_dcHist.all=false;dcHistRender()">이 배치 ${batch.length}잔</button><button class="dc-pf${all?' on':''}" onclick="_dcHist.all=true;dcHistRender()">이 생두 전체 ${bean.length}잔</button></div>`;
+  document.getElementById('dcHistBody').innerHTML=`<div class="dc-sel-meta">${dcSelMetaHtml(snap)}</div>${tog}`+(list.length?list.map(r=>dcHistCard(r,key)).join(''):'<div class="dc-empty">마신 기록이 없어요.</div>');
+}
 /* 배치의 숙성 일수: 냉동한 배치는 냉동한 날에서 멈춘 것으로 */
 function dcAgeOf(s,on){return s&&s.frozen&&typeof frozenAgeDays==='function'?frozenAgeDays(s.roast_date,s.frozen,on):dcDays(on,s&&s.roast_date);}
 
@@ -365,7 +396,7 @@ function dcEntryHtml(){
   const selNotes=e.sel?dcBeanNotes(e.sel).join(', '):'';
   const selBox=e.sel?`<div class="dc-sel"><div class="dc-sel-name">${dcEsc(e.sel.bean)}</div>${selNotes?`<div class="dc-notes">🍑 ${dcEsc(selNotes)}</div>`:''}
       <div class="dc-sel-meta">${dcSelMetaHtml(e.sel)}</div>
-      <div class="dc-sel-deg" id="dcDegText">${dcDegHtml(e.sel,deg)}</div>${dcRecentHtml(e.sel,e.editId)}</div>`:'';
+      <div class="dc-sel-deg" id="dcDegText">${dcDegHtml(e.sel,deg)}</div>${dcRecentHtml(e.sel,e.editId)}${dcCupsFor(e.sel).length?`<button class="dc-histbtn" onclick="dcHistSel()">📜 이 배치 마신 기록 전체 (${dcCupsFor(e.sel).length}잔)</button>`:''}</div>`:'';
   const stars=[1,2,3,4,5].map(n=>`<button class="dc-star${e.stars>=n?' on':''}" onclick="dcSetStars(${n})" aria-label="별 ${n}개">★</button>`).join('');
   return `<div class="sh"><div class="stl">${e.editId?'기록 수정':'오늘의 한 잔'}</div>${e.editId?'<button class="btn2" onclick="dcCancelEdit()">수정 취소</button>':''}</div>
   <div class="dc-card">
@@ -645,7 +676,7 @@ function dcRenderPick(){
   }
   const SEC={0:'🟢 지금 최적기',1:'🟡 최적기 전',2:'⚪ 최적기 후',3:'🔴 지남',9:'날짜 없음'};let lastSec=null;
   document.getElementById('dcPickList').innerHTML=groups.map(g=>{const head=_dcPickSort==='stage'&&g.st.o!==lastSec?`<div class="dc-psec">${SEC[g.st.o]||''}</div>`:'';lastSec=g.st.o;return head+`<div class="dc-pg">
-    <div class="dc-pg-t">${g.rb?'<span class="dc-rbtag">산 원두</span> ':''}${dcEsc(g.title)}<span>${dcEsc([g.rb?g.sub.replace('산 원두 · ',''):g.sub,g.w?`숙성 ${restText(g.w)}`:''].filter(Boolean).join(' · '))}</span>${g.notes?`<span class="dc-notes">🍑 ${dcEsc(g.notes)}</span>`:''}${(()=>{const r=g.cups&&g.cups[0];if(!r)return '';const bb=dcBrewBrief(r.brew),rs=(r.bean_info||{}).roast_date;
+    <div class="dc-pg-t">${g.rb?`<span class="rb-shop">${dcEsc(g.sub.replace('산 원두 · ','')||'구매')}</span> `:''}${dcEsc(g.title)}<span>${dcEsc([g.rb?g.sub.replace('산 원두 · ',''):g.sub,g.w?`숙성 ${restText(g.w)}`:''].filter(Boolean).join(' · '))}</span>${g.notes?`<span class="dc-notes">🍑 ${dcEsc(g.notes)}</span>`:''}${(()=>{const r=g.cups&&g.cups[0];if(!r)return '';const bb=dcBrewBrief(r.brew),rs=(r.bean_info||{}).roast_date;
       return `<span class="dc-ev">최근 ${dcEsc(dcMD(r.date))}${rs?` (${dcEsc(dcMD(rs))} 로스팅분)`:''} · ${dcEsc(dcBrief(r))}</span>${bb?`<span class="dc-ev dim">☕ ${dcEsc(bb)}</span>`:''}`;})()}</div>
     <div class="dc-pg-items">${g.items.map(({c,i})=>{const s=c.snap,d=dcAgeOf(s,t),n=counts[dcBatchKey(s)]||0,lc=dcCupsFor(s,recsAll)[0];
       return `<button class="dc-pb${c.drunk?' drunk':''}${c.held===false?' off':''}${s.frozen?' frz':''}" onclick="dcPickIdx(${i})"><b>${dcEsc(dcMD(s.roast_date)||'날짜 없음')}${s.roast_id&&dcProfile(s)?' · '+dcEsc(dcProfile(s)):''}${s.roast_id&&dcLossOfSnap(s)?' · '+dcLossHtml(dcLossOfSnap(s)):''}</b><span>${[d!=null?(s.frozen?'🧊 ':'')+d+'일차':'',n?n+'잔':'',c.held===false?'정리됨':''].filter(Boolean).join(' · ')}</span>${lc?`<span class="dc-pb-ev">최근 ${dcEsc(dcBrief(lc,3))}</span>`:''}</button>`;}).join('')}</div></div>`;}).join('')

@@ -155,13 +155,14 @@ function rbItemHtml(it){
   const btn=(on,fn,l)=>`<button class="${on?'on':''}" onclick="${fn}">${l}</button>`;
   const kd=own?'roast':'rb';
   const frzBtn=btn(it.frozen,`lbVacFrz('${kd}','${r.id}')`,it.frozen?'🧊 '+(frozenLeft(r)==null?'냉동 중':frozenLeft(r)+'봉')+' · 수정':'🧊 진공·냉동');
-  const acts=own
+  const hist=cups.length?btn(0,`dcHistOpen('${own?'roast':'rb'}','${r.id}')`,`📜 마신 기록 ${cups.length}`):'';
+  const acts=hist+(own
     ?btn(0,`roastToCup('${r.id}')`,'☕ 한 잔 기록')+(it.state?'':frzBtn)+btn(0,`lbRoastLabel('${r.id}')`,'🏷 로스팅 라벨')
       +btn(it.state==='gift',it.state?`setRoastState('${r.id}','gift')`:`lbVacOpen('roast','${r.id}','gift')`,'🎁 나눔')+btn(it.state==='done',`setRoastState('${r.id}','done')`,'다 마심')
     :btn(0,`openDailyCupRb('${r.id}')`,'☕ 한 잔 기록')+(it.held?frzBtn:'')+(it.held?btn(0,`lbVacOpen('rb','${r.id}','gift')`,'🎁 나눔'):'')
-      +btn(!it.held,`rbToggleDone('${r.id}')`,'다 마심');
+      +btn(!it.held,`rbToggleDone('${r.id}')`,'다 마심'));
   return `<div class="rbi ${own?'own':'bought'}${it.held?'':' off'}" onclick="${own?`openRoastDetail('${r.id}')`:`openRbForm('${r.id}')`}">
-    <div class="rbi-top"><span class="rbi-tag">${own?'🔥 직접 로스팅':'🛒 산 원두'}</span><b>${rbEsc(md(it.date)||'날짜 없음')} 로스팅${prof?' · '+rbEsc(prof):''}${lossH?' · '+lossH:''}${own?'':r.roastery?' · '+rbEsc(r.roastery):''}</b>${stBadge}</div>
+    <div class="rbi-top">${own?'<span class="rbi-tag">🔥 직접 로스팅</span>':`<span class="rb-shop">${rbEsc(r.roastery||'구매')}</span>`}<b>${rbEsc(md(it.date)||'날짜 없음')} 로스팅${prof?' · '+rbEsc(prof):''}${lossH?' · '+lossH:''}</b>${stBadge}</div>
     ${meta?`<div class="rbi-meta">${rbEsc(meta)}</div>`:''}
     ${it.frozen?`<div class="rb-frz">${rbEsc(frozenText(r))}</div>`:''}
     <div class="rbi-act" onclick="event.stopPropagation()">${acts}</div></div>`;
