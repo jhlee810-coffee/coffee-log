@@ -9,6 +9,7 @@ const RB_STATUS_ON='마시는 중', RB_STATUS_DONE='다 마심';
 
 let _rbFilter='on';   // 'on' | 'done' | 'all'
 let _rbSearch='';
+let _rbSort='stage';   // 정렬: 'new' 로스팅 최신순 | 'old' 오래된 순 | 'stage' 숙성 단계순(기본)
 let _rbOS='';   // 원산지/구매처 칩 선택: '' | 'origin:에티오피아' | 'shop:모모스'
 let _rbForm=null;
 // 항목의 원산지·구매처 (내 로스팅은 생두 정보, 산 원두는 직접 입력한 값 · 로스터리). 구매처 이름은 별칭을 하나로 합침
@@ -108,7 +109,13 @@ function renderRoastedBeans(){
     g.g=g.items.filter(it=>it.held).reduce((s,it)=>s+(it.kind==='own'?ownRemainG(it.rec):boughtRemainG(it.rec)),0);
     g.nh=g.items.filter(it=>it.held).length;
   });
-  groups.sort((a,b)=>a.o-b.o||a.title.localeCompare(b.title,'ko'));
+  if(_rbSort==='stage')groups.sort((a,b)=>a.o-b.o||a.title.localeCompare(b.title,'ko'));
+  else{   // 로스팅 날짜 기준 (원두 고르기 창과 같은 규칙): 묶음은 가장 최근(오래된 순이면 가장 오래된) 날짜로, 묶음 안 배치도 같은 방향
+    const dir=_rbSort==='old'?1:-1;
+    groups.forEach(g=>{g.items.sort((a,b)=>{const x=a.date||'',y=b.date||'';if(!x!==!y)return x?-1:1;return dir*x.localeCompare(y)||dir*((+a.rec.batch_no||0)-(+b.rec.batch_no||0));});
+      const ds=g.items.map(i=>i.date||'').filter(Boolean);g.dk=dir<0?ds.reduce((a,b)=>a>b?a:b,''):ds.reduce((a,b)=>a<b?a:b,ds[0]||'');});
+    groups.sort((a,b)=>{if(!a.dk!==!b.dk)return a.dk?-1:1;return dir*a.dk.localeCompare(b.dk);});
+  }
   const S=stockSummary();
   const fc=(k,l)=>`<div class="fc ${_rbFilter===k?'on':''}" onclick="_rbFilter='${k}';renderRoastedBeans()">${l}</div>`;
   const kc=(k,l)=>`<div class="fc ${_rbKind===k?'on':''}" onclick="_rbKind='${k}';renderRoastedBeans()">${l}</div>`;
@@ -118,6 +125,7 @@ function renderRoastedBeans(){
     <div class="rb-sum">마시는 중 <b>${nHeld}개</b> · 🔥 내 로스팅 ${S.ownKinds}종 ≈ ${fmtWeight(S.ownG)} · 🛒 산 원두 ${S.boughtKinds}종 ≈ ${fmtWeight(S.boughtG)}${S.frozenG?` · 🧊 냉동 ≈ ${fmtWeight(S.frozenG)}`:''}</div>
     <input class="search" placeholder="원두 · 로스터리 · 원산지 · 컵노트 검색..." value="${rbEsc(_rbSearch)}" oninput="_rbSearch=this.value;renderRoastedBeans();const i=document.querySelector('#rbRoot .search');i.focus();i.setSelectionRange(i.value.length,i.value.length)">
     <div class="filters">${fc('on','마시는 중')}${fc('done','다 마심·나눔')}${fc('all','전체')}</div>
+    <div class="filters">${[['new','로스팅 최신순'],['old','오래된 순'],['stage','숙성 단계순']].map(([k,l])=>`<div class="fc ${_rbSort===k?'on':''}" onclick="_rbSort='${k}';renderRoastedBeans()">${l}</div>`).join('')}</div>
     <div class="filters">${kc('all','모두')}${kc('own','🔥 내 로스팅')}${kc('bought','🛒 산 원두')}${kc('frozen','🧊 냉동')}</div>
     <div class="filters">${(origins.length||shops.length)?`<div class="frow">${oc('','전체')}${origins.map(o=>oc('origin:'+o,o)).join('')}</div>${shops.length?`<div class="frow">${shops.map(s=>oc('shop:'+s,s)).join('')}</div>`:''}`:''}</div>
     <div class="rbg-list">${groups.map(rbGroupHtml).join('')||

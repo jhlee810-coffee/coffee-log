@@ -1,3 +1,5 @@
+let _bsSort='';   // 생두 정렬: '' 기본 | new 구매 최신순 | old 구매 오래된 순 | most 잔량 많은 순 | least 잔량 적은 순
+function setBS(v){_bsSort=_bsSort===v?'':v;renderBeans();}
 function renderBeans(){
   // 필터 칩: 라벨·품종 없이 원산지 줄 / 구매처 줄 두 줄, 각각 가나다순 (2026-11-12)
   const cs_=(n)=>typeof canonShop==='function'?canonShop(n):n;
@@ -7,7 +9,8 @@ function renderBeans(){
   const fc=(key,lbl)=>`<div class="fc ${cf===key?'on':''}" onclick="setF('${key.replace(/'/g,"\\'")}')">${lbl}</div>`;
   document.getElementById('originFilters').innerHTML=
     `<div class="frow">${fc('all','전체')}${origins.map(o=>fc(`origin:${o}`,o)).join('')}</div>`+
-    (shops.length?`<div class="frow">${shops.map(s=>fc(`shop:${s}`,s)).join('')}</div>`:'');
+    (shops.length?`<div class="frow">${shops.map(s=>fc(`shop:${s}`,s)).join('')}</div>`:'')+
+    `<div class="frow">${[['new','구매 최신순'],['old','구매 오래된 순'],['most','잔량 많은 순'],['least','잔량 적은 순']].map(([k,l])=>`<div class="fc ${_bsSort===k?'on':''}" onclick="setBS('${k}')">${l}</div>`).join('')}</div>`;
   let beans=db.beans;
   if(cf!=='all'){
     if(cf.startsWith('origin:')){const val=cf.slice(7);beans=beans.filter(b=>b.origin===val);}
@@ -16,6 +19,13 @@ function renderBeans(){
     else beans=beans.filter(b=>b.origin===cf);
   }
   if(cs){const q=cs.toLowerCase();beans=beans.filter(b=>(b.name+b.origin+(b.variety||'')+(b.cup_notes||'')+(b.shop||'')).toLowerCase().includes(q));}
+  if(_bsSort){   // 정렬: 날짜·잔량을 모르는 생두는 맨 뒤
+    const rem=b=>{const u=beanUsage(b);return u.remaining===null?null:Math.max(0,u.remaining);};
+    const cmp=_bsSort==='new'||_bsSort==='old'
+      ?(a,b)=>{const x=a.stock_date||'',y=b.stock_date||'';if(!x!==!y)return x?-1:1;return (_bsSort==='new'?-1:1)*x.localeCompare(y);}
+      :(a,b)=>{const x=rem(a),y=rem(b);if((x===null)!==(y===null))return x===null?1:-1;if(x===null)return 0;return _bsSort==='most'?y-x:x-y;};
+    beans=beans.slice().sort(cmp);
+  }
   // 소진 생두는 맨 아래로 (그 외 순서는 그대로)
   beans=beans.filter(b=>b.status!=='소진').concat(beans.filter(b=>b.status==='소진'));
   renderStockFillBanner();
