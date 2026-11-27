@@ -16,6 +16,19 @@ let _rbForm=null;
 function rbOriginOf(it){return (it.kind==='own'?(it.bean&&it.bean.origin):it.rec.origin)||'';}
 function rbShopOf(it){const s=it.kind==='own'?(it.bean&&it.bean.shop):it.rec.roastery;return (typeof canonShop==='function'?canonShop(s):s)||'';}
 
+/* 원두 묶음 부제: 원산지 · 대표 품종 1개 · 가공 (예: "에티오피아 헤일룸 워시드") — 내 로스팅은 뒤에 구매처, 산 원두는 로스터리 칩이 따로 있어서 안 붙임 (2026-11-27) */
+function rbVarietyOne(v){
+  let p=String(v||'').split(/[,/·;|]/)[0].replace(/\(.*?\)/g,'').trim();if(!p)return '';
+  const t=p.split(/\s+/);if(t.length>1&&/^[A-Za-z]+\s?\d+$/.test(t[0])&&!/[가-힣]/.test(p))p=t[0];
+  return /^[a-z]+\d+$/i.test(p)?p.toUpperCase():p;
+}
+function rbProcKo(v){return String(v||'').split(/[,/]/)[0].replace(/Fully\s+/i,'').replace(/Washed/i,'워시드').replace(/Natural/i,'내추럴').replace(/Honey/i,'허니').trim();}
+function rbGroupSub(own,bean,rec){
+  const o=own?bean.origin:rec.origin,pr=rbProcKo(own?bean.process:rec.process);
+  let v=rbVarietyOne(own?bean.variety:rec.variety);
+  if(!v){const m=String(own?(bean.name||rec.bean_name):rec.name).match(/헤이룸|헤일룸|에어룸|게이샤|게샤|부르봉|버번|카투라|카투아이|파카마라|SL\d+|Heirloom|Gesha|Geisha|Bourbon|Pacamara|Typica|Caturra/i);if(m)v=m[0];}
+  return [o,v,pr].filter(Boolean).join(' ');
+}
 function rbList(){if(!Array.isArray(db.roasted_beans))db.roasted_beans=[];return db.roasted_beans;}
 function rbEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function rbDays(roastDate){
@@ -98,7 +111,7 @@ function renderRoastedBeans(){
     const k=own?'b:'+(it.bean.id||it.rec.bean_name):'rb:'+String(it.rec.name).replace(/\s+/g,'');
     if(!(k in gi)){gi[k]=groups.length;groups.push({k,own,
       title:own?(it.bean.group_name||it.bean.name||it.rec.bean_name):it.rec.name,
-      sub:own?[it.bean.origin,it.bean.shop].filter(Boolean).join(' · '):(it.rec.roastery||''),
+      sub:own?[rbGroupSub(true,it.bean,it.rec),it.bean.shop].filter(Boolean).join(' '):rbGroupSub(false,null,it.rec),
       notes:own?(it.bean.cup_notes||''):(it.rec.cup_notes||''),items:[]});}
     groups[gi[k]].items.push(it);
   });
