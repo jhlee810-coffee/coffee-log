@@ -81,18 +81,12 @@ function bcApplyPreset(i,p){
 }
 function bcRecipe(i,name){
   const c=_bc.cups[i],b=c.brew,list=dcRecipeList();let it=list.find(x=>x.name===name);if(!it)return;
-  if(b.recipe===name||(it.kind==='p'&&it.p.decafTwin&&b.recipe===it.p.decafTwin)){b.recipe='';}
+  if(b.recipe===name){b.recipe='';}
   else{
-    if(it.kind==='p'&&it.p.decafTwin&&c.sel&&c.sel.decaf){const tw=list.find(x=>x.name===it.p.decafTwin);if(tw)it=tw;}
     if(it.kind==='p')bcApplyPreset(i,it.p);
     else{const r=dcAllRecipes()[it.i];if(r){b.recipe=r.name;b.coffee_g=r.coffee_g||b.coffee_g;b.water_g=r.water_g||b.water_g;b.temp=r.temp||b.temp;}}
   }
   bcTouch(i);bcSync();bcRerender();
-}
-function bcMatchDecaf(i){   // 디카페인 원두를 고르면 짝 프리셋으로 (오늘의 한 잔과 같은 규칙)
-  const c=_bc.cups[i];if(!c.sel)return;const cur=DC_PRESETS.find(p=>p.name===c.brew.recipe);if(!cur)return;
-  const twin=c.sel.decaf?cur.decafTwin:cur.regularTwin,p=DC_PRESETS.find(x=>x.name===twin);
-  if(p)bcApplyPreset(i,p);
 }
 function bcGrinder(i,name){
   const b=_bc.cups[i].brew;
@@ -123,7 +117,7 @@ function bcFilterList(b){
 }
 function bcRecipeChipsHtml(i){
   const c=_bc.cups[i],b=c.brew,list=dcRecipeList();
-  const isOn=it=>b.recipe===it.name||(it.kind==='p'&&!!it.p.decafTwin&&b.recipe===it.p.decafTwin);
+  const isOn=it=>b.recipe===it.name;
   const chip=it=>`<button class="dc-chip${isOn(it)?' on':''}" onclick="bcRecipe(${i},'${bcQ(it.name)}')">${ecEsc(it.name)}</button>`;
   const main=DC_MAIN_RECIPES.map(n=>list.find(x=>x.name===n)).filter(Boolean);
   const rest=list.filter(x=>!main.includes(x)),restOn=main.some(isOn)?null:rest.find(isOn);
@@ -170,7 +164,7 @@ function bcDetailHtml(i){
 }
 
 /* ── 잔 카드 ── */
-function bcSetSel(i,snap){const c=_bc.cups[i];c.sel=snap;bcTouch(i);bcMatchDecaf(i);bcSync();bcRerender();}
+function bcSetSel(i,snap){const c=_bc.cups[i];c.sel=snap;bcTouch(i);bcSync();bcRerender();}
 function bcOpenPick(i){
   if(typeof _dc==='undefined'||!_dc)dcNew();
   dcOpenPick('',snap=>bcSetSel(i,snap),_bc.cups[i].date||_bc.date);   // 오늘의 한 잔의 원두 고르기 창을 그대로 씀

@@ -27,12 +27,12 @@ const DC_TEMP_COLD=['상온','45','50','75'];                                   
 const DC_TEMP_DEFAULT='92';
 // 화면·목록에 보일 때: 숫자면 92°C, 상온처럼 글자면 그대로
 function dcTempLabel(t){t=String(t==null?'':t).trim();if(!t)return '';return /^\d+(\.\d+)?$/.test(t)?t+'°C':t;}
-// 레시피 프리셋: 고르면 아래 값이 한 번에 채워짐 (decafOf/decafTwin: 디카페인 원두를 고르면 자동으로 짝 프리셋)
+// 레시피 프리셋: 고르면 아래 값이 한 번에 채워짐 (디카페인 원두 자동 전환은 2026-11-28 없앰)
 const DC_PRESETS=[
   {name:'펄사 미니 15',dripper:'펄사 미니',grinder:'ZP6',clicks:'75',coffee_g:'15',water_g:'250',dilute_g:'10',temp:'94',bloom:'1분',water:'백산수10+딥스골드1',
-   steps:'스위치 닫고 블룸 50g → 1분 오픈 50g → 1:30 50g → 2:00 50g → 2:30 50g (총 250g) · 가수 10g',decafTwin:'펄사 미니 15 디카페인'},
+   steps:'스위치 닫고 블룸 50g → 1분 오픈 50g → 1:30 50g → 2:00 50g → 2:30 50g (총 250g) · 가수 10g'},
   {name:'펄사 미니 15 디카페인',dripper:'펄사 미니',grinder:'ZP6',clicks:'75',coffee_g:'15',water_g:'250',dilute_g:'10',temp:'90',bloom:'30초',water:'백산수10+딥스골드1',
-   steps:'스위치 닫고 블룸 50g → 1분 오픈 50g → 1:30 50g → 2:00 50g → 2:30 50g (총 250g) · 가수 10g',decaf:true,regularTwin:'펄사 미니 15'},
+   steps:'스위치 닫고 블룸 50g → 1분 오픈 50g → 1:30 50g → 2:00 50g → 2:30 50g (총 250g) · 가수 10g'},
   {name:'펄사 미니 20',dripper:'펄사 미니',grinder:'ZP6',clicks:'75',coffee_g:'20',water_g:'300',dilute_g:'50',temp:'94',bloom:'1분',water:'백산수10+딥스골드1',
    steps:'스위치 닫고 블룸 50g → 1분 오픈 50g → 1:30 50g → 2:00 50g → 2:30 50g → 3:00 50g (총 300g) · 가수 50g'},
   {name:'10푸어 코만',dripper:'하리오 네오',grinder:'코만단테 C40',clicks:'40',coffee_g:'20',water_g:'310',dilute_g:'30',temp:'90',bloom:'30초',time:'3:15~3:30',water:'백산수10+딥스골드1',
@@ -419,13 +419,12 @@ function dcRecipeList(){   // 프리셋 + 앱 레시피를 이름 기준으로 �
 }
 function dcRecipePick(name){
   const b=_dc.brew,list=dcRecipeList();let it=list.find(x=>x.name===name);if(!it)return;
-  if(b.recipe===name||(it.kind==='p'&&it.p.decafTwin&&b.recipe===it.p.decafTwin)){b.recipe='';dcRerender();return;}   // 다시 누르면 해제 (디카페인 짝으로 바뀐 상태도)
-  if(it.kind==='p'&&it.p.decafTwin&&_dc.sel&&_dc.sel.decaf){const tw=list.find(x=>x.name===it.p.decafTwin);if(tw)it=tw;}   // 디카페인 원두면 짝 프리셋으로
+  if(b.recipe===name){b.recipe='';dcRerender();return;}   // 다시 누르면 해제
   if(it.kind==='p')dcApplyPreset(it.i);else dcSetRecipe(it.i);
 }
 function dcRecipeChipsHtml(){
   const b=_dc.brew,list=dcRecipeList(),q=t=>dcEsc(t).replace(/'/g,"\\'");
-  const isOn=it=>b.recipe===it.name||(it.kind==='p'&&!!it.p.decafTwin&&b.recipe===it.p.decafTwin);
+  const isOn=it=>b.recipe===it.name;
   const chip=it=>`<button class="dc-chip${isOn(it)?' on':''}" onclick="dcRecipePick('${q(it.name)}')">${dcEsc(it.name)}</button>`;
   const main=DC_MAIN_RECIPES.map(n=>list.find(x=>x.name===n)).filter(Boolean);
   const rest=list.filter(x=>!main.includes(x)),restOn=main.some(isOn)?null:rest.find(isOn);   // 디카페인 짝은 메인 칩이 대신 켜져 있으니 따로 안 보임
@@ -541,7 +540,7 @@ function dcDateChanged(v){ // 달력을 닫지 않도록 화면 전체를 다시
   const el=document.getElementById('dcDegText');
   if(el&&_dc.sel){el.innerHTML=dcDegHtml(_dc.sel,dcAgeOf(_dc.sel,_dc.date));}
 }
-function dcSelect(snap){_dc.sel=snap;closeMo('moDcPick');if(!_dc.editId)dcMatchDecafPreset();dcRerender();}
+function dcSelect(snap){_dc.sel=snap;closeMo('moDcPick');dcRerender();}
 function dcSetNum(k,n){_dc[k]=_dc[k]===n?0:n;dcRerender();}
 function dcAddNote(){const v=(prompt('느낀 컵노트')||'').trim();if(v&&!_dc.notes_felt.includes(v)){_dc.notes_felt.push(v);}dcRerender();}
 function dcAskBrew(k,label){const v=(prompt(label,_dc.brew[k]||'')||'').trim();if(v){_dc.brew[k]=k==='dilute_g'?v.replace(/[^0-9.]/g,''):v;}dcRerender();}
@@ -555,13 +554,6 @@ function dcApplyPreset(i){
   if(_dc.brew.recipe===p.name){_dc.brew.recipe='';dcRerender();return;}
   ['dripper','grinder','clicks','coffee_g','water_g','dilute_g','temp','bloom','time'].forEach(k=>{if(p[k]!=null)_dc.brew[k]=p[k];});
   _dc.brew.recipe=p.name;dcRerender();
-}
-/* 디카페인 원두를 고르면 짝 프리셋으로 바꿔 줌 (반대도) */
-function dcMatchDecafPreset(){
-  const cur=DC_PRESETS.find(p=>p.name===_dc.brew.recipe);if(!cur||!_dc.sel)return;
-  const twin=_dc.sel.decaf?cur.decafTwin:cur.regularTwin;
-  const i=DC_PRESETS.findIndex(p=>p.name===twin);
-  if(i>=0){_dc.brew.recipe='';dcApplyPreset(i);}
 }
 function dcSetStars(n){_dc.stars=_dc.stars===n?0:n;dcRerender();}
 function dcSet(k,v){_dc[k]=_dc[k]===v?'':v;if(k==='aroma'&&_dc.aroma!==DC_AROMA_NOTES)_dc.notes_felt=[];dcRerender();}   // 같은 걸 다시 누르면 해제 (맛 균형 막대/둘 다는 한 칸이라 하나만 선택됨)
@@ -814,7 +806,6 @@ function openDailyCupRoast(id){
   if(!r){window.scrollTo(0,0);return;}
   if(!_dc||_dc.editId)dcNew();
   _dc.sel=dcSnapFromRoast(r);
-  dcMatchDecafPreset();
   renderDailyCup();window.scrollTo(0,0);
 }
 /* 생두 카드에서 바로 열기 (생두 목록 → ☕ 한 잔 기록) */
